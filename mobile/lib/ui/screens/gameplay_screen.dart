@@ -83,7 +83,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.s1.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(44),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.3),
@@ -216,7 +216,7 @@ class _TimerRing extends StatelessWidget {
             value: seconds / total,
             strokeWidth: 6,
             color: AppTheme.acc,
-            backgroundColor: Colors.white10,
+            backgroundColor: Colors.white.withOpacity(0.1),
           ),
           Text(
             '$seconds',

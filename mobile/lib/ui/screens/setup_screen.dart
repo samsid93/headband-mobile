@@ -46,7 +46,7 @@ class SetupScreen extends StatelessWidget {
                       color: AppTheme.s2,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isSelected ? AppTheme.acc : Colors.white10,
+                        color: isSelected ? AppTheme.acc : Colors.white.withOpacity(0.1),
                         width: 2,
                       ),
                     ),
@@ -132,7 +132,7 @@ class _TimerStepper extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.s2,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Row(
         children: [
@@ -172,7 +172,7 @@ class _SettingsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.s2,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Column(
         children: [
@@ -182,14 +182,14 @@ class _SettingsCard extends StatelessWidget {
             value: game.tiltEnabled,
             onChanged: (v) => game.tiltEnabled = v,
           ),
-          const Divider(color: Colors.white10),
+          const Divider(color: Colors.white.withOpacity(0.1)),
           _ToggleRow(
             label: 'Voice commands',
             sub: 'Say "Correct", "Yes", "Skip"',
             value: game.voiceEnabled,
             onChanged: (v) => game.voiceEnabled = v,
           ),
-          const Divider(color: Colors.white10),
+          const Divider(color: Colors.white.withOpacity(0.1)),
           _ToggleRow(
             label: 'Skips deduct points',
             sub: 'Each skip removes 1 point',
