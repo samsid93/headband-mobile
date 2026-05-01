@@ -61,7 +61,7 @@ class HomeScreen extends StatelessWidget {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 17),
-                        side: const BorderSide(color: Colors.white15),
+                        side: const BorderSide(color: Colors.white.withOpacity(0.15)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
