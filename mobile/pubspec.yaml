@@ -9,18 +9,17 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.1.1
-  sensors_plus: ^5.0.1
-  speech_to_text: ^6.6.0
-  audioplayers: ^5.2.1
-  shared_preferences: ^2.2.2
-  google_fonts: ^6.1.0
-  flutter_animate: ^4.5.0
+  sensors_plus: ^6.1.1
+  speech_to_text: ^7.3.0
+  audioplayers: ^6.1.0
+  shared_preferences: ^2.3.2
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.1
+  flutter_lints: ^3.0.2
 
 flutter:
   uses-material-design: true
-  # Note: Assets and fonts would be defined here in a real project
