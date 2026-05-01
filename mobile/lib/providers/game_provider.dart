@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../data/models/game_models.dart';
 import '../data/mock_data.dart';
 import '../core/services/audio_service.dart';
@@ -13,21 +14,41 @@ class GameProvider with ChangeNotifier {
   final SensorService _sensors = SensorService();
   final VoiceService _voice = VoiceService();
 
-  // Settings
-  String selectedDeckId = 'movies';
-  int roundDuration = 60;
-  bool skipDeduct = false;
-  bool voiceEnabled = false;
-  bool tiltEnabled = true;
-  String mode = 'classic'; // 'classic' or 'team'
+  // Settings with proper setters
+  String _selectedDeckId = 'movies';
+  String get selectedDeckId => _selectedDeckId;
+  set selectedDeckId(String val) { _selectedDeckId = val; notifyListeners(); }
+
+  int _roundDuration = 60;
+  int get roundDuration => _roundDuration;
+  set roundDuration(int val) { _roundDuration = val; notifyListeners(); }
+
+  bool _skipDeduct = false;
+  bool get skipDeduct => _skipDeduct;
+  set skipDeduct(bool val) { _skipDeduct = val; notifyListeners(); }
+
+  bool _voiceEnabled = false;
+  bool get voiceEnabled => _voiceEnabled;
+  set voiceEnabled(bool val) { _voiceEnabled = val; notifyListeners(); }
+
+  bool _tiltEnabled = true;
+  bool get tiltEnabled => _tiltEnabled;
+  set tiltEnabled(bool val) { _tiltEnabled = val; notifyListeners(); }
+
+  String _mode = 'classic';
+  String get mode => _mode;
+  set mode(String val) { _mode = val; notifyListeners(); }
 
   // Game State
   GameState state = GameState.home;
   List<WordCard> currentWords = [];
   int wordIndex = 0;
   int secondsRemaining = 60;
+  int countdownValue = 3;
   int scoreCorrect = 0;
   int scoreSkipped = 0;
+  String? lastAction; // 'correct', 'skip'
+  double rawY = 0; // Current tilt value
   Timer? _timer;
 
   // Teams
@@ -45,29 +66,42 @@ class GameProvider with ChangeNotifier {
 
   void selectDeck(String id) {
     selectedDeckId = id;
-    notifyListeners();
   }
 
-  void startRound() {
+  Future<void> startRound() async {
     currentWords = List.from(selectedDeck.words)..shuffle();
     wordIndex = 0;
     scoreCorrect = 0;
     scoreSkipped = 0;
     secondsRemaining = roundDuration;
+    lastAction = null;
     
+    // Voice setup
+    if (voiceEnabled) {
+      var status = await Permission.microphone.request();
+      if (status.isGranted) {
+        await _voice.init();
+      } else {
+        voiceEnabled = false;
+      }
+    }
+
     setGameState(GameState.countdown);
     _startCountdown();
   }
 
   void _startCountdown() {
-    int count = 3;
+    countdownValue = 3;
+    notifyListeners();
+    
     Timer.periodic(const Duration(seconds: 1), (t) {
-      if (count == 0) {
+      if (countdownValue == 0) {
         t.cancel();
         _beginGameplay();
       } else {
         _audio.play(AudioService.countdown);
-        count--;
+        countdownValue--;
+        notifyListeners();
       }
     });
   }
@@ -80,6 +114,9 @@ class GameProvider with ChangeNotifier {
       _sensors.startListening((dir) {
         if (dir == TiltDirection.correct) handleCorrect();
         if (dir == TiltDirection.skip) handleSkip();
+      }, onRawY: (y) {
+        rawY = y;
+        notifyListeners();
       });
     }
 
@@ -95,22 +132,37 @@ class GameProvider with ChangeNotifier {
         endRound();
       } else {
         secondsRemaining--;
-        if (secondsRemaining <= 10) _audio.play(AudioService.countdown);
+        if (secondsRemaining <= 3 && secondsRemaining > 0) _audio.play(AudioService.countdown);
+        if (secondsRemaining == 10) _audio.play(AudioService.countdown); // 10s warning
         notifyListeners();
       }
     });
   }
 
   void handleCorrect() {
+    if (state != GameState.playing) return;
     scoreCorrect++;
     _audio.play(AudioService.correct);
-    _nextWord();
+    lastAction = 'correct';
+    notifyListeners();
+    
+    Future.delayed(const Duration(milliseconds: 500), () {
+      lastAction = null;
+      _nextWord();
+    });
   }
 
   void handleSkip() {
+    if (state != GameState.playing) return;
     scoreSkipped++;
     _audio.play(AudioService.skip);
-    _nextWord();
+    lastAction = 'skip';
+    notifyListeners();
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      lastAction = null;
+      _nextWord();
+    });
   }
 
   void _nextWord() {

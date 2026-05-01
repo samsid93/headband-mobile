@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme.dart';
 import '../../providers/game_provider.dart';
 
@@ -47,94 +48,239 @@ class _GameplayScreenState extends State<GameplayScreen> {
     }
 
     if (game.state == GameState.score) {
-      // We could use a separate screen or a view here
       return const _ScoreView();
     }
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
-      body: Row(
+      body: Stack(
         children: [
-          // Left Side: Skip
-          _SideButton(
-            label: 'SKIP',
-            icon: '✗',
-            color: AppTheme.skp,
-            score: game.scoreSkipped,
-            onPressed: game.handleSkip,
-          ),
-          
-          // Centre: Word Card
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Timer
-                _TimerRing(
-                  seconds: game.secondsRemaining,
-                  total: game.roundDuration,
-                ),
-                const SizedBox(height: 20),
-                
-                // Word Card
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.s1.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(44),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 20,
-                        ),
-                      ],
+          Row(
+            children: [
+              // Left Side: Skip
+              _SideButton(
+                label: 'SKIP',
+                icon: '✗',
+                color: AppTheme.skp,
+                score: game.scoreSkipped,
+                onPressed: game.handleSkip,
+              ),
+              
+              // Centre: Word Card
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Timer
+                    _TimerRing(
+                      seconds: game.secondsRemaining,
+                      total: game.roundDuration,
                     ),
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          game.selectedDeck.name.toUpperCase(),
-                          style: const TextStyle(fontSize: 10, color: AppTheme.mut, letterSpacing: 1.2),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          game.currentWord.word,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Georgia',
-                          ),
-                        ),
-                        if (game.currentWord.hint.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              game.currentWord.hint,
-                              style: const TextStyle(fontSize: 12, color: AppTheme.mut, fontStyle: FontStyle.italic),
+                    const SizedBox(height: 10),
+                    
+                    // Word Card
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppTheme.s1.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(44),
+                              border: Border.all(
+                                color: game.lastAction == 'correct' 
+                                    ? AppTheme.cor 
+                                    : game.lastAction == 'skip' 
+                                        ? AppTheme.skp 
+                                        : Colors.white.withOpacity(0.1),
+                                width: game.lastAction != null ? 3 : 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: game.lastAction == 'correct' 
+                                      ? AppTheme.cor.withOpacity(0.3) 
+                                      : game.lastAction == 'skip' 
+                                          ? AppTheme.skp.withOpacity(0.3) 
+                                          : Colors.black.withOpacity(0.3),
+                                  blurRadius: 20,
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  game.selectedDeck.name.toUpperCase(),
+                                  style: const TextStyle(fontSize: 10, color: AppTheme.mut, letterSpacing: 1.2),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  game.currentWord.word,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'Georgia',
+                                  ),
+                                ).animate(target: game.lastAction != null ? 1 : 0)
+                                 .shake(duration: 300.ms),
+                                if (game.currentWord.hint.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 10),
+                                    child: Text(
+                                      game.currentWord.hint,
+                                      style: const TextStyle(fontSize: 12, color: AppTheme.mut, fontStyle: FontStyle.italic),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                      ],
+                          
+                          // Tilt bars (on the card)
+                          if (game.tiltEnabled) ...[
+                            // Left bar (Skip)
+                            Positioned(
+                              left: 35,
+                              top: 40,
+                              bottom: 40,
+                              width: 6,
+                              child: _TiltIndicatorBar(
+                                value: (game.rawY / 4.5).clamp(0.0, 1.0),
+                                color: AppTheme.skp,
+                              ),
+                            ),
+                            // Right bar (Correct)
+                            Positioned(
+                              right: 35,
+                              top: 40,
+                              bottom: 40,
+                              width: 6,
+                              child: _TiltIndicatorBar(
+                                value: (-game.rawY / 4.5).clamp(0.0, 1.0),
+                                color: AppTheme.cor,
+                              ),
+                            ),
+                          ]
+                        ],
+                      ),
                     ),
-                  ),
+                    
+                    // Bottom pill info
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (game.tiltEnabled)
+                            const _InfoPill(text: '📱 Tilt active', color: AppTheme.acc),
+                          if (game.voiceEnabled)
+                            const SizedBox(width: 10),
+                          if (game.voiceEnabled)
+                            const _InfoPill(text: '🎙️ Listening...', color: AppTheme.pur),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              
+              // Right Side: Correct
+              _SideButton(
+                label: 'CORRECT',
+                icon: '✓',
+                color: AppTheme.cor,
+                score: game.scoreCorrect,
+                onPressed: game.handleCorrect,
+                isRight: true,
+              ),
+            ],
           ),
           
-          // Right Side: Correct
-          _SideButton(
-            label: 'CORRECT',
-            icon: '✓',
-            color: AppTheme.cor,
-            score: game.scoreCorrect,
-            onPressed: game.handleCorrect,
-            isRight: true,
-          ),
+          // Action overlays
+          if (game.lastAction == 'correct')
+            const _ActionOverlay(text: 'CORRECT!', color: AppTheme.cor),
+          if (game.lastAction == 'skip')
+            const _ActionOverlay(text: 'SKIP', color: AppTheme.skp),
         ],
+      ),
+    );
+  }
+}
+
+class _TiltIndicatorBar extends StatelessWidget {
+  final double value;
+  final Color color;
+  const _TiltIndicatorBar({required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      alignment: Alignment.bottomCenter,
+      child: FractionallySizedBox(
+        heightFactor: value,
+        child: Container(
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+            boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 4)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionOverlay extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _ActionOverlay({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: color.withOpacity(0.2),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              BoxShadow(color: color.withOpacity(0.5), blurRadius: 30),
+            ],
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white),
+          ),
+        ),
+      ).animate().scale(duration: 200.ms, curve: Curves.easeOut).fadeOut(delay: 400.ms),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final String text;
+  final Color color;
+  const _InfoPill({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }
@@ -156,12 +302,12 @@ class _SideButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 100,
-      color: Colors.black26,
+      color: Colors.black.withOpacity(0.2),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Column(
               children: [
                 Text(
@@ -170,7 +316,7 @@ class _SideButton extends StatelessWidget {
                 ),
                 Text(
                   label == 'SKIP' ? 'SKIPPED' : 'CORRECT',
-                  style: const TextStyle(fontSize: 9, color: AppTheme.mut),
+                  style: const TextStyle(fontSize: 9, color: AppTheme.mut, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -178,12 +324,15 @@ class _SideButton extends StatelessWidget {
           GestureDetector(
             onTap: onPressed,
             child: Container(
-              height: 120,
+              height: 80,
               width: 80,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(color: color.withOpacity(0.3), blurRadius: 10),
+                ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -206,21 +355,24 @@ class _TimerRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double progress = seconds / total;
+    final Color timerColor = progress > 0.5 ? AppTheme.acc : progress > 0.25 ? Colors.orange : AppTheme.skp;
+
     return SizedBox(
-      width: 80,
-      height: 80,
+      width: 60,
+      height: 60,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CircularProgressIndicator(
-            value: seconds / total,
-            strokeWidth: 6,
-            color: AppTheme.acc,
+            value: progress,
+            strokeWidth: 5,
+            color: timerColor,
             backgroundColor: Colors.white.withOpacity(0.1),
           ),
           Text(
             '$seconds',
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
           ),
         ],
       ),
@@ -232,12 +384,30 @@ class _CountdownView extends StatelessWidget {
   const _CountdownView();
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final game = Provider.of<GameProvider>(context);
+    final val = game.countdownValue;
+
+    return Scaffold(
       backgroundColor: AppTheme.bg,
       body: Center(
-        child: Text(
-          'Get Ready...',
-          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              val == 0 ? 'GO!' : '$val',
+              style: const TextStyle(
+                fontSize: 120,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.acc,
+                fontFamily: 'Georgia',
+              ),
+            ).animate(key: ValueKey(val)).scale(duration: 200.ms, curve: Curves.bounceOut).fadeOut(delay: 700.ms),
+            const SizedBox(height: 20),
+            Text(
+              val == 0 ? '🚀' : 'Get Ready...',
+              style: const TextStyle(fontSize: 20, color: AppTheme.mut, letterSpacing: 2),
+            ),
+          ],
         ),
       ),
     );
@@ -249,23 +419,74 @@ class _ScoreView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final game = Provider.of<GameProvider>(context);
+    final pts = game.skipDeduct ? (game.scoreCorrect - game.scoreSkipped).clamp(0, 100) : game.scoreCorrect;
+    
     return Scaffold(
+      backgroundColor: AppTheme.bg,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🎉', style: TextStyle(fontSize: 60)),
-            const Text('Round Over!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 20),
-            Text('Score: ${game.scoreCorrect}', style: const TextStyle(fontSize: 76, fontWeight: FontWeight.w900, color: AppTheme.acc)),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('🏠 Back to Home'),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('🎉', style: TextStyle(fontSize: 60)).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+              const Text('Round Over!', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: AppTheme.s2,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: AppTheme.acc.withOpacity(0.3)),
+                  boxShadow: [BoxShadow(color: AppTheme.acc.withOpacity(0.1), blurRadius: 20)],
+                ),
+                child: Column(
+                  children: [
+                    Text('$pts', style: const TextStyle(fontSize: 80, fontWeight: FontWeight.w900, color: AppTheme.acc)),
+                    const Text('POINTS SCORED', style: TextStyle(fontSize: 12, color: AppTheme.mut, letterSpacing: 2)),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _StatMini(label: 'CORRECT', val: game.scoreCorrect, color: AppTheme.cor),
+                        const SizedBox(width: 30),
+                        _StatMini(label: 'SKIPPED', val: game.scoreSkipped, color: AppTheme.skp),
+                      ],
+                    )
+                  ],
+                ),
+              ).animate().slideY(begin: 0.2, duration: 400.ms),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 56),
+                ),
+                onPressed: () {
+                  game.reset();
+                  Navigator.pop(context);
+                },
+                child: const Text('🏠 BACK TO HOME'),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _StatMini extends StatelessWidget {
+  final String label;
+  final int val;
+  final Color color;
+  const _StatMini({required this.label, required this.val, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('$val', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.mut)),
+      ],
     );
   }
 }

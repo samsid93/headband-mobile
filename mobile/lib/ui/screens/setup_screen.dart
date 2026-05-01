@@ -23,6 +23,25 @@ class SetupScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const _Label('Game Mode'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _ModeBtn(
+                  label: '🎯 Classic',
+                  isActive: game.mode == 'classic',
+                  onTap: () => game.mode = 'classic',
+                ),
+                const SizedBox(width: 10),
+                _ModeBtn(
+                  label: '👥 Team',
+                  isActive: game.mode == 'team',
+                  onTap: () => game.mode = 'team',
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
             const _Label('Choose a Deck'),
             const SizedBox(height: 12),
             GridView.builder(
@@ -40,7 +59,7 @@ class SetupScreen extends StatelessWidget {
                 final isSelected = game.selectedDeckId == deck.id;
                 
                 return GestureDetector(
-                  onTap: () => game.selectDeck(deck.id),
+                  onTap: () => game.selectedDeckId = deck.id,
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppTheme.s2,
@@ -84,27 +103,62 @@ class SetupScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _SettingsCard(game: game),
             
-            const SizedBox(height: 100), // Spacer for bottom bar
+            const SizedBox(height: 120), // Spacer for bottom bar
           ],
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.transparent, AppTheme.bg],
+            colors: [AppTheme.bg.withOpacity(0), AppTheme.bg],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 56),
+          ),
           onPressed: () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const GameplayScreen()),
             );
           },
-          child: const Text('Continue →'),
+          child: const Text('PROCEED TO START →'),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeBtn extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+  const _ModeBtn({required this.label, required this.isActive, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isActive ? AppTheme.acc : AppTheme.s2,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: isActive ? AppTheme.acc : Colors.white.withOpacity(0.1)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isActive ? Colors.black : AppTheme.mut,
+            ),
+          ),
         ),
       ),
     );
@@ -117,7 +171,7 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     text.toUpperCase(),
-    style: const TextStyle(color: AppTheme.mut, fontSize: 11, letterSpacing: 1),
+    style: const TextStyle(color: AppTheme.mut, fontSize: 11, letterSpacing: 1, fontWeight: FontWeight.bold),
   );
 }
 
@@ -138,7 +192,7 @@ class _TimerStepper extends StatelessWidget {
         children: [
           IconButton(
             onPressed: value > 10 ? () => onChanged(value - 5) : null,
-            icon: const Icon(Icons.remove, size: 28),
+            icon: const Icon(Icons.remove_circle_outline, size: 28),
           ),
           Expanded(
             child: Column(
@@ -152,8 +206,8 @@ class _TimerStepper extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: value < 300 ? () => onChanged(value + 5) : null,
-            icon: const Icon(Icons.add, size: 28),
+            onPressed: value < 600 ? () => onChanged(value + 5) : null,
+            icon: const Icon(Icons.add_circle_outline, size: 28),
           ),
         ],
       ),
