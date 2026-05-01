@@ -122,8 +122,19 @@ class GameProvider with ChangeNotifier {
 
     if (voiceEnabled) {
       _voice.startListening((action, text) {
-        if (action == VoiceAction.correct) handleCorrect();
-        if (action == VoiceAction.skip) handleSkip();
+        if (action == VoiceAction.correct) {
+          handleCorrect();
+        } else if (action == VoiceAction.skip) {
+          handleSkip();
+        } else {
+          // Unknown word — update lastAction to notify UI
+          lastAction = 'unknown';
+          notifyListeners();
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            lastAction = null;
+            notifyListeners();
+          });
+        }
       });
     }
 

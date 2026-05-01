@@ -202,6 +202,8 @@ class _GameplayScreenState extends State<GameplayScreen> {
             const _ActionOverlay(text: 'CORRECT!', color: AppTheme.cor),
           if (game.lastAction == 'skip')
             const _ActionOverlay(text: 'SKIP', color: AppTheme.skp),
+          if (game.lastAction == 'unknown')
+            const _ActionOverlay(text: '❓❓❓', color: AppTheme.pur),
         ],
       ),
     );

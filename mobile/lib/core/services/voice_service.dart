@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 enum VoiceAction { correct, skip, unknown }
@@ -5,6 +6,7 @@ enum VoiceAction { correct, skip, unknown }
 class VoiceService {
   final SpeechToText _speech = SpeechToText();
   bool _isAvailable = false;
+  Function(VoiceAction, String)? _onAction;
 
   final List<String> correctKeywords = [
     'correct', 'yes', 'yeah', 'yep', 'got it', 'right', 'done', 'nice'
@@ -15,29 +17,38 @@ class VoiceService {
   ];
 
   Future<bool> init() async {
-    _isAvailable = await _speech.initialize();
+    _isAvailable = await _speech.initialize(
+      onError: (e) => debugPrint('Speech error: $e'),
+      onStatus: (s) => debugPrint('Speech status: $s'),
+    );
     return _isAvailable;
   }
 
   void startListening(Function(VoiceAction, String) onAction) {
+    _onAction = onAction;
     if (!_isAvailable) return;
 
     _speech.listen(
       onResult: (result) {
-        final text = result.recognizedWords.toLowerCase();
-        if (correctKeywords.any((k) => text.contains(k))) {
-          onAction(VoiceAction.correct, text);
-        } else if (skipKeywords.any((k) => text.contains(k))) {
-          onAction(VoiceAction.skip, text);
-        } else {
-          onAction(VoiceAction.unknown, text);
+        if (result.finalResult) {
+          final text = result.recognizedWords.toLowerCase();
+          _processText(text);
         }
       },
-      listenFor: const Duration(seconds: 30),
-      pauseFor: const Duration(seconds: 3),
-      cancelOnError: true,
-      partialResults: true,
+      partialResults: false, // Wait for final result for better accuracy
     );
+  }
+
+  void _processText(String text) {
+    if (_onAction == null) return;
+    
+    if (correctKeywords.any((k) => text.contains(k))) {
+      _onAction!(VoiceAction.correct, text);
+    } else if (skipKeywords.any((k) => text.contains(k))) {
+      _onAction!(VoiceAction.skip, text);
+    } else {
+      _onAction!(VoiceAction.unknown, text);
+    }
   }
 
   void stopListening() {
