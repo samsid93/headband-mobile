@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start headband-game-milestone1.html)",
+      "Bash(dir)"
+    ]
+  }
+}
