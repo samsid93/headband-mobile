@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme.dart';
 import '../providers/game_provider.dart';
+import '../data/mock_data.dart';
 
 class SetupScreen extends StatelessWidget {
   const SetupScreen({super.key});
@@ -29,6 +30,43 @@ class SetupScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               
+              // Deck Selector
+              _buildSectionTitle('Choose a Deck'),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 1.5,
+                ),
+                itemCount: DECKS.length,
+                itemBuilder: (context, index) {
+                  final deck = DECKS[index];
+                  final isSelected = game.deck == deck.id;
+                  return InkWell(
+                    onTap: () => game.setDeck(deck.id),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface2,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isSelected ? AppTheme.accent : AppTheme.border),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(deck.icon, style: const TextStyle(fontSize: 24)),
+                          Text(deck.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              
+              const SizedBox(height: 20),
               // Timer Section
               _buildSectionTitle('Round Timer'),
               Container(
@@ -104,21 +142,6 @@ class SetupScreen extends StatelessWidget {
           ),
           child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: isSelected ? Colors.black : AppTheme.muted)),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchRow(String title, bool value, Function(bool) onChanged) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppTheme.surface2, borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Switch(value: value, onChanged: onChanged, activeColor: AppTheme.accent),
-        ],
       ),
     );
   }
