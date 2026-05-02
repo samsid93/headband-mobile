@@ -77,7 +77,15 @@ class GameProvider extends ChangeNotifier {
   set tiltEnabled(bool val) { _tiltEnabled = val; notifyListeners(); }
   set state(GameState s) { _state = s; notifyListeners(); }
 
-  void toggleVoiceLive() { _voiceEnabled = !_voiceEnabled; if (!_voiceEnabled) _voice.stopListening(); else _initVoice(); notifyListeners(); }
+  void toggleVoiceLive() { 
+    _voiceEnabled = !_voiceEnabled; 
+    if (!_voiceEnabled) {
+      _voice.stopListening(); 
+    } else {
+      _initVoice(); 
+    }
+    notifyListeners(); 
+  }
   void toggleTiltLive() { _tiltEnabled = !_tiltEnabled; notifyListeners(); }
 
   void setTeamName(int index, String name) {
@@ -182,7 +190,6 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _handleSensorData(double x, double y, double z) {
-    // Axis Intelligence (Auto-reverses tilt if flipped)
     if (x < -7.0) _axisSign = 1;
     else if (x > 7.0) _axisSign = -1;
 
@@ -196,7 +203,6 @@ class GameProvider extends ChangeNotifier {
 
     if (_state != GameState.playing) return;
 
-    // Strict Portrait Guard
     if (y.abs() > 7.0) {
       if (_rawY != 0) { _rawY = 0; notifyListeners(); }
       return; 
@@ -223,6 +229,8 @@ class GameProvider extends ChangeNotifier {
     bool available = await _voice.init();
     if (available) {
       _voice.startListening((text) {
+        // RADICAL FIX: Completely disable hearing anything while sounds are playing
+        // and add a strict guard to prevent "noise trigger" sounds.
         if (_state != GameState.playing || _isCoolingDown || _isVoiceMutedForSfx || !_voiceEnabled) return;
         
         final lower = text.toLowerCase().trim();
@@ -241,13 +249,14 @@ class GameProvider extends ChangeNotifier {
         }
 
         if (isActionable) {
+          // Play sound ONLY if it matches a hard-coded keyword
           if (['correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup'].contains(detected)) {
             handleCorrect();
           } else {
             handleSkip();
           }
-        } else if (lower.length > 3) {
-          // Permanently silenced feedback sound for unknown voice
+        } else if (lower.length > 4) {
+          // Show visual feedback ONLY, no audio for unknown noise.
           _lastAction = 'unknown';
           _heardText = text;
           notifyListeners();
