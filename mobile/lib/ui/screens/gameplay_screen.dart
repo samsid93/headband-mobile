@@ -25,7 +25,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   @override
   void dispose() {
-    // Re-enable portrait on exit
+    // Reset orientation on leave
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -154,15 +154,15 @@ class _GameplayScreenState extends State<GameplayScreen> {
                               ),
                             ),
                             
-                            // Tilt indicators
+                            // Tilt indicators - uses Y axis for parity
                             if (game.tiltEnabled) ...[
                               Positioned(
                                 left: 35, top: 40, bottom: 40, width: 6,
-                                child: _TiltIndicatorBar(value: (game.rawZ / 6.5).clamp(0.0, 1.0), color: AppTheme.cor),
+                                child: _TiltIndicatorBar(value: (-game.rawY / 4.5).clamp(0.0, 1.0), color: AppTheme.cor),
                               ),
                               Positioned(
                                 right: 35, top: 40, bottom: 40, width: 6,
-                                child: _TiltIndicatorBar(value: (-game.rawZ / 6.5).clamp(0.0, 1.0), color: AppTheme.skp),
+                                child: _TiltIndicatorBar(value: (game.rawY / 4.5).clamp(0.0, 1.0), color: AppTheme.skp),
                               ),
                             ]
                           ],
@@ -200,7 +200,7 @@ class _GameplayScreenState extends State<GameplayScreen> {
             // Overlays
             if (game.lastAction == 'correct') const _ActionOverlay(text: 'CORRECT!', color: AppTheme.cor),
             if (game.lastAction == 'skip') const _ActionOverlay(text: 'SKIP', color: AppTheme.skp),
-            if (game.lastAction == 'unknown') const _ActionOverlay(text: '❓❓❓', color: AppTheme.pur),
+            if (game.lastAction == 'unknown') _ActionOverlay(text: '🎙️ "${game.heardText}"\n❓❓❓', color: AppTheme.pur),
           ],
         ),
       ),
@@ -241,7 +241,11 @@ class _ActionOverlay extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(40), boxShadow: [BoxShadow(color: color.withOpacity(0.5), blurRadius: 30)]),
-          child: Text(text, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white)),
+          child: Text(
+            text, 
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white)
+          ),
         ),
       ).animate().scale(duration: 200.ms, curve: Curves.easeOut).fadeOut(delay: 400.ms),
     );
@@ -355,8 +359,23 @@ class _CountdownView extends StatelessWidget {
   }
 }
 
-class _ScoreView extends StatelessWidget {
+class _ScoreView extends StatefulWidget {
   const _ScoreView();
+
+  @override
+  State<_ScoreView> createState() => _ScoreViewState();
+}
+
+class _ScoreViewState extends State<_ScoreView> {
+  @override
+  void initState() {
+    super.initState();
+    // Force portrait for results
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final game = Provider.of<GameProvider>(context);

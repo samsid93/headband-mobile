@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 import '../data/models/game_models.dart';
 import '../data/mock_data.dart';
@@ -36,7 +37,8 @@ class GameProvider extends ChangeNotifier {
   List<WordCard> _remainingWords = [];
   WordCard? _currentWord;
   String? _lastAction;
-  double _rawZ = 0;
+  String _heardText = '';
+  double _rawY = 0;
   bool _isCoolingDown = false;
   Timer? _gameTimer;
 
@@ -61,7 +63,8 @@ class GameProvider extends ChangeNotifier {
   WordCard get currentWord => _currentWord ?? WordCard(word: 'ERROR', hint: '');
   Deck get selectedDeck => DECKS.firstWhere((d) => d.id == _selectedDeckId);
   String? get lastAction => _lastAction;
-  double get rawZ => _rawZ;
+  String get heardText => _heardText;
+  double get rawY => _rawY;
   Map<int, String> get teamNames => _teamNames;
 
   // Setters
@@ -92,6 +95,7 @@ class GameProvider extends ChangeNotifier {
     _secondsRemaining = _roundDuration;
     _remainingWords = List.from(selectedDeck.words)..shuffle();
     _nextWord();
+    _audio.playCountdown(); // First sound immediately
     notifyListeners();
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -164,28 +168,33 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _handleSensorData(double x, double y, double z) {
-    _rawZ = z;
-    
-    // Rotation Detection (for tutorial auto-proceed)
+    // Rotation Gate: We need to detect Landscape.
+    // If phone is against forehead, gravity is on X (short axis).
+    // If phone is portrait, gravity is on Y (long axis).
     if (_state == GameState.rotate) {
-      // Landscape: gravity mostly on X or Y, not Z
-      if (x.abs() > 7.0 || y.abs() > 7.0) {
+      if (x.abs() > 7.5 && y.abs() < 4.0) {
         _state = GameState.ready;
         notifyListeners();
       }
       return;
     }
 
-    // Gameplay Tilt Detection
+    // Web Parity Tilt: Uses Y-axis (long axis) side-tilt in landscape
+    _rawY = y;
     if (_state != GameState.playing || _isCoolingDown || !_tiltEnabled) {
       notifyListeners();
       return;
     }
 
-    // Thresholds: Z > 6 = screen down (Correct), Z < -6 = screen up (Skip)
-    if (z > 6.0) handleCorrect();
-    else if (z < -6.0) handleSkip();
-    else notifyListeners();
+    // Web logic: gy > 4.5 (Positive Y) = Skip, gy < -4.5 (Negative Y) = Correct
+    // Threshold 4.5
+    if (y >= 4.5) {
+      handleSkip();
+    } else if (y <= -4.5) {
+      handleCorrect();
+    } else {
+      notifyListeners();
+    }
   }
 
   void _initVoice() async {
@@ -193,13 +202,17 @@ class GameProvider extends ChangeNotifier {
     if (available) {
       _voice.startListening((text) {
         final lower = text.toLowerCase();
-        if (lower.contains('correct') || lower.contains('yes')) handleCorrect();
-        else if (lower.contains('skip') || lower.contains('next')) handleSkip();
-        else {
+        if (lower.contains('correct') || lower.contains('yes')) {
+          handleCorrect();
+        } else if (lower.contains('skip') || lower.contains('next')) {
+          handleSkip();
+        } else {
           _lastAction = 'unknown';
+          _heardText = text;
           notifyListeners();
-          Timer(const Duration(seconds: 1), () {
+          Timer(const Duration(seconds: 2), () {
             _lastAction = null;
+            _heardText = '';
             notifyListeners();
           });
         }
@@ -210,7 +223,16 @@ class GameProvider extends ChangeNotifier {
   void _endRound() async {
     _state = GameState.score;
     _gameTimer?.cancel();
+    _sensor.stop();
     _voice.stopListening();
+    
+    // Unlock orientation for score display
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     
     final service = LeaderboardService();
     await service.saveEntry(LeaderboardEntry(
@@ -225,6 +247,11 @@ class GameProvider extends ChangeNotifier {
   void reset() {
     _state = GameState.idle;
     _sensor.stop();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     if (_mode == 'team') _currentTeamIndex = 1 - _currentTeamIndex;
     notifyListeners();
   }
