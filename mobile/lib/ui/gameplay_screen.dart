@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:vibration/vibration.dart';
+import 'package:vibration_plus/vibration_plus.dart';
 import '../providers/game_provider.dart';
 import '../core/services/sensor_service.dart';
 import '../core/services/voice_service.dart';
