@@ -16,9 +16,9 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
+    // HARD LOCK to one side only to prevent inversion
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
   }
 

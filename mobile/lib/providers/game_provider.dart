@@ -252,11 +252,10 @@ class GameProvider extends ChangeNotifier {
           } else {
             handleSkip();
           }
-        } else if (lower.length > 2) {
-          // Only show 'unknown' if it's long enough to be an actual word, not a background pop
+        } else if (lower.length > 3) {
+          // Silent feedback: Only show overlay, NO trigger sound for unknown noise
           _lastAction = 'unknown';
           _heardText = text;
-          _audio.playTap(); 
           notifyListeners();
           Timer(const Duration(seconds: 2), () {
             if (_lastAction == 'unknown') _lastAction = null;
