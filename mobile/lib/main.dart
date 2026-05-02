@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme.dart';
+import 'ui/setup_screen.dart';
 
 void main() {
   runApp(const HeadBandApp());
@@ -54,7 +55,7 @@ class HomeScreen extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                     letterSpacing: -3,
                     fontFamily: 'Georgia',
-                    color: AppTheme.accent, // Simplified gradient for base
+                    color: AppTheme.accent,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -76,7 +77,12 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 48),
                 
                 // Buttons
-                _buildButton('Play Now', AppTheme.accent, () {}),
+                _buildButton('Play Now', AppTheme.accent, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SetupScreen()),
+                  );
+                }),
                 const SizedBox(height: 10),
                 _buildButton('Leaderboard', Colors.transparent, () {}, outlined: true),
               ],
