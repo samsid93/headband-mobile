@@ -5,15 +5,23 @@ import '../../core/theme.dart';
 import '../../providers/game_provider.dart';
 import 'ready_screen.dart';
 
-class RotateScreen extends StatelessWidget {
+class RotateScreen extends StatefulWidget {
   const RotateScreen({super.key});
+
+  @override
+  State<RotateScreen> createState() => _RotateScreenState();
+}
+
+class _RotateScreenState extends State<RotateScreen> {
+  bool _hasNavigated = false;
 
   @override
   Widget build(BuildContext context) {
     final game = Provider.of<GameProvider>(context);
 
-    // Auto-transition to Ready screen when landscape is detected
-    if (game.state == GameState.ready) {
+    // Ensure we only navigate once
+    if (game.state == GameState.ready && !_hasNavigated) {
+      _hasNavigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
@@ -47,7 +55,6 @@ class RotateScreen extends StatelessWidget {
               ),
               const Spacer(),
               
-              // Animated tutorial panels (Correct/Skip)
               Row(
                 children: [
                    _buildTutorialCard('✓ CORRECT', 'Tilt top toward floor', AppTheme.cor),
