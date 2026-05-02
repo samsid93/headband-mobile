@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme.dart';
 import '../../providers/game_provider.dart';
+import '../../data/models/game_models.dart';
 import '../../data/mock_data.dart';
 import 'team_setup_screen.dart';
 import 'rotate_screen.dart';
