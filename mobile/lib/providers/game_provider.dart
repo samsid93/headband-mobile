@@ -12,7 +12,6 @@ import '../core/services/leaderboard_service.dart';
 enum GameState { idle, setup, rotate, ready, countdown, playing, score }
 
 class GameProvider extends ChangeNotifier {
-  // Services
   final AudioService _audio = AudioService();
   late SensorService _sensor;
   late VoiceService _voice;
@@ -24,10 +23,10 @@ class GameProvider extends ChangeNotifier {
   bool _skipDeduct = false;
   bool _voiceEnabled = false;
   bool _tiltEnabled = true;
-  List<String> _unlockedDeckIds = [];
-  Map<int, String> _teamNames = {0: 'Team 1', 1: 'Team 2'};
+  final List<String> _unlockedDeckIds = [];
+  final Map<int, String> _teamNames = {0: 'Team 1', 1: 'Team 2'};
 
-  // Game State
+  // State
   GameState _state = GameState.idle;
   int _countdownValue = 3;
   int _secondsRemaining = 60;
@@ -60,7 +59,7 @@ class GameProvider extends ChangeNotifier {
   int get scoreCorrect => _scoreCorrect;
   int get scoreSkipped => _scoreSkipped;
   int get currentTeamIndex => _currentTeamIndex;
-  WordCard get currentWord => _currentWord ?? WordCard(word: 'ERROR', hint: '');
+  WordCard get currentWord => _currentWord ?? WordCard(word: '...', hint: '');
   Deck get selectedDeck => DECKS.firstWhere((d) => d.id == _selectedDeckId);
   String? get lastAction => _lastAction;
   String get heardText => _heardText;
@@ -95,6 +94,7 @@ class GameProvider extends ChangeNotifier {
     _secondsRemaining = _roundDuration;
     _remainingWords = List.from(selectedDeck.words)..shuffle();
     _nextWord();
+    
     _audio.playCountdown();
     notifyListeners();
 
@@ -138,29 +138,33 @@ class GameProvider extends ChangeNotifier {
 
   void handleCorrect() async {
     if (_state != GameState.playing || _isCoolingDown) return;
+    _isCoolingDown = true; // Lock immediately
+    
     _scoreCorrect++;
-    _triggerActionFeedback('correct');
+    _lastAction = 'correct';
     _audio.playCorrect();
     if (await Vibration.hasVibrator() ?? false) Vibration.vibrate(duration: 100);
     _nextWord();
     notifyListeners();
+    
+    Timer(const Duration(milliseconds: 1100), () {
+      _lastAction = null;
+      _isCoolingDown = false;
+      notifyListeners();
+    });
   }
 
   void handleSkip() async {
     if (_state != GameState.playing || _isCoolingDown) return;
+    _isCoolingDown = true; // Lock immediately
+    
     _scoreSkipped++;
-    _triggerActionFeedback('skip');
+    _lastAction = 'skip';
     _audio.playSkip();
     if (await Vibration.hasVibrator() ?? false) Vibration.vibrate(duration: 300);
     _nextWord();
     notifyListeners();
-  }
-
-  void _triggerActionFeedback(String action) {
-    _lastAction = action;
-    _isCoolingDown = true;
-    notifyListeners();
-    // Longer cooldown to prevent rapid-fire triggers
+    
     Timer(const Duration(milliseconds: 1100), () {
       _lastAction = null;
       _isCoolingDown = false;
@@ -169,7 +173,7 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _handleSensorData(double x, double y, double z) {
-    // Rotation Gate Logic
+    // Rotation Gate
     if (_state == GameState.rotate) {
       if (x.abs() > 7.5 && y.abs() < 4.0) {
         _state = GameState.ready;
@@ -178,32 +182,27 @@ class GameProvider extends ChangeNotifier {
       return;
     }
 
-    // Only process tilt if currently playing and NOT cooling down
-    if (_state != GameState.playing || _isCoolingDown || !_tiltEnabled) {
-      _rawY = 0; // Reset indicator
+    // Gameplay Guards
+    if (_state != GameState.playing || !_tiltEnabled) return;
+
+    // Throttle UI updates for the indicator - only notify if changed significantly (> 0.2)
+    if ((_rawY - y).abs() > 0.2) {
+      _rawY = y;
       notifyListeners();
-      return;
     }
 
-    // CRITICAL: Strict Landscape Guard
-    // In forehead position (landscape), gravity is on X axis (short side).
-    // If gravity moves to Y axis (long side), user is holding it in portrait.
-    if (y.abs() > 8.0) {
-      _rawY = 0;
-      notifyListeners();
-      return; 
-    }
+    // Cooldown check
+    if (_isCoolingDown) return;
 
-    // Actual gameplay tilt (uses side-tilt Y axis when in landscape)
-    _rawY = y;
+    // Strict Portrait/Landscape Guard (using Y-axis gravity)
+    // If phone held portrait, Y is near 9.8.
+    if (y.abs() > 8.0) return; 
 
-    // Threshold check
+    // Threshold triggers (Web Parity: 4.5)
     if (y >= 5.5) {
       handleSkip();
     } else if (y <= -5.5) {
       handleCorrect();
-    } else {
-      notifyListeners();
     }
   }
 
@@ -211,6 +210,8 @@ class GameProvider extends ChangeNotifier {
     bool available = await _voice.init();
     if (available) {
       _voice.startListening((text) {
+        if (_state != GameState.playing || _isCoolingDown) return;
+        
         final lower = text.toLowerCase();
         if (lower.contains('correct') || lower.contains('yes')) {
           handleCorrect();
@@ -219,9 +220,10 @@ class GameProvider extends ChangeNotifier {
         } else {
           _lastAction = 'unknown';
           _heardText = text;
+          _audio.playTap(); // Immediate feedback for noise
           notifyListeners();
           Timer(const Duration(seconds: 2), () {
-            _lastAction = null;
+            if (_lastAction == 'unknown') _lastAction = null;
             _heardText = '';
             notifyListeners();
           });
@@ -236,9 +238,7 @@ class GameProvider extends ChangeNotifier {
     _sensor.stop();
     _voice.stopListening();
     
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     
     final service = LeaderboardService();
     await service.saveEntry(LeaderboardEntry(
@@ -253,21 +253,16 @@ class GameProvider extends ChangeNotifier {
   void reset() {
     _state = GameState.idle;
     _sensor.stop();
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    _voice.stopListening();
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     if (_mode == 'team') _currentTeamIndex = 1 - _currentTeamIndex;
     notifyListeners();
   }
 
-  void unlockDeck(String id) {
-    _unlockedDeckIds.add(id);
-    notifyListeners();
-  }
-
-  bool isDeckUnlocked(String id) {
-    final deck = DECKS.firstWhere((d) => d.id == id);
-    if (!deck.isPremium) return true;
-    return _unlockedDeckIds.contains(id);
+  @override
+  void dispose() {
+    _audio.dispose();
+    _gameTimer?.cancel();
+    super.dispose();
   }
 }
