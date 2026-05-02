@@ -40,7 +40,7 @@ class GameProvider extends ChangeNotifier {
   double _rawY = 0;
   bool _isCoolingDown = false;
   bool _isVoiceMutedForSfx = false;
-  int _axisSign = 1; // Corrects tilt for landscape left vs right
+  int _axisSign = 1; 
   Timer? _gameTimer;
 
   GameProvider() {
@@ -77,7 +77,6 @@ class GameProvider extends ChangeNotifier {
   set tiltEnabled(bool val) { _tiltEnabled = val; notifyListeners(); }
   set state(GameState s) { _state = s; notifyListeners(); }
 
-  // Toggle in-game
   void toggleVoiceLive() { _voiceEnabled = !_voiceEnabled; if (!_voiceEnabled) _voice.stopListening(); else _initVoice(); notifyListeners(); }
   void toggleTiltLive() { _tiltEnabled = !_tiltEnabled; notifyListeners(); }
 
@@ -183,9 +182,7 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _handleSensorData(double x, double y, double z) {
-    // Rotation Detection & Axis Auto-Correction
-    // home button on right (primary): gravity is roughly -9.8 on X
-    // home button on left (secondary): gravity is roughly +9.8 on X
+    // Axis Intelligence (Auto-reverses tilt if flipped)
     if (x < -7.0) _axisSign = 1;
     else if (x > 7.0) _axisSign = -1;
 
@@ -199,13 +196,12 @@ class GameProvider extends ChangeNotifier {
 
     if (_state != GameState.playing) return;
 
-    // Strict Portrait Guard (silence sensor if held vertically)
+    // Strict Portrait Guard
     if (y.abs() > 7.0) {
       if (_rawY != 0) { _rawY = 0; notifyListeners(); }
       return; 
     }
 
-    // Process Tilt with orientation sign
     double gy = y * _axisSign;
     if ((_rawY - gy).abs() > 0.2) {
       _rawY = gy;
@@ -218,7 +214,6 @@ class GameProvider extends ChangeNotifier {
     else if (gy <= -5.0) handleCorrect();
   }
 
-  // Keywords to reject background noise
   static const Set<String> _KEYWORDS = {
     'correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup',
     'skip', 'next', 'no', 'pass', 'nope', 'nahi', 'nai'
@@ -233,7 +228,6 @@ class GameProvider extends ChangeNotifier {
         final lower = text.toLowerCase().trim();
         if (lower.isEmpty) return;
 
-        // Noise Rejection: Check if at least one word is a valid command
         bool isActionable = false;
         final words = lower.split(' ');
         
@@ -253,7 +247,7 @@ class GameProvider extends ChangeNotifier {
             handleSkip();
           }
         } else if (lower.length > 3) {
-          // Silent feedback: Only show overlay, NO trigger sound for unknown noise
+          // Permanently silenced feedback sound for unknown voice
           _lastAction = 'unknown';
           _heardText = text;
           notifyListeners();
@@ -273,7 +267,12 @@ class GameProvider extends ChangeNotifier {
     _sensor.stop();
     _voice.stopListening();
     
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     
     final service = LeaderboardService();
     await service.saveEntry(LeaderboardEntry(
@@ -289,7 +288,12 @@ class GameProvider extends ChangeNotifier {
     _state = GameState.idle;
     _sensor.stop();
     _voice.stopListening();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     if (_mode == 'team') _currentTeamIndex = 1 - _currentTeamIndex;
     notifyListeners();
   }
