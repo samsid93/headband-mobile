@@ -22,6 +22,18 @@ class AppTheme {
   static const Color border = Color(0x14FFFFFF); // rgba(255,255,255,0.08)
   static const Color border2 = Color(0x26FFFFFF); // rgba(255,255,255,0.15)
 
+  // Aliases for screen consistency
+  static const Color bg = background;
+  static const Color s1 = surface1;
+  static const Color s2 = surface2;
+  static const Color s3 = surface3;
+  static const Color s4 = surface4;
+  static const Color acc = accent;
+  static const Color cor = correct;
+  static const Color skp = skip;
+  static const Color mut = muted;
+  static const Color pur = purple;
+
   static ThemeData get theme {
     return ThemeData(
       brightness: Brightness.dark,
@@ -37,6 +49,15 @@ class AppTheme {
         secondary: accent2,
         surface: surface1,
         background: background,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
       ),
     );
   }

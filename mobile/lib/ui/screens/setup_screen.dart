@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/game_provider.dart';
 import '../../data/mock_data.dart';
-import 'gameplay_screen.dart';
+import 'team_setup_screen.dart';
+import 'ready_screen.dart';
 
 class SetupScreen extends StatelessWidget {
   const SetupScreen({super.key});
@@ -121,10 +122,17 @@ class SetupScreen extends StatelessWidget {
             minimumSize: const Size(double.infinity, 56),
           ),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const GameplayScreen()),
-            );
+            if (game.mode == 'team') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TeamSetupScreen()),
+              );
+            } else {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReadyScreen()),
+              );
+            }
           },
           child: const Text('PROCEED TO START →'),
         ),

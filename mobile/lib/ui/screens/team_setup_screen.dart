@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme.dart';
+import '../../providers/game_provider.dart';
+import 'ready_screen.dart';
 
 class TeamSetupScreen extends StatefulWidget {
   const TeamSetupScreen({super.key});
@@ -13,10 +16,24 @@ class _TeamSetupScreenState extends State<TeamSetupScreen> {
   final _t2Controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    final game = Provider.of<GameProvider>(context, listen: false);
+    _t1Controller.text = game.teamNames[0] ?? 'Team 1';
+    _t2Controller.text = game.teamNames[1] ?? 'Team 2';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final game = Provider.of<GameProvider>(context);
+
     return Scaffold(
       backgroundColor: AppTheme.bg,
-      appBar: AppBar(title: const Text('👥 Team Setup')),
+      appBar: AppBar(
+        title: const Text('👥 Team Setup'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -27,12 +44,22 @@ class _TeamSetupScreenState extends State<TeamSetupScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: ElevatedButton(
-        onPressed: () {
-          // Save team names and proceed
-          Navigator.pushNamed(context, '/ready');
-        },
-        child: const Text('START GAME →'),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 56),
+          ),
+          onPressed: () {
+            game.setTeamName(0, _t1Controller.text);
+            game.setTeamName(1, _t2Controller.text);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReadyScreen()),
+            );
+          },
+          child: const Text('START GAME →'),
+        ),
       ),
     );
   }
@@ -52,7 +79,14 @@ class _TeamInput extends StatelessWidget {
         const SizedBox(height: 10),
         TextField(
           controller: controller,
-          decoration: const InputDecoration(filled: true, fillColor: AppTheme.s2),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppTheme.s2,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
       ],
     );

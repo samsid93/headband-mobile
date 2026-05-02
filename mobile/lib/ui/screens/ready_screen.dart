@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/game_provider.dart';
 import '../../core/theme.dart';
+import 'gameplay_screen.dart';
 
 class ReadyScreen extends StatelessWidget {
   const ReadyScreen({super.key});
@@ -24,7 +25,13 @@ class ReadyScreen extends StatelessWidget {
               const Text('Hold phone to forehead — others see the word!', style: TextStyle(color: AppTheme.mut)),
               const SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () => game.startRound(),
+                onPressed: () {
+                  game.startRound();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GameplayScreen()),
+                  );
+                },
                 child: Text(game.mode == 'team' ? "Start — ${game.teamNames[game.currentTeamIndex]}'s Turn!" : 'START ROUND!'),
               ),
               const SizedBox(height: 20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/theme.dart';
 import 'setup_screen.dart';
+import 'leaderboard_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,10 +13,8 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: AppTheme.bg,
       body: Stack(
         children: [
-          // Background Grid (from web app style)
           const _BackgroundGrid(),
           
-          // Glow effect
           Center(
             child: Container(
               width: 300,
@@ -38,7 +37,6 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   const Spacer(),
                   
-                  // Logo
                   Text(
                     'HeadBand!',
                     style: TextStyle(
@@ -62,7 +60,6 @@ class HomeScreen extends StatelessWidget {
                   
                   const SizedBox(height: 20),
                   
-                  // Badges
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -76,7 +73,6 @@ class HomeScreen extends StatelessWidget {
 
                   const Spacer(),
                   
-                  // Buttons
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 60),
@@ -100,7 +96,10 @@ class HomeScreen extends StatelessWidget {
                       side: BorderSide(color: Colors.white.withOpacity(0.15)),
                     ),
                     onPressed: () {
-                      // Navigate to Leaderboard
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+                      );
                     },
                     child: const Text('🏆 LEADERBOARD'),
                   ).animate().slideY(begin: 1.5, duration: 600.ms, curve: Curves.easeOut),
