@@ -39,7 +39,8 @@ class GameProvider extends ChangeNotifier {
   String _heardText = '';
   double _rawY = 0;
   bool _isCoolingDown = false;
-  bool _isVoiceMutedForSfx = false; // Prevents hearing its own beeps
+  bool _isVoiceMutedForSfx = false;
+  int _axisSign = 1; // Corrects tilt for landscape left vs right
   Timer? _gameTimer;
 
   GameProvider() {
@@ -76,6 +77,10 @@ class GameProvider extends ChangeNotifier {
   set tiltEnabled(bool val) { _tiltEnabled = val; notifyListeners(); }
   set state(GameState s) { _state = s; notifyListeners(); }
 
+  // Toggle in-game
+  void toggleVoiceLive() { _voiceEnabled = !_voiceEnabled; if (!_voiceEnabled) _voice.stopListening(); else _initVoice(); notifyListeners(); }
+  void toggleTiltLive() { _tiltEnabled = !_tiltEnabled; notifyListeners(); }
+
   void setTeamName(int index, String name) {
     _teamNames[index] = name;
     notifyListeners();
@@ -96,7 +101,6 @@ class GameProvider extends ChangeNotifier {
     _remainingWords = List.from(selectedDeck.words)..shuffle();
     _nextWord();
     
-    // Countdown Audio Sequence
     _audio.playCountdown(); 
     notifyListeners();
 
@@ -141,7 +145,7 @@ class GameProvider extends ChangeNotifier {
   void handleCorrect() async {
     if (_state != GameState.playing || _isCoolingDown) return;
     _isCoolingDown = true;
-    _isVoiceMutedForSfx = true; // Mute voice before playing SFX
+    _isVoiceMutedForSfx = true;
     
     _scoreCorrect++;
     _lastAction = 'correct';
@@ -150,11 +154,10 @@ class GameProvider extends ChangeNotifier {
     _nextWord();
     notifyListeners();
     
-    // Web parity cooldown 1100ms
     Timer(const Duration(milliseconds: 1100), () {
       _lastAction = null;
       _isCoolingDown = false;
-      _isVoiceMutedForSfx = false; // Unmute
+      _isVoiceMutedForSfx = false;
       notifyListeners();
     });
   }
@@ -162,7 +165,7 @@ class GameProvider extends ChangeNotifier {
   void handleSkip() async {
     if (_state != GameState.playing || _isCoolingDown) return;
     _isCoolingDown = true;
-    _isVoiceMutedForSfx = true; // Mute voice before playing SFX
+    _isVoiceMutedForSfx = true;
     
     _scoreSkipped++;
     _lastAction = 'skip';
@@ -174,15 +177,19 @@ class GameProvider extends ChangeNotifier {
     Timer(const Duration(milliseconds: 1100), () {
       _lastAction = null;
       _isCoolingDown = false;
-      _isVoiceMutedForSfx = false; // Unmute
+      _isVoiceMutedForSfx = false;
       notifyListeners();
     });
   }
 
   void _handleSensorData(double x, double y, double z) {
-    // 1. Rotation Tutorial Detection
+    // Rotation Detection & Axis Auto-Correction
+    // home button on right (primary): gravity is roughly -9.8 on X
+    // home button on left (secondary): gravity is roughly +9.8 on X
+    if (x < -7.0) _axisSign = 1;
+    else if (x > 7.0) _axisSign = -1;
+
     if (_state == GameState.rotate) {
-      // Correct landscape: Gravity on X side, Y is low
       if (x.abs() > 7.5 && y.abs() < 4.5) {
         _state = GameState.ready;
         notifyListeners();
@@ -190,54 +197,63 @@ class GameProvider extends ChangeNotifier {
       return;
     }
 
-    // 2. Gameplay Guards
     if (_state != GameState.playing) return;
 
-    // CRITICAL FIX: Z-axis Gravity Check for Portrait Protection
-    // When held against forehead (vertical in landscape), gravity should be near-zero on Z (face of phone).
-    // If phone is flat (face up/down) or portrait, Z gravity increases.
-    // Also, if Y (long axis) gravity > 7.0, it's definitely portrait.
-    bool isPortrait = y.abs() > 7.0;
-    
-    if (isPortrait) {
-      // Hard silence while in portrait
-      if (_rawY != 0) {
-        _rawY = 0;
-        notifyListeners();
-      }
+    // Strict Portrait Guard (silence sensor if held vertically)
+    if (y.abs() > 7.0) {
+      if (_rawY != 0) { _rawY = 0; notifyListeners(); }
       return; 
     }
 
-    // Update indicator if meaningful change
-    if ((_rawY - y).abs() > 0.2) {
-      _rawY = y;
+    // Process Tilt with orientation sign
+    double gy = y * _axisSign;
+    if ((_rawY - gy).abs() > 0.2) {
+      _rawY = gy;
       notifyListeners();
     }
 
-    // If tilt is off or we are cooling down, stop here
     if (!_tiltEnabled || _isCoolingDown) return;
 
-    // Threshold triggers (Y axis side-tilt)
-    if (y >= 5.0) {
-      handleSkip();
-    } else if (y <= -5.0) {
-      handleCorrect();
-    }
+    if (gy >= 5.0) handleSkip();
+    else if (gy <= -5.0) handleCorrect();
   }
+
+  // Keywords to reject background noise
+  static const Set<String> _KEYWORDS = {
+    'correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup',
+    'skip', 'next', 'no', 'pass', 'nope', 'nahi', 'nai'
+  };
 
   void _initVoice() async {
     bool available = await _voice.init();
     if (available) {
       _voice.startListening((text) {
-        // Guard: Skip if mute (audio playing), cooling down, or round ended
-        if (_state != GameState.playing || _isCoolingDown || _isVoiceMutedForSfx) return;
+        if (_state != GameState.playing || _isCoolingDown || _isVoiceMutedForSfx || !_voiceEnabled) return;
         
-        final lower = text.toLowerCase();
-        if (lower.contains('correct') || lower.contains('yes') || lower.contains('right')) {
-          handleCorrect();
-        } else if (lower.contains('skip') || lower.contains('next') || lower.contains('no')) {
-          handleSkip();
-        } else {
+        final lower = text.toLowerCase().trim();
+        if (lower.isEmpty) return;
+
+        // Noise Rejection: Check if at least one word is a valid command
+        bool isActionable = false;
+        final words = lower.split(' ');
+        
+        String? detected;
+        for (var w in words) {
+          if (_KEYWORDS.contains(w)) {
+            detected = w;
+            isActionable = true;
+            break;
+          }
+        }
+
+        if (isActionable) {
+          if (['correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup'].contains(detected)) {
+            handleCorrect();
+          } else {
+            handleSkip();
+          }
+        } else if (lower.length > 2) {
+          // Only show 'unknown' if it's long enough to be an actual word, not a background pop
           _lastAction = 'unknown';
           _heardText = text;
           _audio.playTap(); 

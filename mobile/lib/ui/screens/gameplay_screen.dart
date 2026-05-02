@@ -16,7 +16,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
   @override
   void initState() {
     super.initState();
-    // Gameplay MUST be landscape
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
@@ -25,7 +24,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
 
   @override
   void dispose() {
-    // Reset orientation on leave
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -74,7 +72,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
           children: [
             Row(
               children: [
-                // Left Side: Skip
                 _SideButton(
                   label: 'SKIP',
                   icon: '✗',
@@ -83,19 +80,16 @@ class _GameplayScreenState extends State<GameplayScreen> {
                   onPressed: game.handleSkip,
                 ),
                 
-                // Centre: Word Card
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Timer
                       _TimerRing(
                         seconds: game.secondsRemaining,
                         total: game.roundDuration,
                       ),
                       const SizedBox(height: 10),
                       
-                      // Word Card
                       Expanded(
                         child: Stack(
                           children: [
@@ -154,7 +148,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
                               ),
                             ),
                             
-                            // Tilt indicators - uses Y axis for parity
                             if (game.tiltEnabled) ...[
                               Positioned(
                                 left: 35, top: 40, bottom: 40, width: 6,
@@ -169,15 +162,26 @@ class _GameplayScreenState extends State<GameplayScreen> {
                         ),
                       ),
                       
-                      // Status pills
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            if (game.tiltEnabled) const _InfoPill(text: '📱 Tilt active', color: AppTheme.acc),
-                            if (game.voiceEnabled) const SizedBox(width: 10),
-                            if (game.voiceEnabled) const _InfoPill(text: '🎙️ Listening...', color: AppTheme.pur),
+                            GestureDetector(
+                              onTap: game.toggleTiltLive,
+                              child: _InfoPill(
+                                text: game.tiltEnabled ? '📱 Tilt On' : '📱 Tilt Off',
+                                color: game.tiltEnabled ? AppTheme.acc : AppTheme.mut,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: game.toggleVoiceLive,
+                              child: _InfoPill(
+                                text: game.voiceEnabled ? '🎙️ Voice On' : '🎙️ Voice Off',
+                                color: game.voiceEnabled ? AppTheme.pur : AppTheme.mut,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -185,7 +189,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
                   ),
                 ),
                 
-                // Right Side: Correct
                 _SideButton(
                   label: 'CORRECT',
                   icon: '✓',
@@ -197,7 +200,6 @@ class _GameplayScreenState extends State<GameplayScreen> {
               ],
             ),
             
-            // Overlays
             if (game.lastAction == 'correct') const _ActionOverlay(text: 'CORRECT!', color: AppTheme.cor),
             if (game.lastAction == 'skip') const _ActionOverlay(text: 'SKIP', color: AppTheme.skp),
             if (game.lastAction == 'unknown') _ActionOverlay(text: '🎙️ "${game.heardText}"\n❓❓❓', color: AppTheme.pur),
@@ -261,7 +263,11 @@ class _InfoPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: color.withOpacity(0.3))),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
       child: Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
     );
   }
@@ -370,7 +376,6 @@ class _ScoreViewState extends State<_ScoreView> {
   @override
   void initState() {
     super.initState();
-    // Force portrait for results
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);
