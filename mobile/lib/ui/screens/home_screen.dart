@@ -15,7 +15,6 @@ class HomeScreen extends StatelessWidget {
         children: [
           const _BackgroundGrid(),
           
-          // Animated Background Glows
           Positioned(
             top: -100,
             right: -100,
@@ -30,64 +29,69 @@ class HomeScreen extends StatelessWidget {
 
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Spacer(),
+                  const Spacer(flex: 2),
                   
-                  // Logo with Vibrant Gradient
-                  Text(
-                    'HeadBand!',
-                    style: TextStyle(
-                      fontSize: 82,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Georgia',
-                      height: 0.9,
-                      foreground: Paint()
-                        ..shader = const LinearGradient(
-                          colors: [AppTheme.acc, AppTheme.secondary, AppTheme.primary],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(const Rect.fromLTWH(0.0, 0.0, 400.0, 100.0)),
-                      shadows: [
-                        Shadow(color: AppTheme.primary.withOpacity(0.6), blurRadius: 40),
-                        Shadow(color: AppTheme.secondary.withOpacity(0.4), blurRadius: 20),
-                      ],
+                  // Rebranded Title: "Charades Party"
+                  // Using FittedBox to prevent word breaking/overflow
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Charades\nParty',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 78,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Georgia',
+                        height: 0.85,
+                        letterSpacing: -2,
+                        foreground: Paint()
+                          ..shader = const LinearGradient(
+                            colors: [AppTheme.acc, AppTheme.secondary, AppTheme.primary],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(const Rect.fromLTWH(0.0, 0.0, 400.0, 160.0)),
+                        shadows: [
+                          Shadow(color: AppTheme.primary.withOpacity(0.6), blurRadius: 40),
+                          Shadow(color: AppTheme.secondary.withOpacity(0.4), blurRadius: 20),
+                        ],
+                      ),
                     ),
                   ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),
                   
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   const Text(
                     'THE ULTIMATE PARTY GUESSING GAME',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppTheme.mut, 
-                      fontSize: 12, 
-                      letterSpacing: 2, 
+                      fontSize: 13, 
+                      letterSpacing: 1.5, 
                       fontWeight: FontWeight.w900
                     ),
                   ).animate().fadeIn(delay: 600.ms),
                   
                   const SizedBox(height: 40),
                   
-                  // Interactive Badges
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _VibrantBadge(text: '📱 TILT', color: AppTheme.blue, icon: Icons.phone_android),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       _VibrantBadge(text: '🎙️ VOICE', color: AppTheme.purple, icon: Icons.mic),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       _VibrantBadge(text: '👥 TEAMS', color: AppTheme.secondary, icon: Icons.groups),
                     ],
                   ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
 
-                  const Spacer(),
+                  const Spacer(flex: 3),
                   
-                  // Buttons
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 70),
+                      minimumSize: const Size(double.infinity, 72),
                       backgroundColor: AppTheme.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     ),
@@ -100,18 +104,18 @@ class HomeScreen extends StatelessWidget {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.play_arrow_rounded, size: 32),
-                        SizedBox(width: 10),
-                        Text('PLAY NOW', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                        Icon(Icons.play_arrow_rounded, size: 36),
+                        SizedBox(width: 8),
+                        Text('PLAY NOW', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 1)),
                       ],
                     ),
                   ).animate().shimmer(delay: 2.seconds, duration: 1.5.seconds),
                   
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 16),
                   
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 70),
+                      minimumSize: const Size(double.infinity, 72),
                       side: const BorderSide(color: AppTheme.border2, width: 2),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     ),
@@ -121,7 +125,7 @@ class HomeScreen extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
                       );
                     },
-                    child: const Text('🏆 LEADERBOARD', style: TextStyle(fontSize: 18)),
+                    child: const Text('🏆 LEADERBOARD', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                   ),
                   
                   const SizedBox(height: 40),
@@ -144,17 +148,17 @@ class _VibrantBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.4), width: 1.5),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Text(
             text,
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5),

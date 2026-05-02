@@ -108,17 +108,18 @@ class GameProvider extends ChangeNotifier {
     _remainingWords = List.from(selectedDeck.words)..shuffle();
     _nextWord();
     
+    // START COUNTDOWN AUDIO IMMEDIATELY
     _audio.playCountdown(); 
     notifyListeners();
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdownValue > 1) {
         _countdownValue--;
-        _audio.playCountdown();
+        _audio.playCountdown(); // 2, 1
         notifyListeners();
       } else if (_countdownValue == 1) {
         _countdownValue = 0;
-        _audio.playGo();
+        _audio.playGo(); // GO!
         _state = GameState.playing;
         _startGameplayTimer();
         if (_voiceEnabled) _initVoice();
@@ -133,7 +134,7 @@ class GameProvider extends ChangeNotifier {
     _gameTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
         _secondsRemaining--;
-        if (_secondsRemaining < 10) _audio.playTick();
+        if (_secondsRemaining < 10 && _secondsRemaining > 0) _audio.playTick();
         notifyListeners();
       } else {
         _endRound();
@@ -203,7 +204,7 @@ class GameProvider extends ChangeNotifier {
 
     if (_state != GameState.playing) return;
 
-    if (y.abs() > 7.0) {
+    if (y.abs() > 7.5) {
       if (_rawY != 0) { _rawY = 0; notifyListeners(); }
       return; 
     }
@@ -220,43 +221,42 @@ class GameProvider extends ChangeNotifier {
     else if (gy <= -5.0) handleCorrect();
   }
 
-  static const Set<String> _KEYWORDS = {
-    'correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup',
-    'skip', 'next', 'no', 'pass', 'nope', 'nahi', 'nai'
-  };
+  static const Set<String> _KEYWORDS_CORRECT = {'correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup'};
+  static const Set<String> _KEYWORDS_SKIP = {'skip', 'next', 'no', 'pass', 'nope', 'nahi', 'nai'};
 
   void _initVoice() async {
     bool available = await _voice.init();
     if (available) {
       _voice.startListening((text) {
-        // RADICAL FIX: Completely disable hearing anything while sounds are playing
-        // and add a strict guard to prevent "noise trigger" sounds.
         if (_state != GameState.playing || _isCoolingDown || _isVoiceMutedForSfx || !_voiceEnabled) return;
         
         final lower = text.toLowerCase().trim();
         if (lower.isEmpty) return;
 
-        bool isActionable = false;
         final words = lower.split(' ');
-        
         String? detected;
+        bool isCorrect = false;
+        bool isSkip = false;
+
         for (var w in words) {
-          if (_KEYWORDS.contains(w)) {
+          if (_KEYWORDS_CORRECT.contains(w)) {
             detected = w;
-            isActionable = true;
+            isCorrect = true;
+            break;
+          }
+          if (_KEYWORDS_SKIP.contains(w)) {
+            detected = w;
+            isSkip = true;
             break;
           }
         }
 
-        if (isActionable) {
-          // Play sound ONLY if it matches a hard-coded keyword
-          if (['correct', 'yes', 'yep', 'right', 'got it', 'yeah', 'yup'].contains(detected)) {
-            handleCorrect();
-          } else {
-            handleSkip();
-          }
-        } else if (lower.length > 4) {
-          // Show visual feedback ONLY, no audio for unknown noise.
+        if (isCorrect) {
+          handleCorrect();
+        } else if (isSkip) {
+          handleSkip();
+        } else if (lower.length > 3) {
+          // TOTAL SILENCE: No sound trigger for unknown noise
           _lastAction = 'unknown';
           _heardText = text;
           notifyListeners();
@@ -278,9 +278,6 @@ class GameProvider extends ChangeNotifier {
     
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
     
     final service = LeaderboardService();
@@ -299,9 +296,6 @@ class GameProvider extends ChangeNotifier {
     _voice.stopListening();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
     if (_mode == 'team') _currentTeamIndex = 1 - _currentTeamIndex;
     notifyListeners();
