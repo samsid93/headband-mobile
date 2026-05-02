@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'core/theme.dart';
 import 'ui/setup_screen.dart';
+import 'providers/game_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const HeadBandApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => GameProvider(),
+      child: const HeadBandApp(),
+    ),
+  );
 }
 
 class HeadBandApp extends StatelessWidget {
