@@ -95,7 +95,7 @@ class GameProvider extends ChangeNotifier {
     _secondsRemaining = _roundDuration;
     _remainingWords = List.from(selectedDeck.words)..shuffle();
     _nextWord();
-    _audio.playCountdown(); // First sound immediately
+    _audio.playCountdown();
     notifyListeners();
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -160,7 +160,8 @@ class GameProvider extends ChangeNotifier {
     _lastAction = action;
     _isCoolingDown = true;
     notifyListeners();
-    Timer(const Duration(milliseconds: 600), () {
+    // Longer cooldown to prevent rapid-fire triggers
+    Timer(const Duration(milliseconds: 1100), () {
       _lastAction = null;
       _isCoolingDown = false;
       notifyListeners();
@@ -168,9 +169,7 @@ class GameProvider extends ChangeNotifier {
   }
 
   void _handleSensorData(double x, double y, double z) {
-    // Rotation Gate: We need to detect Landscape.
-    // If phone is against forehead, gravity is on X (short axis).
-    // If phone is portrait, gravity is on Y (long axis).
+    // Rotation Gate Logic
     if (_state == GameState.rotate) {
       if (x.abs() > 7.5 && y.abs() < 4.0) {
         _state = GameState.ready;
@@ -179,18 +178,29 @@ class GameProvider extends ChangeNotifier {
       return;
     }
 
-    // Web Parity Tilt: Uses Y-axis (long axis) side-tilt in landscape
-    _rawY = y;
+    // Only process tilt if currently playing and NOT cooling down
     if (_state != GameState.playing || _isCoolingDown || !_tiltEnabled) {
+      _rawY = 0; // Reset indicator
       notifyListeners();
       return;
     }
 
-    // Web logic: gy > 4.5 (Positive Y) = Skip, gy < -4.5 (Negative Y) = Correct
-    // Threshold 4.5
-    if (y >= 4.5) {
+    // CRITICAL: Strict Landscape Guard
+    // In forehead position (landscape), gravity is on X axis (short side).
+    // If gravity moves to Y axis (long side), user is holding it in portrait.
+    if (y.abs() > 8.0) {
+      _rawY = 0;
+      notifyListeners();
+      return; 
+    }
+
+    // Actual gameplay tilt (uses side-tilt Y axis when in landscape)
+    _rawY = y;
+
+    // Threshold check
+    if (y >= 5.5) {
       handleSkip();
-    } else if (y <= -4.5) {
+    } else if (y <= -5.5) {
       handleCorrect();
     } else {
       notifyListeners();
@@ -226,12 +236,8 @@ class GameProvider extends ChangeNotifier {
     _sensor.stop();
     _voice.stopListening();
     
-    // Unlock orientation for score display
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
     
     final service = LeaderboardService();
@@ -249,8 +255,6 @@ class GameProvider extends ChangeNotifier {
     _sensor.stop();
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
     ]);
     if (_mode == 'team') _currentTeamIndex = 1 - _currentTeamIndex;
     notifyListeners();
