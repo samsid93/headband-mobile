@@ -39,6 +39,7 @@ class GameProvider extends ChangeNotifier {
   String _heardText = '';
   double _rawY = 0;
   bool _isCoolingDown = false;
+  bool _isVoiceMutedForSfx = false; // Prevents hearing its own beeps
   Timer? _gameTimer;
 
   GameProvider() {
@@ -95,7 +96,8 @@ class GameProvider extends ChangeNotifier {
     _remainingWords = List.from(selectedDeck.words)..shuffle();
     _nextWord();
     
-    _audio.playCountdown();
+    // Countdown Audio Sequence
+    _audio.playCountdown(); 
     notifyListeners();
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -138,7 +140,8 @@ class GameProvider extends ChangeNotifier {
 
   void handleCorrect() async {
     if (_state != GameState.playing || _isCoolingDown) return;
-    _isCoolingDown = true; // Lock immediately
+    _isCoolingDown = true;
+    _isVoiceMutedForSfx = true; // Mute voice before playing SFX
     
     _scoreCorrect++;
     _lastAction = 'correct';
@@ -147,16 +150,19 @@ class GameProvider extends ChangeNotifier {
     _nextWord();
     notifyListeners();
     
+    // Web parity cooldown 1100ms
     Timer(const Duration(milliseconds: 1100), () {
       _lastAction = null;
       _isCoolingDown = false;
+      _isVoiceMutedForSfx = false; // Unmute
       notifyListeners();
     });
   }
 
   void handleSkip() async {
     if (_state != GameState.playing || _isCoolingDown) return;
-    _isCoolingDown = true; // Lock immediately
+    _isCoolingDown = true;
+    _isVoiceMutedForSfx = true; // Mute voice before playing SFX
     
     _scoreSkipped++;
     _lastAction = 'skip';
@@ -168,40 +174,53 @@ class GameProvider extends ChangeNotifier {
     Timer(const Duration(milliseconds: 1100), () {
       _lastAction = null;
       _isCoolingDown = false;
+      _isVoiceMutedForSfx = false; // Unmute
       notifyListeners();
     });
   }
 
   void _handleSensorData(double x, double y, double z) {
-    // Rotation Gate
+    // 1. Rotation Tutorial Detection
     if (_state == GameState.rotate) {
-      if (x.abs() > 7.5 && y.abs() < 4.0) {
+      // Correct landscape: Gravity on X side, Y is low
+      if (x.abs() > 7.5 && y.abs() < 4.5) {
         _state = GameState.ready;
         notifyListeners();
       }
       return;
     }
 
-    // Gameplay Guards
-    if (_state != GameState.playing || !_tiltEnabled) return;
+    // 2. Gameplay Guards
+    if (_state != GameState.playing) return;
 
-    // Throttle UI updates for the indicator - only notify if changed significantly (> 0.2)
+    // CRITICAL FIX: Z-axis Gravity Check for Portrait Protection
+    // When held against forehead (vertical in landscape), gravity should be near-zero on Z (face of phone).
+    // If phone is flat (face up/down) or portrait, Z gravity increases.
+    // Also, if Y (long axis) gravity > 7.0, it's definitely portrait.
+    bool isPortrait = y.abs() > 7.0;
+    
+    if (isPortrait) {
+      // Hard silence while in portrait
+      if (_rawY != 0) {
+        _rawY = 0;
+        notifyListeners();
+      }
+      return; 
+    }
+
+    // Update indicator if meaningful change
     if ((_rawY - y).abs() > 0.2) {
       _rawY = y;
       notifyListeners();
     }
 
-    // Cooldown check
-    if (_isCoolingDown) return;
+    // If tilt is off or we are cooling down, stop here
+    if (!_tiltEnabled || _isCoolingDown) return;
 
-    // Strict Portrait/Landscape Guard (using Y-axis gravity)
-    // If phone held portrait, Y is near 9.8.
-    if (y.abs() > 8.0) return; 
-
-    // Threshold triggers (Web Parity: 4.5)
-    if (y >= 5.5) {
+    // Threshold triggers (Y axis side-tilt)
+    if (y >= 5.0) {
       handleSkip();
-    } else if (y <= -5.5) {
+    } else if (y <= -5.0) {
       handleCorrect();
     }
   }
@@ -210,17 +229,18 @@ class GameProvider extends ChangeNotifier {
     bool available = await _voice.init();
     if (available) {
       _voice.startListening((text) {
-        if (_state != GameState.playing || _isCoolingDown) return;
+        // Guard: Skip if mute (audio playing), cooling down, or round ended
+        if (_state != GameState.playing || _isCoolingDown || _isVoiceMutedForSfx) return;
         
         final lower = text.toLowerCase();
-        if (lower.contains('correct') || lower.contains('yes')) {
+        if (lower.contains('correct') || lower.contains('yes') || lower.contains('right')) {
           handleCorrect();
-        } else if (lower.contains('skip') || lower.contains('next')) {
+        } else if (lower.contains('skip') || lower.contains('next') || lower.contains('no')) {
           handleSkip();
         } else {
           _lastAction = 'unknown';
           _heardText = text;
-          _audio.playTap(); // Immediate feedback for noise
+          _audio.playTap(); 
           notifyListeners();
           Timer(const Duration(seconds: 2), () {
             if (_lastAction == 'unknown') _lastAction = null;
