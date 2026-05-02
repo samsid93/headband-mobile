@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/game_provider.dart';
-import 'ready_screen.dart';
+import 'rotate_screen.dart';
 
 class TeamSetupScreen extends StatefulWidget {
   const TeamSetupScreen({super.key});
@@ -47,18 +47,16 @@ class _TeamSetupScreenState extends State<TeamSetupScreen> {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
         child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 56),
-          ),
           onPressed: () {
             game.setTeamName(0, _t1Controller.text);
             game.setTeamName(1, _t2Controller.text);
+            game.startRotationGate();
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ReadyScreen()),
+              MaterialPageRoute(builder: (_) => const RotateScreen()),
             );
           },
-          child: const Text('START GAME →'),
+          child: const Text('CONTINUE →'),
         ),
       ),
     );

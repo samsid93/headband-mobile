@@ -8,7 +8,7 @@ import '../core/services/sensor_service.dart';
 import '../core/services/voice_service.dart';
 import '../core/services/leaderboard_service.dart';
 
-enum GameState { idle, countdown, playing, score }
+enum GameState { idle, setup, rotate, ready, countdown, playing, score }
 
 class GameProvider extends ChangeNotifier {
   // Services
@@ -35,13 +35,13 @@ class GameProvider extends ChangeNotifier {
   int _currentTeamIndex = 0;
   List<WordCard> _remainingWords = [];
   WordCard? _currentWord;
-  String? _lastAction; // 'correct', 'skip', 'unknown'
-  double _rawY = 0;
+  String? _lastAction;
+  double _rawZ = 0;
   bool _isCoolingDown = false;
   Timer? _gameTimer;
 
   GameProvider() {
-    _sensor = SensorService(onTilt: _handleTilt);
+    _sensor = SensorService(onData: _handleSensorData);
     _voice = VoiceService();
   }
 
@@ -61,7 +61,7 @@ class GameProvider extends ChangeNotifier {
   WordCard get currentWord => _currentWord ?? WordCard(word: 'ERROR', hint: '');
   Deck get selectedDeck => DECKS.firstWhere((d) => d.id == _selectedDeckId);
   String? get lastAction => _lastAction;
-  double get rawY => _rawY;
+  double get rawZ => _rawZ;
   Map<int, String> get teamNames => _teamNames;
 
   // Setters
@@ -71,13 +71,19 @@ class GameProvider extends ChangeNotifier {
   set skipDeduct(bool val) { _skipDeduct = val; notifyListeners(); }
   set voiceEnabled(bool val) { _voiceEnabled = val; notifyListeners(); }
   set tiltEnabled(bool val) { _tiltEnabled = val; notifyListeners(); }
+  set state(GameState s) { _state = s; notifyListeners(); }
 
   void setTeamName(int index, String name) {
     _teamNames[index] = name;
     notifyListeners();
   }
 
-  // Actions
+  void startRotationGate() {
+    _state = GameState.rotate;
+    _sensor.start();
+    notifyListeners();
+  }
+
   void startRound() {
     _state = GameState.countdown;
     _countdownValue = 3;
@@ -98,7 +104,6 @@ class GameProvider extends ChangeNotifier {
         _audio.playGo();
         _state = GameState.playing;
         _startGameplayTimer();
-        if (_tiltEnabled) _sensor.start();
         if (_voiceEnabled) _initVoice();
         timer.cancel();
         notifyListeners();
@@ -158,14 +163,28 @@ class GameProvider extends ChangeNotifier {
     });
   }
 
-  void _handleTilt(double x, double y, double z) {
-    _rawY = y;
-    if (_state != GameState.playing || _isCoolingDown) {
+  void _handleSensorData(double x, double y, double z) {
+    _rawZ = z;
+    
+    // Rotation Detection (for tutorial auto-proceed)
+    if (_state == GameState.rotate) {
+      // Landscape: gravity mostly on X or Y, not Z
+      if (x.abs() > 7.0 || y.abs() > 7.0) {
+        _state = GameState.ready;
+        notifyListeners();
+      }
+      return;
+    }
+
+    // Gameplay Tilt Detection
+    if (_state != GameState.playing || _isCoolingDown || !_tiltEnabled) {
       notifyListeners();
       return;
     }
-    if (y > 5.0) handleSkip();
-    else if (y < -5.0) handleCorrect();
+
+    // Thresholds: Z > 6 = screen down (Correct), Z < -6 = screen up (Skip)
+    if (z > 6.0) handleCorrect();
+    else if (z < -6.0) handleSkip();
     else notifyListeners();
   }
 
@@ -191,7 +210,6 @@ class GameProvider extends ChangeNotifier {
   void _endRound() async {
     _state = GameState.score;
     _gameTimer?.cancel();
-    _sensor.stop();
     _voice.stopListening();
     
     final service = LeaderboardService();
@@ -206,6 +224,7 @@ class GameProvider extends ChangeNotifier {
 
   void reset() {
     _state = GameState.idle;
+    _sensor.stop();
     if (_mode == 'team') _currentTeamIndex = 1 - _currentTeamIndex;
     notifyListeners();
   }

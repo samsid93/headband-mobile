@@ -2,18 +2,18 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'dart:async';
 
 class SensorService {
-  StreamSubscription<GyroscopeEvent>? _gyroSubscription;
-  final Function(double, double, double) onTilt;
+  StreamSubscription<AccelerometerEvent>? _accelSubscription;
+  final Function(double, double, double) onData;
 
-  SensorService({required this.onTilt});
+  SensorService({required this.onData});
 
   void start() {
-    _gyroSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
-      onTilt(event.x, event.y, event.z);
+    _accelSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+      onData(event.x, event.y, event.z);
     });
   }
 
   void stop() {
-    _gyroSubscription?.cancel();
+    _accelSubscription?.cancel();
   }
 }

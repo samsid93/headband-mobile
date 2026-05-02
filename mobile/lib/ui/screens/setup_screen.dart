@@ -4,7 +4,7 @@ import '../../core/theme.dart';
 import '../../providers/game_provider.dart';
 import '../../data/mock_data.dart';
 import 'team_setup_screen.dart';
-import 'ready_screen.dart';
+import 'rotate_screen.dart';
 
 class SetupScreen extends StatelessWidget {
   const SetupScreen({super.key});
@@ -118,9 +118,6 @@ class SetupScreen extends StatelessWidget {
           ),
         ),
         child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 56),
-          ),
           onPressed: () {
             if (game.mode == 'team') {
               Navigator.push(
@@ -128,13 +125,14 @@ class SetupScreen extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const TeamSetupScreen()),
               );
             } else {
+              game.startRotationGate();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ReadyScreen()),
+                MaterialPageRoute(builder: (_) => const RotateScreen()),
               );
             }
           },
-          child: const Text('PROCEED TO START →'),
+          child: const Text('CONTINUE →'),
         ),
       ),
     );
