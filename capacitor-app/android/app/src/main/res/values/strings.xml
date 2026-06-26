@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HeadBand!</string>
+    <string name="title_activity_main">HeadBand!</string>
+    <string name="package_name">pk.eatneat.headband</string>
+    <string name="custom_url_scheme">pk.eatneat.headband</string>
+</resources>
