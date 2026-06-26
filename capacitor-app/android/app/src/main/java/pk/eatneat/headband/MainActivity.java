@@ -31,9 +31,16 @@ public class MainActivity extends BridgeActivity {
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onPermissionRequest(PermissionRequest request) {
-                // Grant all WebView permission requests (DeviceMotion, sensors)
                 request.grant(request.getResources());
             }
         });
+
+        // Fix zoom/scaling to match browser behaviour
+        webView.getSettings().setTextZoom(100);          // disable Android font inflation
+        webView.getSettings().setUseWideViewPort(true);  // honour viewport meta tag
+        webView.getSettings().setLoadWithOverviewMode(false); // don't auto-shrink to fit
+        webView.getSettings().setSupportZoom(false);     // disable pinch-to-zoom
+        webView.getSettings().setBuiltInZoomControls(false);
+        webView.getSettings().setDisplayZoomControls(false);
     }
 }
