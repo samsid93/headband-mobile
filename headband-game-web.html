@@ -2180,8 +2180,8 @@ function enterFS(){
 }
 function updateFSBtn(){
   const btn=document.getElementById('fs-btn');if(!btn)return;
-  // In Capacitor/WebView the native layer handles fullscreen — web API always returns null
-  if(window.Capacitor){btn.style.display='none';return;}
+  // Android WebView UA always contains "; wv)" — native layer handles fullscreen
+  if(window.Capacitor||/; wv\)/.test(navigator.userAgent)){btn.style.display='none';return;}
   const inFS=!!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement);
   const inPlay=document.getElementById('screen-play').classList.contains('active');
   const inCd=document.getElementById('screen-countdown').classList.contains('active');
