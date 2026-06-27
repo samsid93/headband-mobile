@@ -1,8 +1,10 @@
 package pk.eatneat.headband;
 
 import android.Manifest;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -18,6 +20,26 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
 
     private static final int MIC_PERMISSION_CODE = 1001;
+
+    /** Exposed to the web page as window.AndroidBridge */
+    private class AndroidBridge {
+        @JavascriptInterface
+        public void unlockOrientation() {
+            // FULL_SENSOR ignores system portrait lock on all OEMs
+            runOnUiThread(() -> setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR));
+        }
+
+        @JavascriptInterface
+        public void lockLandscape() {
+            runOnUiThread(() -> setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE));
+        }
+
+        @JavascriptInterface
+        public void resetOrientation() {
+            // Return to manifest default (sensor) after game ends
+            runOnUiThread(() -> setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR));
+        }
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -48,6 +70,9 @@ public class MainActivity extends BridgeActivity {
                 request.grant(request.getResources());
             }
         });
+
+        // Expose native orientation control to the web page
+        webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
 
         // Fix zoom/scaling to match browser behaviour
         webView.getSettings().setTextZoom(100);
