@@ -1299,6 +1299,7 @@ function detectAxisSign(){
 let _waitLandscapeCb=null,_waitLandscapeCleanup=null;
 
 function waitLandscape(cb){
+  unlockOrient(); // release any JS-level lock so phone can freely rotate to landscape
   _waitLandscapeCb=cb;
   goTo('screen-rotate');updateRotateStatus();updateRotateStartBtn();
   let _poll=null;
