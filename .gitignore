@@ -1,0 +1,16 @@
+# Credentials / secrets — never commit
+xsolla-setup-steps.txt
+supabase-wiring-steps.txt
+*.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Supabase local dev
+.supabase/
+supabase/.temp/

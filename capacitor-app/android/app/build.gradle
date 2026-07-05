@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "pk.eatneat.headband"
+    namespace "games.whambam.app"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "pk.eatneat.headband"
+        applicationId "games.whambam.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

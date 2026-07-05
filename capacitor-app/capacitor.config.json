@@ -1,9 +1,9 @@
 {
-  "appId": "pk.eatneat.headband",
-  "appName": "HeadBand!",
+  "appId": "games.whambam.app",
+  "appName": "Wam Bam",
   "webDir": "www",
   "server": {
-    "url": "https://gameplay.eatneat.pk",
+    "url": "https://whambam.games",
     "cleartext": false,
     "androidScheme": "https"
   },
@@ -15,7 +15,7 @@
   "plugins": {
     "StatusBar": {
       "style": "Dark",
-      "backgroundColor": "#06060E",
+      "backgroundColor": "#0A0500",
       "overlaysWebView": false
     },
     "ScreenOrientation": {

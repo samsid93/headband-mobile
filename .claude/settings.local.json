@@ -2,7 +2,32 @@
   "permissions": {
     "allow": [
       "Bash(start headband-game-milestone1.html)",
-      "Bash(dir)"
+      "Bash(dir)",
+      "Bash(git stash *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(gh run *)",
+      "Skill(claude-in-chrome)",
+      "Bash(grep -v \"//\\\\|<!--\")",
+      "Bash(grep -v \"//\\\\|waitLandscape\\\\|orient\")",
+      "Bash(git checkout *)",
+      "Bash(start chrome *)",
+      "Bash(python -m http.server 8765)",
+      "Bash(Start-Process python *)",
+      "PowerShell(Start-Process python -ArgumentList \"-m\",\"http.server\",\"8765\" -WorkingDirectory \"C:\\\\Users\\\\DELL LATITUDE E 5450\\\\Desktop\\\\project claude code - Copy\" -WindowStyle Hidden)",
+      "PowerShell(Test-NetConnection *)",
+      "PowerShell(Get-Command *)",
+      "Bash(node *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(supabase *)",
+      "PowerShell(npm *)",
+      "PowerShell(supabase link *)",
+      "PowerShell(supabase secrets *)",
+      "PowerShell(supabase functions *)",
+      "Bash(npm install *)",
+      "Bash(npx cap *)",
+      "Bash(grep -rnE \"sbp_[a-z0-9]{20,}|service_role|6206c6f753ac3937|bdMMYTP0A7XB\" --include=\"*.html\" --include=\"*.sql\" --include=\"*.ts\" --include=\"*.md\" --include=\"*.txt\" --include=\"*.json\" .)"
     ]
   }
 }

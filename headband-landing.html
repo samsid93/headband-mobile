@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeadBand! — The Ultimate Party Game</title>
+  <meta name="description" content="Hold your phone to your forehead. Let your friends' chaos do the rest. Free party game — no account needed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ── TOKENS ── */
+    :root {
+      --bg:#06060E; --s1:#0E0E1C; --s2:#161626; --s3:#1E1E30;
+      --acc:#F7C948; --acc2:#FF7A3D;
+      --cor:#2EE68A; --skp:#FF3F5A;
+      --blu:#4A9EFF; --pur:#9B7EFF; --pnk:#FF6EBC;
+      --txt:#EEF0FF; --mut:#5E6080;
+      --bdr:rgba(255,255,255,0.08); --bdr2:rgba(255,255,255,0.15);
+    }
+
+    /* ── RESET ── */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      background:var(--bg);color:var(--txt);
+      font-family:'Space Grotesk',sans-serif;
+      overflow-x:hidden;line-height:1.6;
+    }
+    a{text-decoration:none;color:inherit}
+
+    /* ── NOISE ── */
+    body::after{
+      content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity:0.028;
+    }
+
+    /* ── LAYOUT ── */
+    .container{max-width:1160px;margin:0 auto;padding:0 24px}
+
+    /* ── UTILS ── */
+    .grad-text{
+      background:linear-gradient(135deg,#F7C948 0%,#FF7A3D 50%,#FF6EBC 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .section-label{
+      font-size:11px;font-weight:700;letter-spacing:3px;
+      text-transform:uppercase;color:var(--acc);margin-bottom:14px;
+    }
+    .section-title{
+      font-size:clamp(32px,5vw,52px);font-weight:800;
+      line-height:1.1;letter-spacing:-1.5px;margin-bottom:48px;
+    }
+
+    /* ── NAV ── */
+    nav{
+      position:fixed;top:0;left:0;right:0;z-index:100;
+      padding:14px 28px;display:flex;align-items:center;
+      justify-content:space-between;
+      backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--bdr);
+      background:rgba(6,6,14,0.85);
+    }
+    .nav-logo{
+      font-family:Georgia,serif;font-size:22px;font-weight:900;
+      letter-spacing:-1px;
+      background:linear-gradient(135deg,#F7C948 0%,#FF7A3D 60%,#FF6EBC 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      filter:drop-shadow(0 0 12px rgba(247,201,72,0.4));
+    }
+    .nav-cta{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:10px 22px;border-radius:50px;
+      background:linear-gradient(135deg,#F7C948,#FFA820);
+      color:#0A0808;font-size:13px;font-weight:800;
+      cursor:pointer;transition:transform .15s,box-shadow .15s;
+      box-shadow:0 0 24px rgba(247,201,72,0.3);
+    }
+    .nav-cta:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(247,201,72,0.5)}
+    .nav-cta:active{transform:scale(0.97)}
+
+    /* ── HERO ── */
+    #hero{
+      min-height:100vh;display:flex;align-items:center;
+      position:relative;overflow:hidden;padding-top:80px;
+    }
+    .orb{
+      position:absolute;border-radius:50%;
+      filter:blur(90px);pointer-events:none;
+    }
+    .orb-1{
+      width:520px;height:520px;
+      background:rgba(247,201,72,0.18);
+      top:-120px;left:-160px;
+      animation:drift 18s ease-in-out infinite alternate;
+    }
+    .orb-2{
+      width:420px;height:420px;
+      background:rgba(155,126,255,0.2);
+      bottom:-100px;right:-120px;
+      animation:drift 14s ease-in-out infinite alternate-reverse;
+    }
+    .orb-3{
+      width:280px;height:280px;
+      background:rgba(255,122,61,0.14);
+      top:45%;left:45%;
+      animation:drift 22s ease-in-out infinite alternate;
+    }
+    @keyframes drift{
+      0%{transform:translate(0,0) scale(1)}
+      100%{transform:translate(50px,35px) scale(1.12)}
+    }
+
+    .hero-grid{
+      display:grid;grid-template-columns:1fr 1fr;
+      gap:60px;align-items:center;
+      position:relative;z-index:1;width:100%;
+    }
+    .hero-text{
+      animation:rise .9s cubic-bezier(.16,1,.3,1) both;
+    }
+    .hero-visual{
+      display:flex;justify-content:center;
+      animation:rise .9s cubic-bezier(.16,1,.3,1) .15s both;
+    }
+    @keyframes rise{
+      from{opacity:0;transform:translateY(40px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    .hero-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 14px;border-radius:50px;
+      background:rgba(247,201,72,0.1);
+      border:1px solid rgba(247,201,72,0.3);
+      font-size:12px;font-weight:600;color:var(--acc);
+      margin-bottom:24px;
+    }
+    h1{
+      font-size:clamp(52px,7.5vw,88px);font-weight:800;
+      line-height:1.0;letter-spacing:-3px;margin-bottom:20px;
+    }
+    .hero-sub{
+      font-size:clamp(15px,2vw,18px);
+      color:rgba(238,240,255,0.65);
+      max-width:420px;line-height:1.75;margin-bottom:36px;
+    }
+    .hero-ctas{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px}
+    .btn-primary{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:16px 32px;border-radius:50px;
+      background:linear-gradient(135deg,#F7C948,#FFA820);
+      color:#0A0808;font-size:15px;font-weight:800;
+      cursor:pointer;transition:transform .15s,box-shadow .15s;
+      box-shadow:0 0 36px rgba(247,201,72,0.35);
+    }
+    .btn-primary:hover{transform:scale(1.04) translateY(-2px);box-shadow:0 0 56px rgba(247,201,72,0.55)}
+    .btn-primary:active{transform:scale(0.97)}
+    .btn-ghost{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:16px 28px;border-radius:50px;
+      background:rgba(255,255,255,0.06);
+      border:1.5px solid rgba(255,255,255,0.2);
+      color:var(--txt);font-size:15px;font-weight:700;
+      cursor:pointer;transition:all .15s;
+    }
+    .btn-ghost:hover{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.35)}
+    .hero-meta{
+      display:flex;flex-wrap:wrap;gap:6px 16px;
+      font-size:12px;color:var(--mut);font-weight:600;
+    }
+    .meta-dot{color:rgba(255,255,255,0.18)}
+
+    /* ── PHONE ── */
+    .phone-wrap{
+      position:relative;
+      animation:float 4s ease-in-out infinite;
+    }
+    @keyframes float{
+      0%,100%{transform:translateY(0) rotate(-2deg)}
+      50%{transform:translateY(-18px) rotate(-2deg)}
+    }
+    .phone{
+      width:252px;height:510px;border-radius:44px;
+      background:var(--s1);
+      border:2px solid rgba(255,255,255,0.12);
+      padding:52px 14px 34px;position:relative;
+      box-shadow:
+        0 0 0 1px rgba(247,201,72,0.07),
+        0 50px 100px rgba(0,0,0,0.75),
+        inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+    .phone-pill{
+      position:absolute;top:14px;left:50%;
+      transform:translateX(-50%);
+      width:84px;height:5px;
+      background:rgba(255,255,255,0.14);border-radius:3px;
+    }
+    .phone-screen{
+      height:100%;border-radius:26px;
+      background:var(--bg);border:1px solid var(--bdr);
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:20px 14px;gap:14px;overflow:hidden;
+    }
+    .p-timer{
+      font-size:30px;font-weight:900;
+      color:var(--acc);letter-spacing:-1px;
+      transition:color .3s;
+    }
+    .p-cat{
+      display:inline-flex;align-items:center;gap:5px;
+      padding:4px 12px;border-radius:50px;
+      background:rgba(46,230,138,0.1);
+      border:1px solid rgba(46,230,138,0.25);
+      color:var(--cor);font-size:10px;font-weight:700;
+      letter-spacing:.3px;transition:all .3s;
+    }
+    .p-word{
+      font-size:21px;font-weight:900;
+      text-align:center;letter-spacing:-.5px;
+      line-height:1.2;text-transform:uppercase;
+      color:var(--txt);
+    }
+    .p-actions{display:flex;flex-direction:column;gap:8px;width:100%}
+    .p-cor{
+      padding:10px;border-radius:12px;
+      background:rgba(46,230,138,0.1);
+      border:1px solid rgba(46,230,138,0.28);
+      color:var(--cor);font-size:10px;font-weight:800;
+      text-align:center;letter-spacing:1px;
+    }
+    .p-skp{
+      padding:10px;border-radius:12px;
+      background:rgba(255,63,90,0.1);
+      border:1px solid rgba(255,63,90,0.28);
+      color:var(--skp);font-size:10px;font-weight:800;
+      text-align:center;letter-spacing:1px;
+    }
+    .phone-glow{
+      position:absolute;inset:-50px;
+      background:radial-gradient(ellipse at center,rgba(247,201,72,0.22) 0%,transparent 65%);
+      pointer-events:none;z-index:-1;border-radius:50%;
+    }
+
+    /* ── HOW ── */
+    #how{padding:120px 0}
+    .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .step{
+      padding:32px 26px;border-radius:24px;
+      background:var(--s1);border:1px solid var(--bdr);
+      position:relative;overflow:hidden;
+      transition:border-color .3s,transform .3s;cursor:default;
+    }
+    .step::before{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(135deg,rgba(247,201,72,0.05) 0%,transparent 55%);
+      pointer-events:none;
+    }
+    .step:hover{border-color:rgba(247,201,72,0.35);transform:translateY(-5px)}
+    .step-n{
+      font-size:60px;font-weight:900;
+      color:rgba(247,201,72,0.07);
+      font-family:Georgia,serif;
+      line-height:1;margin-bottom:12px;letter-spacing:-3px;
+    }
+    .step-icon{font-size:36px;margin-bottom:14px}
+    .step h3{font-size:20px;font-weight:800;margin-bottom:10px}
+    .step p{font-size:14px;color:rgba(238,240,255,0.58);line-height:1.75}
+
+    /* ── MODES ── */
+    #modes{padding:0 0 120px}
+    .modes-header{text-align:center}
+    .modes-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .mode-card{
+      padding:40px 34px;border-radius:28px;
+      border:1px solid var(--bdr);
+      position:relative;overflow:hidden;
+      transition:transform .3s,border-color .3s;cursor:default;
+    }
+    .mode-card:hover{transform:translateY(-5px)}
+    .mode-hu{
+      background:linear-gradient(135deg,rgba(247,201,72,0.07) 0%,rgba(255,122,61,0.05) 100%);
+      border-color:rgba(247,201,72,0.18);
+    }
+    .mode-hu:hover{border-color:rgba(247,201,72,0.42)}
+    .mode-ch{
+      background:linear-gradient(135deg,rgba(155,126,255,0.07) 0%,rgba(255,110,188,0.05) 100%);
+      border-color:rgba(155,126,255,0.18);
+    }
+    .mode-ch:hover{border-color:rgba(155,126,255,0.42)}
+    .mode-tag{
+      display:inline-block;padding:4px 12px;border-radius:50px;
+      font-size:10px;font-weight:800;letter-spacing:1.5px;
+      text-transform:uppercase;margin-bottom:16px;
+    }
+    .mode-hu .mode-tag{background:rgba(247,201,72,0.12);color:var(--acc)}
+    .mode-ch .mode-tag{background:rgba(155,126,255,0.12);color:var(--pur)}
+    .mode-icon{font-size:44px;margin-bottom:16px}
+    .mode-card h3{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
+    .mode-card p{font-size:14px;color:rgba(238,240,255,0.6);line-height:1.75;max-width:300px}
+    .mode-list{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:8px}
+    .mode-list li{
+      font-size:12px;color:rgba(238,240,255,0.5);
+      display:flex;align-items:center;gap:8px;
+    }
+    .mode-list li::before{content:'→';color:var(--acc);font-weight:700}
+
+    /* ── DECKS ── */
+    #decks{padding:0 0 120px}
+    .decks-header{text-align:center}
+    .decks-track{
+      display:flex;gap:14px;overflow-x:auto;
+      padding-bottom:6px;scrollbar-width:none;
+      -ms-overflow-style:none;cursor:grab;
+      -webkit-overflow-scrolling:touch;
+    }
+    .decks-track::-webkit-scrollbar{display:none}
+    .decks-track:active{cursor:grabbing}
+    .deck{
+      flex-shrink:0;padding:22px 20px;border-radius:20px;
+      background:var(--s1);border:1.5px solid var(--bdr);
+      transition:border-color .2s,transform .2s;cursor:default;
+      min-width:148px;
+    }
+    .deck:hover{border-color:rgba(247,201,72,0.35);transform:translateY(-4px)}
+    .deck-ico{font-size:34px;margin-bottom:10px}
+    .deck-name{font-size:14px;font-weight:700;margin-bottom:4px}
+    .deck-badge{
+      display:inline-block;margin-top:8px;
+      padding:2px 9px;border-radius:50px;
+      font-size:9px;font-weight:800;
+      letter-spacing:.5px;text-transform:uppercase;
+    }
+    .b-free{background:rgba(46,230,138,0.1);color:var(--cor);border:1px solid rgba(46,230,138,0.25)}
+    .b-pro{background:rgba(247,201,72,0.1);color:var(--acc);border:1px solid rgba(247,201,72,0.25)}
+
+    /* ── STATS ── */
+    #stats{
+      padding:80px 0;
+      border-top:1px solid var(--bdr);
+      border-bottom:1px solid var(--bdr);
+    }
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center}
+    .stat-val{
+      font-size:clamp(52px,7vw,80px);font-weight:900;
+      letter-spacing:-4px;line-height:1;font-family:Georgia,serif;
+    }
+    .stat-lbl{
+      font-size:12px;color:var(--mut);font-weight:600;
+      margin-top:8px;text-transform:uppercase;letter-spacing:2px;
+    }
+
+    /* ── CTA ── */
+    #cta{
+      padding:140px 0;text-align:center;
+      position:relative;overflow:hidden;
+    }
+    #cta::before{
+      content:'';position:absolute;
+      width:700px;height:700px;border-radius:50%;
+      background:radial-gradient(circle,rgba(247,201,72,0.1) 0%,transparent 70%);
+      top:50%;left:50%;transform:translate(-50%,-50%);
+      pointer-events:none;
+    }
+    .cta-eye{
+      font-size:11px;font-weight:700;letter-spacing:3px;
+      text-transform:uppercase;color:var(--acc);margin-bottom:20px;
+    }
+    .cta-title{
+      font-size:clamp(48px,7.5vw,88px);font-weight:900;
+      letter-spacing:-3px;line-height:1.0;margin-bottom:24px;
+    }
+    .cta-sub{
+      font-size:17px;color:rgba(238,240,255,0.58);
+      margin-bottom:40px;
+    }
+    .cta-row{
+      display:flex;gap:14px;justify-content:center;
+      flex-wrap:wrap;margin-bottom:20px;
+    }
+    .cta-note{font-size:12px;color:var(--mut)}
+
+    /* ── FOOTER ── */
+    footer{
+      padding:28px 28px;border-top:1px solid var(--bdr);
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:16px;
+    }
+    .footer-logo{
+      font-family:Georgia,serif;font-size:18px;font-weight:900;
+      letter-spacing:-.5px;
+      background:linear-gradient(135deg,#F7C948,#FF7A3D);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .footer-copy{font-size:12px;color:var(--mut)}
+    .footer-links{display:flex;gap:20px}
+    .footer-links a{font-size:12px;color:var(--mut);transition:color .2s}
+    .footer-links a:hover{color:var(--txt)}
+
+    /* ── SCROLL REVEAL ── */
+    .reveal{opacity:0;transform:translateY(32px)}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px){
+      .hero-grid{grid-template-columns:1fr;text-align:center;gap:48px}
+      .hero-text{order:2}
+      .hero-visual{order:1}
+      .hero-sub{margin:0 auto 36px}
+      .hero-ctas,.hero-meta{justify-content:center}
+      .steps{grid-template-columns:1fr}
+      .modes-grid{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:1fr;gap:40px}
+      .phone{width:220px;height:440px}
+      .p-word{font-size:18px}
+      h1{letter-spacing:-2px}
+      .cta-title{letter-spacing:-2px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">HeadBand!</span>
+  <a href="https://whambam.games" class="nav-cta">Play Free →</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+
+  <div class="container">
+    <div class="hero-grid">
+
+      <div class="hero-text">
+        <div class="hero-badge">🎉 Party game · 2+ players</div>
+        <h1>
+          <span class="grad-text">Everyone</span><br>
+          knows.<br>
+          <span style="color:rgba(238,240,255,0.35)">You don't.</span>
+        </h1>
+        <p class="hero-sub">
+          Hold your phone to your forehead. Let your friends' frantic clues do the rest. No accounts. No setup. Just chaos.
+        </p>
+        <div class="hero-ctas">
+          <a href="https://whambam.games" class="btn-primary">Play Free Online →</a>
+          <a href="#" class="btn-ghost">📱 Get the App</a>
+        </div>
+        <div class="hero-meta">
+          <span>7+ Decks</span>
+          <span class="meta-dot">•</span>
+          <span>Free to Play</span>
+          <span class="meta-dot">•</span>
+          <span>Works on Any Device</span>
+          <span class="meta-dot">•</span>
+          <span>No Account Needed</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="HeadBand game running on a phone, showing THE DARK KNIGHT in the Movies category">
+            <div class="phone-pill"></div>
+            <div class="phone-screen">
+              <div class="p-timer" id="p-timer">0:42</div>
+              <div class="p-cat" id="p-cat">🎬 Movies</div>
+              <div class="p-word" id="p-word">THE DARK KNIGHT</div>
+              <div class="p-actions">
+                <div class="p-cor">▲ &nbsp; CORRECT</div>
+                <div class="p-skp">▼ &nbsp; SKIP</div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-glow" aria-hidden="true"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-label reveal">HOW IT WORKS</div>
+    <h2 class="section-title reveal">Three steps to<br><span class="grad-text">pure chaos.</span></h2>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-n">01</div>
+        <div class="step-icon">📱</div>
+        <h3>Hold it up</h3>
+        <p>One player holds their phone against their forehead — screen facing out. They can't see a thing.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-n">02</div>
+        <div class="step-icon">🗣️</div>
+        <h3>Shout clues</h3>
+        <p>Everyone else gives frantic hints — anything goes except the word itself. Drama guaranteed.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-n">03</div>
+        <div class="step-icon">↕️</div>
+        <h3>Tilt to score</h3>
+        <p>Got it? Tilt up to mark correct. Clueless? Tilt down to skip. Race the clock, rack the points.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GAME MODES -->
+<section id="modes">
+  <div class="container">
+    <div class="modes-header reveal">
+      <div class="section-label">GAME MODES</div>
+      <h2 class="section-title">Play your way.</h2>
+    </div>
+    <div class="modes-grid">
+      <div class="mode-card mode-hu reveal">
+        <div class="mode-tag">HeadsUp Mode</div>
+        <div class="mode-icon">📱</div>
+        <h3>Hold it up.<br>Tilt to win.</h3>
+        <p>The classic forehead-phone experience. The accelerometer does all the work — just tilt and score.</p>
+        <ul class="mode-list">
+          <li>Tilt-sensor auto-detection</li>
+          <li>Landscape play on any phone</li>
+          <li>60-second rounds</li>
+        </ul>
+      </div>
+      <div class="mode-card mode-ch reveal">
+        <div class="mode-tag">Charades Mode</div>
+        <div class="mode-icon">🎭</div>
+        <h3>Act it out.<br>No acrobatics.</h3>
+        <p>Use the screen as a prompt, act or describe, and tap to score. Works in any orientation, any crowd.</p>
+        <ul class="mode-list">
+          <li>Manual correct / skip taps</li>
+          <li>Portrait or landscape</li>
+          <li>Works on any device</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DECKS -->
+<section id="decks">
+  <div class="container">
+    <div class="decks-header reveal">
+      <div class="section-label">WORD PACKS</div>
+      <h2 class="section-title">Pick a category.<br><span class="grad-text">Pick your poison.</span></h2>
+    </div>
+    <div class="decks-track" id="decks-track" role="list" aria-label="Available word packs">
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">🎬</div>
+        <div class="deck-name">Movies</div>
+        <div class="deck-badge b-free">Free</div>
+      </div>
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">🐾</div>
+        <div class="deck-name">Animals</div>
+        <div class="deck-badge b-free">Free</div>
+      </div>
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">⚽</div>
+        <div class="deck-name">Sports</div>
+        <div class="deck-badge b-free">Free</div>
+      </div>
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">👤</div>
+        <div class="deck-name">Famous People</div>
+        <div class="deck-badge b-pro">Premium</div>
+      </div>
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">🍕</div>
+        <div class="deck-name">Food & Drink</div>
+        <div class="deck-badge b-pro">Premium</div>
+      </div>
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">💻</div>
+        <div class="deck-name">Technology</div>
+        <div class="deck-badge b-pro">Premium</div>
+      </div>
+      <div class="deck reveal" role="listitem">
+        <div class="deck-ico">🌍</div>
+        <div class="deck-name">Geography</div>
+        <div class="deck-badge b-pro">Premium</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="reveal" style="text-align:center">
+        <div class="stat-val grad-text">7+</div>
+        <div class="stat-lbl">Word Packs</div>
+      </div>
+      <div class="reveal" style="text-align:center">
+        <div class="stat-val grad-text">60s</div>
+        <div class="stat-lbl">Per Round</div>
+      </div>
+      <div class="reveal" style="text-align:center">
+        <div class="stat-val grad-text">∞</div>
+        <div class="stat-lbl">Party Potential</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-eye reveal">Ready to play?</div>
+    <h2 class="cta-title reveal">Your next party<br><span class="grad-text">needs this.</span></h2>
+    <p class="cta-sub reveal">No account. No download. Instantly playable on iPhone, Android, and any browser.</p>
+    <div class="cta-row reveal">
+      <a href="https://whambam.games" class="btn-primary" style="padding:18px 44px;font-size:16px">Play Free Online →</a>
+      <a href="#" class="btn-ghost" style="padding:18px 34px;font-size:16px">📱 Download App</a>
+    </div>
+    <p class="cta-note reveal">No credit card. No account. Start in seconds.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">HeadBand!</span>
+  <p class="footer-copy">© 2025 whambam.games — The party starts here.</p>
+  <div class="footer-links">
+    <a href="https://whambam.games">Play Online</a>
+    <a href="#">Download</a>
+    <a href="#">Privacy</a>
+  </div>
+</footer>
+
+<script type="module">
+import { animate, inView } from "https://cdn.jsdelivr.net/npm/motion@latest/+esm";
+
+/* ── SCROLL REVEALS ─────────────────────────────── */
+document.querySelectorAll('.reveal').forEach(el => {
+  inView(el, () => {
+    animate(el,
+      { opacity: [0, 1], y: [32, 0] },
+      { duration: 0.7, easing: [0.16, 1, 0.3, 1] }
+    );
+  }, { margin: '-8%' });
+});
+
+/* ── PHONE WORD CYCLING ─────────────────────────── */
+const WORDS = [
+  { w: 'THE DARK KNIGHT',    c: '🎬 Movies' },
+  { w: 'GREAT WHITE SHARK',  c: '🐾 Animals' },
+  { w: 'EIFFEL TOWER',       c: '🌍 Geography' },
+  { w: 'PIZZA MARGHERITA',   c: '🍕 Food & Drink' },
+  { w: 'MICHAEL JORDAN',     c: '👤 Famous People' },
+  { w: 'BASKETBALL',         c: '⚽ Sports' },
+  { w: 'MACBOOK PRO',        c: '💻 Technology' },
+];
+
+const wordEl = document.getElementById('p-word');
+const catEl  = document.getElementById('p-cat');
+let idx = 0;
+
+setInterval(() => {
+  idx = (idx + 1) % WORDS.length;
+  const next = WORDS[idx];
+
+  animate(wordEl, { opacity: 0, y: -18 }, { duration: 0.22, easing: 'ease-in' })
+    .then(() => {
+      wordEl.textContent = next.w;
+      catEl.textContent  = next.c;
+      return animate(wordEl, { opacity: 1, y: 0 }, { duration: 0.32, easing: [0.16, 1, 0.3, 1] });
+    });
+}, 2800);
+
+/* ── PHONE TIMER COUNTDOWN ──────────────────────── */
+const timerEl = document.getElementById('p-timer');
+let secs = 42;
+
+setInterval(() => {
+  secs = secs > 0 ? secs - 1 : 60;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  timerEl.style.color = secs <= 10 ? 'var(--skp)' : 'var(--acc)';
+}, 1000);
+
+/* ── DECK SCROLL DRAG ───────────────────────────── */
+const track = document.getElementById('decks-track');
+let dragging = false, startX = 0, scrollLeft = 0;
+
+track.addEventListener('mousedown', e => {
+  dragging = true;
+  startX = e.pageX - track.offsetLeft;
+  scrollLeft = track.scrollLeft;
+});
+track.addEventListener('mouseleave', () => dragging = false);
+track.addEventListener('mouseup',    () => dragging = false);
+track.addEventListener('mousemove',  e => {
+  if (!dragging) return;
+  e.preventDefault();
+  const x = e.pageX - track.offsetLeft;
+  track.scrollLeft = scrollLeft - (x - startX) * 1.6;
+});
+</script>
+</body>
+</html>

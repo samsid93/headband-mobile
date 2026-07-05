@@ -1,4 +1,4 @@
-package pk.eatneat.headband;
+package games.whambam.app;
 
 import android.Manifest;
 import android.content.pm.ActivityInfo;

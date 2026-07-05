@@ -1,0 +1,116 @@
+REVENUECAT — MOBILE PAYMENT SETUP (Wam Bam Android app)
+========================================================
+Web keeps Xsolla. Mobile app uses RevenueCat. Same paywall buttons,
+routed by platform (PAYMENTS.buy -> RCAT on native, XSOLLA on web).
+
+App package (use everywhere): games.whambam.app
+Products (logical ids used in code): standard_yearly, allaccess_yearly
+Entitlements (RevenueCat): standard, allaccess
+
+
+WHAT'S ALREADY DONE IN CODE
+========================================================
+- @revenuecat/purchases-capacitor@9.2.2 installed + cap synced
+- Native plugin registered (capacitor.plugins.json, gradle module,
+  settings.gradle), BILLING permission added to AndroidManifest
+- JS: PLATFORM detection, RCAT module, PAYMENTS router, grantSubLocally,
+  restore-purchases link (native only), entitlement sync at boot + login
+- All 4 paywall buttons now call PAYMENTS.buy (was XSOLLA.buy)
+
+REMAINING = dashboard/store config + fill ONE key (below).
+
+
+STEP 1 — Google Play Console
+--------------------------------------------------------
+1. Create the app (package games.whambam.app) if not already.
+2. Monetize -> Products -> Subscriptions -> create TWO subscriptions:
+     a) Product ID: standard_yearly    Base plan: yearly   Price: $0.99/yr
+     b) Product ID: allaccess_yearly   Base plan: yearly   Price: $4.99/yr
+   Product IDs MUST match exactly.
+3. Activate both. Upload at least one build to a testing track so
+   Billing goes live (products won't return until an app build exists
+   on a track and the account is a licensed tester).
+4. Play Console -> Setup -> License testing: add your tester Gmail
+   so sandbox purchases don't charge real money.
+
+
+STEP 2 — RevenueCat Dashboard
+--------------------------------------------------------
+1. revenuecat.com -> create Project "Wam Bam".
+2. Add App -> Google Play:
+     - Package: games.whambam.app
+     - Upload the Play Service Account credentials JSON
+       (Play Console -> Setup -> API access -> service account with
+        "Financial data" + "Manage orders" permission).
+3. Entitlements -> create:
+     - identifier: standard    (grants the free-deck word bump)
+     - identifier: allaccess   (grants all decks + no ads)
+4. Products -> import from Play: standard_yearly, allaccess_yearly.
+5. Attach products to entitlements:
+     - standard_yearly  -> entitlement "standard"
+     - allaccess_yearly -> entitlement "allaccess"
+6. Offerings -> create "default" offering with two packages:
+     - package -> standard_yearly
+     - package -> allaccess_yearly
+   (code reads the current offering, then falls back to direct
+    product purchase, so either path works.)
+
+
+STEP 3 — Put the public SDK key in the game
+--------------------------------------------------------
+RevenueCat -> Project -> API keys -> Google Play public SDK key
+(starts with "goog_"). This is a PUBLIC client key — safe to ship,
+not a secret.
+
+In headband-game-web.html, RCAT module, replace:
+    const RC_API_KEY = 'goog_YOUR_REVENUECAT_PUBLIC_SDK_KEY';
+with your real goog_ key.
+
+Then upload headband-game-web.html to Hostinger (whambam.games).
+The app loads the game from that live URL, so no rebuild is needed
+for JS changes — just the upload.
+
+
+STEP 4 — Cross-platform sync (optional but recommended)
+--------------------------------------------------------
+So a purchase on mobile shows on web (and vice-versa), point
+RevenueCat at Supabase:
+1. On login the app calls Purchases.logIn({ appUserID: <supabase user id> })
+   (already wired in RCAT._ensure) so RevenueCat is keyed by the same id.
+2. RevenueCat -> Integrations -> Webhooks -> add:
+     URL: https://izxzlxtowubbjiatouci.supabase.co/functions/v1/revenuecat-webhook
+   Then write that Edge Function to update profiles.sub_type /
+   sub_expires_at (mirror of the existing xsolla-webhook). Until this
+   exists, mobile purchases still work — they grant locally via
+   grantSubLocally() — they just won't propagate to the web account.
+
+
+STEP 5 — Build the APK
+--------------------------------------------------------
+Local build needs JDK 17 + Android SDK (this machine has neither).
+Use the GitHub Action instead:
+  - Push to main (paths capacitor-app/** trigger it), OR
+  - Actions tab -> "Build WebView APK (HeadBand)" -> Run workflow
+  - Download the "headband-webview-debug" artifact (app-debug.apk)
+For a Play release build, do a signed release in Android Studio
+(cap open android) or extend the workflow with assembleRelease + signing.
+
+
+STEP 6 — Test purchases (sandbox)
+--------------------------------------------------------
+1. Install the debug/testing-track build on a device signed in with a
+   License-tester Gmail.
+2. Hit a paywall -> Google Play purchase sheet appears (test card, no
+   charge) -> on success the deck/all-access unlocks.
+3. "Restore purchases" link (shown only in the app) re-applies an
+   active subscription on a fresh install.
+
+
+NOTES
+========================================================
+- RC public SDK key is safe client-side; no gitignore needed.
+- Web is untouched: browsers never load the RevenueCat plugin and keep
+  using Xsolla.
+- Product IDs, entitlement ids, and package name must match the code:
+  standard_yearly / allaccess_yearly, standard / allaccess,
+  games.whambam.app.

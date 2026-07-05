@@ -1,0 +1,248 @@
+WHAM BAM — CHANGELOG (Fable session)
+Date: 2026-07-04
+File changed: headband-game-web.html (all passes)
+Plan source: GAME_ENHANCEMENT_PLAN.md / suggestion.txt
+=======================================================
+
+
+PASS 1 — CRITICAL FIXES
+=======================================================
+
+[FIX] Navy palette purge
+  All 15 occurrences of 7 old blue-purple color values replaced with
+  warm-black equivalents:
+    rgba(6,6,14,*)   -> rgba(10,5,0,*)   (how-to + paywall backdrops)
+    rgba(7,5,26,*)   -> rgba(18,8,0,*)   (play-back btn, bottom bar, auth modal)
+    rgba(14,10,44,*) -> rgba(26,12,0,*)  (team bar, score bubbles, fs-btn,
+                                          unlock card, paywall card)
+    rgba(22,18,64,*) -> rgba(34,18,0,*)  (timer pill, voice toast)
+    rgba(10,8,34,*)  -> rgba(20,10,0,*)  (play side panels)
+    rgba(30,24,72,*) -> rgba(46,24,0,*)  (tutorial demo phone)
+    rgba(30,24,82,*) -> rgba(46,24,0,*)  (timer ring track)
+  Canvas base fill #06060E -> #0A0500.
+
+[FIX] AudioContext leak
+  beepNewWord() created a NEW AudioContext on every word (iOS caps ~4
+  per page -> audio died mid-game). Now calls SFX.newWord() on the
+  single shared context. One AudioContext creation site in whole file.
+
+[NEW] Mute toggle
+  🔊/🔇 pill button top-right of home screen. Persists via
+  localStorage key hb_muted. All SFX guarded through single beep() gate.
+  Unmute plays a tap sound as confirmation.
+
+
+PASS 2 — GAME FEEL
+=======================================================
+
+[NEW] Streak/combo system
+  - G.streak increments on correct, resets on skip / round start
+  - Milestone banners replace "CORRECT!" overlay:
+      x3  = 🔥 ON FIRE!      (yellow)
+      x5  = 🔥🔥 BLAZING!    (orange)
+      x8  = 🌋 UNSTOPPABLE!  (red)
+      x10 = 👑 LEGENDARY!    (purple)
+  - "🔥 xN" chip on word card top-left from streak 2+ (pop animation)
+  - SFX.correct(streak): pitch rises 7% per streak step (cap x8)
+  - Works for tilt, voice, and button input automatically
+
+[NEW] Final-10-seconds tension mode
+  - At 10s: red vignette pulses over play screen (opacity-only,
+    compositor-safe), timer ring throbs
+  - Low heartbeat double-thump each second 10s -> 4s, then existing
+    countdown beeps at 3-2-1
+  - Cleaned up in endRound() and beginRound()
+
+[NEW] Team hand-off splash
+  - Full-screen overlay between team turns: team-colored radial wash,
+    floating 📱, "Pass the phone to -> TEAM NAME" in team color,
+    current score, "We're Ready!" button
+  - 6 team colors (TEAM_HEX) match existing team dots
+  - Hooked into playAgain(); classic mode unaffected
+
+[NEW] Word swap animation
+  - New word slides in from right (180ms, transform+opacity only)
+  - Rapid tilt fires jump-cut cleanly (reflow re-trigger)
+
+
+PASS 3 — COLOR IDENTITY
+=======================================================
+
+[NEW] Deck-tinted gameplay
+  - DECK_COLORS map (11 decks) — word arrays untouched
+  - applyDeckTint() per round sets CSS vars on #screen-play:
+      --deck (pill bg), --deck-txt (auto black/white by luminance),
+      --deck-glow (pill shadow), --deck-bdr (word card border)
+  - Category pill + card border take deck color; card body stays
+    yellow for readability
+  - Correct/skip flash border kept priority (specificity fix)
+
+[NEW] Countdown color ramp
+  - 3 = bright yellow, 2 = orange, 1 = red-pink (classes cd-3/cd-2/cd-1
+    with matching glows). LET'S GO frame unchanged.
+
+[NEW] Team-colored rounds
+  - --team CSS var set during team turns
+  - Team bar text + timer ring (above 50% time) use team color
+  - All 6 teams supported (was hardcoded 2 colors)
+  - Classic mode unchanged (yellow)
+
+[NEW] Score podium colors
+  - Rank 1 = gold glow (existing .winner), rank 2 = silver border,
+    rank 3 = bronze border on team result cards
+
+
+PASS 4 — POLISH & RETENTION
+=======================================================
+
+[NEW] Score count-up + personal best
+  - Score screen numbers animate 0 -> value (ease-out ~800ms):
+    classic points/correct/skipped and team card scores
+  - New classic personal best (>=3 pts, localStorage hb_pb):
+    full-screen confetti burst + "🏆 NEW PERSONAL BEST" toast + fanfare
+  - Team game-over winner: confetti + fanfare
+
+[NEW] Haptics (buzz helper)
+  - correct [30], skip [15,30,15], 10s warning [10],
+    round end [80,40,80]
+  - navigator.vibrate — Android web active; iOS web no-ops
+    (Capacitor Haptics plugin planned for app build)
+
+[NEW] Golden word
+  - Triggers when 10s remain: NEXT word becomes golden
+    (design change from plan — "last word in array" was unreachable)
+  - Card turns pulsing gold, hint "⭐ GOLDEN WORD — worth 2x!"
+  - Correct on golden = +2 points, gold "⭐ +2 GOLDEN!" overlay
+  - Stacks with tension mode for final-seconds climax
+
+[NEW] Daily featured deck
+  - Date-seeded rotation over free decks (DAILY_DECK)
+  - "⭐ TODAY'S DECK" ribbon on deck card in setup grid
+    (initial render + refreshDeckGrid)
+  - Tappable chip on home screen -> jumps to setup with deck selected
+
+[NEW] Achievements (local, no backend)
+  - 🎯 Perfect Round    — 5+ correct, zero skips
+  - ⚡ Speed Demon      — 10+ correct in one round
+  - 🔥 On Fire          — 8-word streak
+  - ⭐ Golden Touch     — nail a golden word
+  - 💯 Century Club     — 100 lifetime correct (hb_total_correct)
+  - Stored in localStorage hb_achv; unlock = 🏅 toast + fanfare
+  - Grid at bottom of leaderboard screen, locked ones grayed out
+
+
+FIXES DURING IMPLEMENTATION
+=======================================================
+  - TEAM_COLORS name collision: existing const at team setup held CSS
+    class suffixes; new hex array renamed to TEAM_HEX
+  - Specificity: #screen-play .wcard deck border would have overridden
+    .fc/.fs flash borders; explicit override rules added
+  - Syntax check: all inline JS parses clean (node new Function test)
+
+
+NEW LOCALSTORAGE KEYS
+=======================================================
+  hb_muted          '1' | '0'  — mute state
+  hb_pb             int        — classic personal best points
+  hb_achv           JSON array — unlocked achievement ids
+  hb_total_correct  int        — lifetime correct counter
+
+
+PASS 5 — HYGIENE
+=======================================================
+
+[SEC] XSS escaping (1.3)
+  - New esc() helper HTML-escapes user-controlled strings
+  - Applied at all innerHTML sinks: player names (renderPlayers),
+    team names (score cards + local leaderboard rows), Supabase
+    display_name / avatar_url / deck fields (global leaderboard)
+
+[PERF] Canvas + floaties sleep (1.4)
+  - window._bgOn flag set in goTo(): ambient orb canvas skips drawing
+    and floaty spawner pauses on screen-play / countdown / rotate /
+    ready / ad. Battery saved during gameplay.
+
+[PERF] Supabase SDK deferred (1.5)
+  - defer added to SDK script tag — no longer blocks first paint
+  - HB_AUTH.init() moved to DOMContentLoaded (deferred scripts are
+    guaranteed to execute before that event)
+
+[UX] Styled clear-history confirm (1.6)
+  - Native confirm() replaced with branded modal (#clearlb-modal),
+    Cancel / Clear buttons. Zero native dialogs left in the game.
+
+[SEO] Meta + OG tags (1.7)
+  - meta description, og:title/description/image/url/type,
+    twitter:card — WhatsApp/social link shares now show title,
+    description, and logo.
+
+
+PASS 6 — GAMEPLAY BUGFIXES + PLAYER TURNS
+=======================================================
+
+[FIX] Long word overlapped/hid team-name bar
+  - Root cause: flex min-height:auto let a long wrapped word expand the
+    yellow card beyond the viewport; with justify-content:center the
+    overflow ate the top edge, pushing the team bar off-screen.
+  - #screen-play -> justify-content:flex-start (team bar pinned top)
+  - min-height:0 on .play-land / .pcentre / .wcard so flex children
+    shrink instead of forcing overflow
+  - .wtext: smaller max clamp (44px), overflow-wrap:anywhere,
+    max-height:100% + hidden-scroll so giant words stay inside the card
+  - team-bar: nowrap + ellipsis, z-index raised, slightly bolder
+
+[NEW] Player turn indication (team mode)
+  - Player names were collected but never used — nobody knew whose turn.
+  - Each team rotates through its own players independently
+    (per-team playerIdx, reset at game start)
+  - Shown in 3 places:
+      * Team splash: "🎯 {player}, you're up!"
+      * In-game team bar: "Team 1 · 🎯 {player}'s turn"
+      * Ready button: "Start — {player} (Team 1)"
+  - Advances after each turn starts; wraps around the roster
+  - No players added -> falls back to the old team-name-only labels
+
+
+PASS 7 — MOBILE PAYMENTS (RevenueCat) + CAPACITOR APP
+=======================================================
+Web keeps Xsolla. Mobile app gets RevenueCat. Same paywall buttons,
+routed by platform. App loads the live site remotely, so all the
+gameplay/GUI work above ships to the app automatically once the HTML
+is uploaded to Hostinger — only payments needed a native path.
+
+[NEW] Platform-routed payments
+  - PLATFORM detection (Capacitor.isNativePlatform() / window.AndroidBridge)
+  - PAYMENTS router: native -> RCAT (RevenueCat), web -> XSOLLA
+  - All 4 paywall entry points now call PAYMENTS.buy (was XSOLLA.buy):
+    freePaywallSub, allAccessUpgrade, unlockDeckWithPayment, unlockAllAccess
+
+[NEW] RCAT module (RevenueCat via @revenuecat/purchases-capacitor)
+  - configure() with public SDK key + logIn(appUserID = Supabase user id)
+  - buy(): current offering package match, falls back to direct product
+    purchase; grants locally on success; silent on user-cancel
+  - syncEntitlements(): re-applies active sub at app boot + after login
+  - restore(): store-required "Restore purchases" (link shown native-only)
+  - grantSubLocally(): mirrors applySubFromProfile() unlock state for the
+    mobile path (no Supabase webhook yet)
+
+[BUILD] Capacitor / Android wiring
+  - @revenuecat/purchases-capacitor@9.2.2 (v9 = Capacitor 6 compatible)
+  - cap sync: plugin registered in capacitor.plugins.json + gradle module
+    + settings.gradle
+  - AndroidManifest: com.android.vending.BILLING permission added
+  - capacitor.config StatusBar color 06060E -> 0A0500 (theme match)
+  - App package: games.whambam.app (Play + RevenueCat config target)
+  - APK builds via existing GitHub Action (JDK17 + cap sync + gradle);
+    local build blocked (machine has JDK 8, no Android SDK)
+
+[DOC] REVENUECAT_SETUP.txt
+  - Play Console products (standard_yearly $0.99, allaccess_yearly $4.99)
+  - RevenueCat entitlements (standard, allaccess) + offering
+  - Where to paste the goog_ public SDK key
+  - Optional Supabase webhook for cross-platform sync
+
+PENDING (needs user / accounts — cannot be done in code):
+  - Fill RC_API_KEY ('goog_...') in RCAT module
+  - Create Play Console subscription products + license testers
+  - RevenueCat dashboard: app, entitlements, products, offering
+  - (optional) revenuecat-webhook Edge Function for web<->mobile sync

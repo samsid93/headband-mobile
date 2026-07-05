@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wam Bam — Admin</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0A0500;--s1:#120800;--s2:#1A0C00;--s3:#221200;--s4:#2E1800;--s5:#3A2000;
+  --acc:#FFD60A;--acc2:#FF6B00;--cor:#00E87A;--dan:#FF2D55;--blu:#0088FF;--pur:#CC44FF;
+  --txt:#FFF8E0;--txt2:#9A8060;--txt3:#5A4030;
+  --bdr:rgba(255,255,255,0.06);--bdr2:rgba(255,255,255,0.13);
+  --gY:0 4px 32px rgba(255,214,10,0.35),0 0 60px rgba(255,214,10,0.12);
+  --gG:0 4px 28px rgba(0,232,122,0.35),0 0 50px rgba(0,232,122,0.10);
+  --gR:0 4px 28px rgba(255,45,85,0.35),0 0 50px rgba(255,45,85,0.10);
+  --rS:10px;--rM:16px;--rL:24px;
+  --sidebar:240px;
+  --font-display:'Nunito',sans-serif;
+  --font-mono:'Inter',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;overflow:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 100%,rgba(255,107,0,0.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 0%,rgba(204,68,255,0.05) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:var(--sidebar) 1fr;grid-template-rows:56px 1fr;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--s1);border-bottom:1px solid var(--bdr2);z-index:20}
+.sidebar{background:var(--s1);border-right:1px solid var(--bdr2);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+.sidebar::-webkit-scrollbar{width:0}
+.main{overflow-y:auto;overflow-x:hidden;background:var(--bg)}
+.main::-webkit-scrollbar{width:5px;background:var(--s1)}
+.main::-webkit-scrollbar-thumb{background:var(--s4);border-radius:3px}
+
+/* ── TOPBAR ── */
+.tb-logo{font-family:var(--font-display);font-size:22px;font-weight:900;background:linear-gradient(90deg,#FFD60A,#FF6B00,#FF2D55);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.5px}
+.tb-logo span{color:var(--txt2);font-size:11px;font-family:var(--font-mono);font-weight:500;margin-left:8px;-webkit-text-fill-color:var(--txt2);letter-spacing:.5px}
+.tb-right{display:flex;align-items:center;gap:14px}
+.tb-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt2)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--cor);animation:livepulse 2s infinite}
+@keyframes livepulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,232,122,0.5)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,232,122,0)}}
+.tb-time{font-size:12px;color:var(--txt3);font-family:var(--font-mono)}
+.tb-admin{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt2)}
+.tb-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#FFD60A,#FF6B00);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#0A0500}
+
+/* ── SIDEBAR NAV ── */
+.nav-section{padding:16px 12px 8px;font-size:9px;letter-spacing:2px;color:var(--txt3);text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;font-size:12px;color:var(--txt2);cursor:pointer;border-radius:var(--rS);margin:1px 8px;transition:all .15s;position:relative;text-decoration:none}
+.nav-item:hover{background:var(--s3);color:var(--txt)}
+.nav-item.active{background:rgba(255,214,10,0.1);color:var(--acc);border:1px solid rgba(255,214,10,0.2)}
+.nav-item.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:20px;background:linear-gradient(180deg,#FFD60A,#FF6B00);border-radius:2px}
+.nav-icon{width:16px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--dan);color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700}
+.nav-badge.green{background:var(--cor);color:#031A0D}
+.nav-divider{border:none;border-top:1px solid var(--bdr);margin:8px 14px}
+
+/* ── MAIN CONTENT ── */
+.page{display:none;padding:24px;min-height:100%}
+.page.active{display:block}
+.page-header{margin-bottom:24px}
+.page-title{font-family:var(--font-display);font-size:28px;font-weight:900;background:linear-gradient(90deg,#FFD60A,#FF6B00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-0.5px}
+.page-sub{font-size:11px;color:var(--txt3);margin-top:4px;font-family:var(--font-mono)}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--rM);padding:18px 16px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s,box-shadow .2s}
+.stat-card:hover{border-color:var(--bdr2);transform:translateY(-2px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--rM) var(--rM) 0 0}
+.stat-card.yellow::before{background:var(--acc)}
+.stat-card.green::before{background:var(--cor)}
+.stat-card.blue::before{background:var(--blu)}
+.stat-card.red::before{background:var(--dan)}
+.stat-card.purple::before{background:var(--pur)}
+.stat-label{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.stat-value{font-size:30px;font-weight:900;line-height:1;font-family:var(--font-display)}
+.stat-value.yellow{color:var(--acc)}
+.stat-value.green{color:var(--cor)}
+.stat-value.blue{color:var(--blu)}
+.stat-value.red{color:var(--dan)}
+.stat-value.purple{color:var(--pur)}
+.stat-delta{font-size:11px;margin-top:6px}
+.stat-delta.up{color:var(--cor)}
+.stat-delta.dn{color:var(--dan)}
+
+/* ── PANELS / TABLES ── */
+.panel{background:var(--s2);border:1px solid var(--bdr);border-radius:var(--rM);margin-bottom:18px;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bdr)}
+.panel-title{font-size:12px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:8px;font-family:var(--font-display)}
+.panel-actions{display:flex;gap:8px}
+.panel-body{padding:0}
+
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;padding:10px 18px;text-align:left;border-bottom:1px solid var(--bdr);font-weight:500;background:var(--s1)}
+tbody tr{border-bottom:1px solid var(--bdr);transition:background .12s;cursor:default}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--s3)}
+tbody td{padding:11px 18px;font-size:12px;color:var(--txt2)}
+tbody td.bold{color:var(--txt);font-weight:600}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:var(--rS);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-mono);transition:all .14s;letter-spacing:.3px}
+.btn:active{transform:scale(.97)}
+.btn-pri{background:linear-gradient(135deg,#FFD60A,#FF9500);color:#0A0500;font-weight:700}
+.btn-pri:hover{filter:brightness(1.08)}
+.btn-ghost{background:var(--s3);color:var(--txt2);border:1px solid var(--bdr2)}
+.btn-ghost:hover{background:var(--s4);color:var(--txt)}
+.btn-danger{background:rgba(255,45,85,.15);color:var(--dan);border:1px solid rgba(255,45,85,.28)}
+.btn-danger:hover{background:rgba(255,45,85,.26)}
+.btn-success{background:rgba(0,232,122,.12);color:var(--cor);border:1px solid rgba(0,232,122,.22)}
+.btn-success:hover{background:rgba(0,232,122,.22)}
+.btn-sm{padding:5px 10px;font-size:10px}
+.btn-icon{width:28px;height:28px;padding:0;justify-content:center}
+
+/* ── BADGES / PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;font-family:var(--font-mono)}
+.pill-green{background:rgba(0,232,122,.12);color:var(--cor);border:1px solid rgba(0,232,122,.25)}
+.pill-yellow{background:rgba(255,214,10,.12);color:var(--acc);border:1px solid rgba(255,214,10,.25)}
+.pill-red{background:rgba(255,45,85,.12);color:var(--dan);border:1px solid rgba(255,45,85,.25)}
+.pill-blue{background:rgba(0,136,255,.12);color:var(--blu);border:1px solid rgba(0,136,255,.25)}
+.pill-purple{background:rgba(204,68,255,.12);color:var(--pur);border:1px solid rgba(204,68,255,.25)}
+.pill-ghost{background:var(--s3);color:var(--txt3);border:1px solid var(--bdr)}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ── TOGGLE ── */
+.tgl{position:relative;width:38px;height:22px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0}
+.tgl-slider{position:absolute;inset:0;background:var(--s4);border-radius:11px;cursor:pointer;transition:background .2s;border:1px solid var(--bdr2)}
+.tgl-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:2px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.tgl input:checked+.tgl-slider{background:var(--acc);border-color:var(--acc)}
+.tgl input:checked+.tgl-slider::before{transform:translateX(16px)}
+
+/* ── INPUTS ── */
+.inp{background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--rS);padding:8px 12px;color:var(--txt);font-size:12px;font-family:var(--font-mono);outline:none;width:100%;transition:border-color .15s}
+.inp:focus{border-color:var(--acc)}
+.inp::placeholder{color:var(--txt3)}
+select.inp{cursor:pointer}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-label{font-size:10px;color:var(--txt3);letter-spacing:.8px;text-transform:uppercase}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── CHART BAR ── */
+.bar-chart{display:flex;flex-direction:column;gap:10px;padding:16px 18px}
+.bar-row{display:flex;align-items:center;gap:12px}
+.bar-label-col{font-size:11px;color:var(--txt2);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--s4);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-size:11px;color:var(--txt3);width:40px;text-align:right}
+
+/* ── MINI CHART (sparkline) ── */
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:32px}
+.spark-bar{flex:1;background:var(--acc);border-radius:2px 2px 0 0;opacity:.7;min-width:3px}
+
+/* ── USERS ONLINE ── */
+.online-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:16px 18px}
+.user-card{background:var(--s3);border:1px solid var(--bdr);border-radius:var(--rS);padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.user-card:hover{border-color:var(--bdr2)}
+.user-ava{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;font-weight:700;font-family:var(--font-display)}
+.user-info{flex:1;min-width:0}
+.user-id{font-size:11px;color:var(--txt);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-meta{font-size:10px;color:var(--txt3);margin-top:2px}
+.user-status{font-size:10px}
+
+/* ── DECK CARDS ── */
+.deck-admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:16px 18px}
+.deck-admin-card{background:var(--s3);border:1px solid var(--bdr);border-radius:var(--rM);padding:16px;transition:border-color .15s;position:relative}
+.deck-admin-card:hover{border-color:var(--bdr2)}
+.deck-admin-card.featured{border-color:rgba(255,214,10,.35);background:rgba(255,214,10,.05)}
+.da-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.da-icon{font-size:28px}
+.da-badges{display:flex;gap:5px;flex-wrap:wrap}
+.da-name{font-size:14px;font-weight:700;color:var(--txt);font-family:var(--font-display);margin-bottom:4px}
+.da-meta{font-size:10px;color:var(--txt3);margin-bottom:12px}
+.da-stats{display:flex;gap:16px;margin-bottom:12px}
+.da-stat{display:flex;flex-direction:column;gap:2px}
+.da-stat-v{font-size:16px;font-weight:700;color:var(--txt);font-family:var(--font-display)}
+.da-stat-l{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px}
+.da-actions{display:flex;gap:6px}
+
+/* ── PAYMENTS ── */
+.pay-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:16px 18px;border-bottom:1px solid var(--bdr)}
+.pay-stat{text-align:center;padding:8px}
+.pay-val{font-size:22px;font-weight:700;font-family:var(--font-display);color:var(--cor)}
+.pay-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+
+/* ── ADS / ADMOB ── */
+.ad-connect-card{background:linear-gradient(135deg,rgba(66,133,244,.08),rgba(52,168,83,.08));border:1.5px solid rgba(66,133,244,.2);border-radius:var(--rM);padding:28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;margin:16px 18px}
+.g-logo{font-size:40px;filter:drop-shadow(0 0 12px rgba(66,133,244,.3))}
+.ad-slot-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px 18px}
+.ad-slot{background:var(--s3);border:1px solid var(--bdr);border-radius:var(--rM);padding:16px}
+.ad-slot-name{font-size:12px;font-weight:700;color:var(--txt);margin-bottom:4px;font-family:var(--font-display)}
+.ad-slot-id{font-size:10px;color:var(--txt3);font-family:var(--font-mono);margin-bottom:12px;word-break:break-all}
+.ad-slot-stats{display:flex;justify-content:space-between;font-size:11px;color:var(--txt2);border-top:1px solid var(--bdr);padding-top:10px;margin-top:10px}
+
+/* ── SETTINGS ── */
+.settings-section{padding:18px;border-bottom:1px solid var(--bdr)}
+.settings-section:last-child{border-bottom:none}
+.settings-title{font-size:12px;font-weight:700;color:var(--txt);font-family:var(--font-display);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.setting-row:last-child{border-bottom:none}
+.setting-info{flex:1}
+.setting-name{font-size:12px;color:var(--txt);font-weight:500}
+.setting-desc{font-size:10px;color:var(--txt3);margin-top:2px}
+.setting-ctrl{flex-shrink:0;margin-left:16px}
+
+/* ── MODAL ── */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;backdrop-filter:blur(4px);align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--rL);padding:0;width:100%;max-width:480px;box-shadow:0 32px 64px rgba(0,0,0,.5);overflow:hidden}
+.modal-head{padding:20px 22px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700;color:var(--txt);font-family:var(--font-display)}
+.modal-close{background:var(--s4);border:none;color:var(--txt2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:22px}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--bdr);display:flex;justify-content:flex-end;gap:8px}
+
+/* ── LOGS ── */
+.log-wrap{max-height:180px;overflow-y:auto;background:var(--bg);font-family:var(--font-mono);font-size:10px;line-height:1.8;padding:10px 14px}
+.log-wrap::-webkit-scrollbar{width:3px}
+.log-wrap::-webkit-scrollbar-thumb{background:var(--s4)}
+.log-line{display:flex;gap:10px}
+.log-ts{color:var(--txt3);flex-shrink:0}
+.log-msg{color:var(--txt2)}
+.log-msg.ok{color:var(--cor)}
+.log-msg.warn{color:var(--acc)}
+.log-msg.err{color:var(--dan)}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--rS);padding:12px 16px;font-size:11px;color:var(--txt);display:flex;align-items:center;gap:10px;min-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:toastin .2s ease-out}
+@keyframes toastin{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.ok{border-color:rgba(0,232,122,.35)}
+.toast.warn{border-color:rgba(255,214,10,.35)}
+.toast.err{border-color:rgba(255,45,85,.35)}
+
+/* ── MISC ── */
+.flex{display:flex}.items-center{align-items:center}.gap-8{gap:8px}.gap-12{gap:12px}.ml-auto{margin-left:auto}
+.text-muted{color:var(--txt3);font-size:11px}
+.text-acc{color:var(--acc)}
+.divider{border:none;border-top:1px solid var(--bdr);margin:16px 0}
+.empty{padding:40px;text-align:center;color:var(--txt3);font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="flex items-center gap-12">
+      <div class="flex items-center gap-12" style="gap:10px">
+        <img src="logo.png" alt="Wam Bam" style="height:32px;width:auto;filter:drop-shadow(0 0 8px rgba(255,214,10,0.5))">
+        <div class="tb-logo" style="font-size:14px;font-weight:600;-webkit-text-fill-color:var(--txt2);background:none;color:var(--txt2)">/ ADMIN</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-badge"><div class="live-dot"></div><span id="online-count">0</span> online</div>
+      <div class="tb-time" id="tb-clock">--:--:--</div>
+      <div class="tb-admin">
+        <div class="tb-avatar">A</div>
+        <span id="admin-email-label">Admin</span>
+        <button onclick="adminSignOut()" style="background:none;border:1px solid var(--bdr2);color:var(--txt3);border-radius:4px;padding:2px 8px;font-size:10px;cursor:pointer;font-family:var(--font-mono)">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div style="padding:16px 14px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:center">
+      <img src="logo.png" alt="Wam Bam" style="height:96px;width:auto;filter:drop-shadow(0 0 14px rgba(255,214,10,0.5))">
+    </div>
+    <div class="nav-section">Overview</div>
+    <a class="nav-item active" onclick="nav('dashboard')">
+      <span class="nav-icon">⬡</span> Dashboard
+    </a>
+    <a class="nav-item" onclick="nav('users')">
+      <span class="nav-icon">◎</span> Users Online
+      <span class="nav-badge green" id="nav-online">0</span>
+    </a>
+
+    <div class="nav-section">Content</div>
+    <a class="nav-item" onclick="nav('decks')">
+      <span class="nav-icon">▦</span> Deck Library
+    </a>
+    <a class="nav-item" onclick="nav('words')">
+      <span class="nav-icon">≡</span> Word Editor
+    </a>
+
+    <div class="nav-section">Monetization</div>
+    <a class="nav-item" onclick="nav('payments')">
+      <span class="nav-icon">◈</span> Payments & IAP
+    </a>
+    <a class="nav-item" onclick="nav('ads')">
+      <span class="nav-icon">◧</span> AdMob & Google Ads
+    </a>
+
+    <div class="nav-section">System</div>
+    <a class="nav-item" onclick="nav('analytics')">
+      <span class="nav-icon">⌬</span> Analytics
+    </a>
+    <a class="nav-item" onclick="nav('settings')">
+      <span class="nav-icon">⚙</span> Settings
+    </a>
+    <hr class="nav-divider">
+    <a class="nav-item" onclick="nav('logs')">
+      <span class="nav-icon">▤</span> System Logs
+    </a>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">WAM BAM CONTROL CENTER · REAL-TIME OVERVIEW</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card yellow">
+          <div class="stat-label">Sessions Today</div>
+          <div class="stat-value yellow" id="stat-sessions">—</div>
+          <div class="stat-delta up" id="stat-sessions-d">▲ live</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value green" id="stat-total-users">—</div>
+          <div class="stat-delta up" id="stat-total-users-d">loading…</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Revenue (MTD)</div>
+          <div class="stat-value blue">$318</div>
+          <div class="stat-delta up">▲ +8.1% vs last month</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Ad Impressions</div>
+          <div class="stat-value purple">48.2K</div>
+          <div class="stat-delta up">▲ +22% this week</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Crash Rate</div>
+          <div class="stat-value red">0.3%</div>
+          <div class="stat-delta up">▼ -0.1% improved</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
+        <!-- Deck usage -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">📦 Deck Usage (30d)</div>
+          </div>
+          <div class="bar-chart" id="deck-usage-chart">
+            <div class="bar-row"><div class="bar-label-col" style="color:var(--txt3)">Loading…</div><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--acc)"></div></div><div class="bar-val">—</div></div>
+          </div>
+        </div>
+
+        <!-- Revenue sparkline -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">💰 Revenue Trend (7d)</div>
+            <div class="text-muted">$318 MTD</div>
+          </div>
+          <div style="padding:20px 18px">
+            <div class="sparkline" style="height:60px">
+              <div class="spark-bar" style="height:40%"></div>
+              <div class="spark-bar" style="height:55%"></div>
+              <div class="spark-bar" style="height:48%"></div>
+              <div class="spark-bar" style="height:70%"></div>
+              <div class="spark-bar" style="height:62%"></div>
+              <div class="spark-bar" style="height:85%"></div>
+              <div class="spark-bar" style="height:100%;opacity:1"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+              <span class="text-muted">Mon</span><span class="text-muted">Tue</span><span class="text-muted">Wed</span>
+              <span class="text-muted">Thu</span><span class="text-muted">Fri</span><span class="text-muted">Sat</span>
+              <span style="font-size:11px;color:var(--acc);font-weight:700">Today</span>
+            </div>
+            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div><div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px">IAP Revenue</div><div style="font-size:18px;font-weight:700;color:var(--cor);font-family:var(--font-display)">$214</div></div>
+              <div><div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px">Ad Revenue</div><div style="font-size:18px;font-weight:700;color:var(--acc);font-family:var(--font-display)">$104</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent activity -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">⚡ Live Activity Feed</div>
+          <div class="pill pill-green"><div class="pill-dot"></div>live</div>
+        </div>
+        <div id="activity-feed" style="max-height:200px;overflow-y:auto">
+          <table>
+            <thead><tr><th>Time</th><th>Event</th><th>User</th><th>Detail</th><th>Status</th></tr></thead>
+            <tbody id="activity-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ USERS ═══ -->
+    <div class="page" id="page-users">
+      <div class="page-header">
+        <div class="page-title">Users Online</div>
+        <div class="page-sub">REAL-TIME ACTIVE SESSIONS · AUTO-REFRESHES EVERY 10s</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card green"><div class="stat-label">Online Now</div><div class="stat-value green" id="u-online">0</div><div class="stat-delta up">▲ active</div></div>
+        <div class="stat-card yellow"><div class="stat-label">In-Round</div><div class="stat-value yellow" id="u-playing">0</div><div class="stat-delta up">playing now</div></div>
+        <div class="stat-card blue"><div class="stat-label">In-Menu</div><div class="stat-value blue" id="u-menu">0</div><div class="stat-delta">browsing</div></div>
+        <div class="stat-card purple"><div class="stat-label">Avg Session</div><div class="stat-value purple">8.3m</div><div class="stat-delta">today</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">◎ Active Sessions</div>
+          <div class="panel-actions">
+            <button class="btn btn-ghost btn-sm" onclick="refreshUsers()">↻ Refresh</button>
+            <button class="btn btn-danger btn-sm" onclick="toast('All sessions broadcast sent','warn')">⚠ Broadcast Message</button>
+          </div>
+        </div>
+        <div class="online-grid" id="users-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══ DECKS ═══ -->
+    <div class="page" id="page-decks">
+      <div class="page-header">
+        <div class="page-title">Deck Library</div>
+        <div class="page-sub">MANAGE CONTENT PACKS · CONTROL FEATURED STATUS · ADD EXPANSION DECKS</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">▦ All Decks</div>
+          <div class="panel-actions">
+            <button class="btn btn-pri btn-sm" onclick="openModal('modal-add-deck')">+ Add Deck</button>
+          </div>
+        </div>
+        <div class="deck-admin-grid" id="decks-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══ WORD EDITOR ═══ -->
+    <div class="page" id="page-words">
+      <div class="page-header">
+        <div class="page-title">Word Editor</div>
+        <div class="page-sub">ADD / EDIT / REMOVE WORDS FROM ANY DECK</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">≡ Words</div>
+          <div class="panel-actions">
+            <select class="inp" id="word-deck-sel" style="width:160px" onchange="renderWords()">
+              <option value="movies">Movies 🎬</option>
+              <option value="animals">Animals 🦁</option>
+              <option value="famous">Famous People ⭐</option>
+              <option value="tv">TV Series 📺</option>
+              <option value="kids">Kids Mode 🌈</option>
+            </select>
+            <button class="btn btn-pri btn-sm" onclick="openModal('modal-add-word')">+ Add Word</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Word / Phrase</th><th>Hint</th><th>Plays</th><th>Correct%</th><th>Actions</th></tr></thead>
+          <tbody id="words-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ PAYMENTS ═══ -->
+    <div class="page" id="page-payments">
+      <div class="page-header">
+        <div class="page-title">Payments & IAP</div>
+        <div class="page-sub">IN-APP PURCHASES · TRANSACTIONS · RESTORE CONTROLS</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">💰 Revenue Summary</div></div>
+        <div class="pay-summary">
+          <div class="pay-stat"><div class="pay-val">$214</div><div class="pay-lbl">MTD Revenue</div></div>
+          <div class="pay-stat"><div class="pay-val" style="color:var(--acc)">47</div><div class="pay-lbl">Purchases</div></div>
+          <div class="pay-stat"><div class="pay-val" style="color:var(--blu)">8</div><div class="pay-lbl">Restores</div></div>
+          <div class="pay-stat"><div class="pay-val" style="color:var(--dan)">2</div><div class="pay-lbl">Refunds</div></div>
+        </div>
+      </div>
+
+      <!-- IAP Products -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">◈ IAP Products</div>
+          <div class="panel-actions">
+            <button class="btn btn-pri btn-sm" onclick="openModal('modal-add-iap')">+ Add Product</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Product ID</th><th>Name</th><th>Price</th><th>Type</th><th>Sales</th><th>Revenue</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="iap-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Transactions -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">⌬ Recent Transactions</div></div>
+        <table>
+          <thead><tr><th>TXN ID</th><th>User</th><th>Product</th><th>Amount</th><th>Platform</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody id="txn-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ ADS ═══ -->
+    <div class="page" id="page-ads">
+      <div class="page-header">
+        <div class="page-title">AdMob & Google Ads</div>
+        <div class="page-sub">AD ACCOUNT MANAGEMENT · SLOT CONFIGURATION · REVENUE TRACKING</div>
+      </div>
+
+      <!-- Google Connect -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">◧ Google AdMob Account</div></div>
+        <div id="admob-connect-block">
+          <div class="ad-connect-card">
+            <div class="g-logo">🅖</div>
+            <div style="font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--txt)">Connect Google AdMob</div>
+            <div style="font-size:12px;color:var(--txt2);max-width:320px;text-align:center;line-height:1.6">Link your AdMob account to serve interstitial ads between rounds, track impressions, and monitor ad revenue in real-time.</div>
+            <input class="inp" id="admob-app-id" placeholder="AdMob App ID (ca-app-pub-XXXX~XXXX)" style="max-width:380px">
+            <input class="inp" id="admob-pub-id" placeholder="Publisher ID (pub-XXXXXXXXXXXXXXXXX)" style="max-width:380px">
+            <button class="btn btn-pri" onclick="connectAdMob()">🔗 Connect AdMob Account</button>
+          </div>
+        </div>
+        <div id="admob-connected-block" style="display:none;padding:18px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <span style="font-size:20px">✅</span>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--cor)">AdMob Connected</div>
+              <div class="text-muted" id="admob-acc-label">pub-0000000000000000</div>
+            </div>
+            <div class="ml-auto"><button class="btn btn-danger btn-sm" onclick="disconnectAdMob()">Disconnect</button></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+            <div class="stat-card yellow"><div class="stat-label">Today Revenue</div><div class="stat-value yellow" style="font-size:20px">$14.20</div></div>
+            <div class="stat-card green"><div class="stat-label">Impressions</div><div class="stat-value green" style="font-size:20px">4,812</div></div>
+            <div class="stat-card blue"><div class="stat-label">eCPM</div><div class="stat-value blue" style="font-size:20px">$2.95</div></div>
+            <div class="stat-card purple"><div class="stat-label">Fill Rate</div><div class="stat-value purple" style="font-size:20px">94%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ad Slots -->
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">▦ Ad Unit Slots</div>
+          <div class="panel-actions">
+            <button class="btn btn-pri btn-sm" onclick="openModal('modal-add-slot')">+ Add Slot</button>
+          </div>
+        </div>
+        <div class="ad-slot-row" id="ad-slots-wrap"></div>
+      </div>
+
+      <!-- Ad Settings -->
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">⚙ Ad Behaviour</div></div>
+        <div class="settings-section">
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Show interstitial between rounds</div><div class="setting-desc">Displays a full-screen ad after each round ends</div></div>
+            <div class="setting-ctrl"><label class="tgl"><input type="checkbox" checked id="ad-interstitial"><span class="tgl-slider"></span></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Frequency cap</div><div class="setting-desc">Max ads per session</div></div>
+            <div class="setting-ctrl"><input class="inp" type="number" value="3" style="width:60px;text-align:center"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Ad-free grace (new install)</div><div class="setting-desc">No ads shown for first N rounds</div></div>
+            <div class="setting-ctrl"><input class="inp" type="number" value="2" style="width:60px;text-align:center"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Test mode</div><div class="setting-desc">Serve Google test ads (no real revenue)</div></div>
+            <div class="setting-ctrl"><label class="tgl"><input type="checkbox" id="ad-testmode"><span class="tgl-slider"></span></label></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ANALYTICS ═══ -->
+    <div class="page" id="page-analytics">
+      <div class="page-header">
+        <div class="page-title">Analytics</div>
+        <div class="page-sub">FIREBASE ANALYTICS · SESSION TRACKING · DECK PERFORMANCE</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card yellow"><div class="stat-label">Total Installs</div><div class="stat-value yellow">12,480</div><div class="stat-delta up">▲ +340 this week</div></div>
+        <div class="stat-card green"><div class="stat-label">DAU</div><div class="stat-value green">847</div><div class="stat-delta up">▲ +5.2%</div></div>
+        <div class="stat-card blue"><div class="stat-label">Avg Rounds/Session</div><div class="stat-value blue">4.2</div><div class="stat-delta up">▲ +0.3</div></div>
+        <div class="stat-card red"><div class="stat-label">Uninstalls (7d)</div><div class="stat-value red">124</div><div class="stat-delta dn">▲ +12 vs prev</div></div>
+        <div class="stat-card purple"><div class="stat-label">Retention D1</div><div class="stat-value purple">62%</div><div class="stat-delta up">▲ +3%</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">📱 Device Split</div></div>
+          <div class="bar-chart">
+            <div class="bar-row"><div class="bar-label-col">Android</div><div class="bar-track"><div class="bar-fill" style="width:68%;background:var(--cor)"></div></div><div class="bar-val">68%</div></div>
+            <div class="bar-row"><div class="bar-label-col">iOS</div><div class="bar-track"><div class="bar-fill" style="width:32%;background:var(--blu)"></div></div><div class="bar-val">32%</div></div>
+          </div>
+          <div class="bar-chart" style="border-top:1px solid var(--bdr)">
+            <div style="font-size:10px;color:var(--txt3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">Input Method Used</div>
+            <div class="bar-row"><div class="bar-label-col">Tilt</div><div class="bar-track"><div class="bar-fill" style="width:74%;background:var(--acc)"></div></div><div class="bar-val">74%</div></div>
+            <div class="bar-row"><div class="bar-label-col">Voice</div><div class="bar-track"><div class="bar-fill" style="width:41%;background:var(--pur)"></div></div><div class="bar-val">41%</div></div>
+            <div class="bar-row"><div class="bar-label-col">Buttons</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--txt3)"></div></div><div class="bar-val">28%</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">🌍 Top Regions</div></div>
+          <table>
+            <thead><tr><th>Region</th><th>Users</th><th>Sessions</th><th>Avg Rounds</th></tr></thead>
+            <tbody>
+              <tr><td class="bold">🇵🇰 Pakistan</td><td>4,120</td><td>18,430</td><td>4.7</td></tr>
+              <tr><td class="bold">🇮🇳 India</td><td>3,280</td><td>14,200</td><td>4.1</td></tr>
+              <tr><td class="bold">🇺🇸 USA</td><td>1,940</td><td>7,680</td><td>3.8</td></tr>
+              <tr><td class="bold">🇬🇧 UK</td><td>980</td><td>3,900</td><td>4.0</td></tr>
+              <tr><td class="bold">🇦🇪 UAE</td><td>620</td><td>2,440</td><td>5.1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div class="page-title">Settings</div>
+        <div class="page-sub">GLOBAL GAME CONFIGURATION · SUPABASE SETUP · ADMIN ACCESS</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">🔥 Firebase Configuration</div></div>
+        <div class="settings-section">
+          <div class="form-grid">
+            <div class="form-row"><div class="form-label">API Key</div><input class="inp" type="password" placeholder="AIzaSy..."></div>
+            <div class="form-row"><div class="form-label">Auth Domain</div><input class="inp" placeholder="project.firebaseapp.com"></div>
+            <div class="form-row"><div class="form-label">Project ID</div><input class="inp" placeholder="headband-game"></div>
+            <div class="form-row"><div class="form-label">Storage Bucket</div><input class="inp" placeholder="project.appspot.com"></div>
+            <div class="form-row"><div class="form-label">App ID (Android)</div><input class="inp" placeholder="1:xxx:android:xxx"></div>
+            <div class="form-row"><div class="form-label">App ID (iOS)</div><input class="inp" placeholder="1:xxx:ios:xxx"></div>
+          </div>
+          <button class="btn btn-pri" onclick="toast('Firebase config saved','ok')">Save Firebase Config</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">🎮 Game Defaults</div></div>
+        <div class="settings-section">
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Default timer</div><div class="setting-desc">Seconds for new players</div></div>
+            <div class="setting-ctrl"><input class="inp" type="number" value="60" style="width:70px;text-align:center"></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Maintenance mode</div><div class="setting-desc">Show maintenance screen to all users</div></div>
+            <div class="setting-ctrl"><label class="tgl"><input type="checkbox" id="maintenance-mode"><span class="tgl-slider"></span></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Force update prompt</div><div class="setting-desc">Require users to update before playing</div></div>
+            <div class="setting-ctrl"><label class="tgl"><input type="checkbox"><span class="tgl-slider"></span></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-name">Analytics enabled</div><div class="setting-desc">Firebase Analytics + Crashlytics</div></div>
+            <div class="setting-ctrl"><label class="tgl"><input type="checkbox" checked><span class="tgl-slider"></span></label></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">👤 Admin Access</div>
+          <div class="panel-actions"><button class="btn btn-pri btn-sm" onclick="openModal('modal-add-admin')">+ Add Admin</button></div>
+        </div>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td class="bold">Super Admin</td><td>admin@headband.app</td><td><span class="pill pill-yellow">Super Admin</span></td><td>Just now</td><td><button class="btn btn-ghost btn-sm">Edit</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ LOGS ═══ -->
+    <div class="page" id="page-logs">
+      <div class="page-header">
+        <div class="page-title">System Logs</div>
+        <div class="page-sub">LIVE SYSTEM EVENTS · ERRORS · FIREBASE SYNC</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">▤ Live Log Stream</div>
+          <div class="panel-actions">
+            <button class="btn btn-ghost btn-sm" onclick="clearLogs()">Clear</button>
+          </div>
+        </div>
+        <div class="log-wrap" id="log-stream"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODALS ══ -->
+<!-- Add Deck -->
+<div class="modal-backdrop" id="modal-add-deck">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">+ Add New Deck</div><button class="modal-close" onclick="closeModal('modal-add-deck')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Deck Name</div><input class="inp" id="new-deck-name" placeholder="e.g. Sports Stars"></div>
+      <div class="form-row"><div class="form-label">Icon (emoji)</div><input class="inp" id="new-deck-icon" placeholder="🏆" style="width:80px"></div>
+      <div class="form-row"><div class="form-label">Type</div>
+        <select class="inp" id="new-deck-type">
+          <option value="free">Free (bundled)</option>
+          <option value="paid">Paid Expansion Pack</option>
+        </select>
+      </div>
+      <div class="form-row" id="deck-price-row" style="display:none"><div class="form-label">Price (USD)</div><input class="inp" id="new-deck-price" placeholder="$1.99" type="number" step="0.01"></div>
+      <div class="form-row"><div class="form-label">Featured</div>
+        <label class="tgl"><input type="checkbox" id="new-deck-featured"><span class="tgl-slider"></span></label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-deck')">Cancel</button>
+      <button class="btn btn-pri" onclick="addDeck()">Create Deck</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Word -->
+<div class="modal-backdrop" id="modal-add-word">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">+ Add Word</div><button class="modal-close" onclick="closeModal('modal-add-word')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Word / Phrase</div><input class="inp" id="new-word" placeholder="e.g. Lionel Messi"></div>
+      <div class="form-row"><div class="form-label">Hint</div><input class="inp" id="new-hint" placeholder="e.g. Argentine football legend"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-word')">Cancel</button>
+      <button class="btn btn-pri" onclick="addWord()">Add Word</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add IAP -->
+<div class="modal-backdrop" id="modal-add-iap">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">+ Add IAP Product</div><button class="modal-close" onclick="closeModal('modal-add-iap')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Product ID</div><input class="inp" placeholder="com.headband.deck.sports"></div>
+      <div class="form-row"><div class="form-label">Display Name</div><input class="inp" placeholder="Sports Stars Pack"></div>
+      <div class="form-row"><div class="form-label">Price (USD)</div><input class="inp" type="number" step="0.01" placeholder="1.99"></div>
+      <div class="form-row"><div class="form-label">Linked Deck</div><select class="inp"><option>Movies</option><option>Animals</option><option>Famous People</option><option>TV Series</option><option>New Deck</option></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-iap')">Cancel</button>
+      <button class="btn btn-pri" onclick="toast('IAP product created','ok');closeModal('modal-add-iap')">Create Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Ad Slot -->
+<div class="modal-backdrop" id="modal-add-slot">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">+ New Ad Slot</div><button class="modal-close" onclick="closeModal('modal-add-slot')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Slot Name</div><input class="inp" placeholder="e.g. Between Rounds"></div>
+      <div class="form-row"><div class="form-label">Ad Unit ID</div><input class="inp" placeholder="ca-app-pub-XXXX/XXXXXXXXXX"></div>
+      <div class="form-row"><div class="form-label">Format</div><select class="inp"><option>Interstitial</option><option>Banner</option><option>Rewarded</option><option>Native</option></select></div>
+      <div class="form-row"><div class="form-label">Platform</div><select class="inp"><option>Both</option><option>Android Only</option><option>iOS Only</option></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-slot')">Cancel</button>
+      <button class="btn btn-pri" onclick="addAdSlot();closeModal('modal-add-slot')">Add Slot</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Admin -->
+<div class="modal-backdrop" id="modal-add-admin">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">+ Add Admin</div><button class="modal-close" onclick="closeModal('modal-add-admin')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Name</div><input class="inp" placeholder="Full name"></div>
+      <div class="form-row"><div class="form-label">Email</div><input class="inp" type="email" placeholder="admin@headband.app"></div>
+      <div class="form-row"><div class="form-label">Role</div><select class="inp"><option>Viewer</option><option>Editor</option><option>Admin</option><option>Super Admin</option></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-admin')">Cancel</button>
+      <button class="btn btn-pri" onclick="toast('Admin invite sent','ok');closeModal('modal-add-admin')">Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+/* ════════════════════════════════════
+   SUPABASE ADMIN
+════════════════════════════════════ */
+const SB_URL   = 'https://izxzlxtowubbjiatouci.supabase.co';
+const SB_ANON  = 'sb_publishable_Q6pr9JEFYrhUuQvnojz1Mg_MbPuinDh';
+const ADMIN_EMAIL = 'usamasiddiqui93@gmail.com';
+const BAR_COLORS  = ['var(--acc)','var(--cor)','var(--blu)','var(--pur)','var(--dan)'];
+
+let _sb = null;
+function getSB(){
+  if(!_sb && typeof supabase !== 'undefined') _sb = supabase.createClient(SB_URL, SB_ANON);
+  return _sb;
+}
+
+async function checkAdminSession(){
+  const sb = getSB();
+  if(!sb) return;
+  const { data: { user } } = await sb.auth.getUser();
+  if(user && user.email === ADMIN_EMAIL){
+    hideLoginOverlay();
+    loadRealData();
+  }
+}
+
+async function adminLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+  if(email !== ADMIN_EMAIL){ errEl.textContent = 'Unauthorized.'; return; }
+  const sb = getSB();
+  const { error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if(error){ errEl.textContent = error.message; return; }
+  hideLoginOverlay();
+  loadRealData();
+}
+
+async function adminSignOut(){
+  const sb = getSB();
+  if(sb) await sb.auth.signOut();
+  document.getElementById('admin-login-overlay').style.display = 'flex';
+  document.getElementById('admin-email-label').textContent = 'Admin';
+}
+
+function hideLoginOverlay(){
+  document.getElementById('admin-login-overlay').style.display = 'none';
+  document.getElementById('admin-email-label').textContent = ADMIN_EMAIL;
+}
+
+async function loadRealData(){
+  await Promise.all([loadDashboardStats(), loadActivityFeed()]);
+}
+
+async function loadDashboardStats(){
+  const sb = getSB();
+
+  // Total users
+  const { count: userCount } = await sb.from('profiles').select('id', { count:'exact', head:true });
+  setEl('stat-total-users', (userCount||0).toLocaleString());
+  setEl('stat-total-users-d', `▲ ${userCount||0} registered`);
+
+  // Sessions today
+  const todayISO = new Date(); todayISO.setHours(0,0,0,0);
+  const { count: todayCnt } = await sb.from('game_sessions')
+    .select('id', { count:'exact', head:true })
+    .gte('played_at', todayISO.toISOString());
+  setEl('stat-sessions', (todayCnt||0).toString());
+
+  // Deck usage chart
+  const { data: sessions } = await sb.from('game_sessions')
+    .select('deck_id, deck_name, deck_icon')
+    .limit(2000);
+
+  if(sessions && sessions.length){
+    const counts = {};
+    sessions.forEach(s=>{
+      if(!counts[s.deck_id]) counts[s.deck_id]={ name: s.deck_name, icon: s.deck_icon, n: 0 };
+      counts[s.deck_id].n++;
+    });
+    const sorted = Object.values(counts).sort((a,b)=>b.n-a.n).slice(0,6);
+    const max = sorted[0].n || 1;
+    const chart = document.getElementById('deck-usage-chart');
+    if(chart) chart.innerHTML = sorted.map((d,i)=>
+      `<div class="bar-row"><div class="bar-label-col">${d.icon} ${d.name}</div>` +
+      `<div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.n/max*100)}%;background:${BAR_COLORS[i]}"></div></div>` +
+      `<div class="bar-val">${d.n}</div></div>`
+    ).join('');
+  } else {
+    const chart = document.getElementById('deck-usage-chart');
+    if(chart) chart.innerHTML = '<div class="bar-row"><div class="bar-label-col" style="color:var(--txt3)">No sessions yet</div><div class="bar-track"></div><div class="bar-val">0</div></div>';
+  }
+}
+
+async function loadActivityFeed(){
+  const sb = getSB();
+  const { data } = await sb.from('game_sessions')
+    .select('id, deck_name, deck_icon, game_style, score, correct_count, skip_count, played_at, profiles(display_name)')
+    .order('played_at', { ascending: false })
+    .limit(20);
+
+  if(!data) return;
+  const tbody = document.getElementById('activity-tbody');
+  if(!tbody) return;
+  if(!data.length){ tbody.innerHTML = '<tr><td colspan="5" style="color:var(--txt3);text-align:center;padding:20px">No sessions yet</td></tr>'; return; }
+  tbody.innerHTML = data.map(s=>{
+    const name = s.profiles?.display_name || 'Player';
+    const time = new Date(s.played_at).toLocaleTimeString();
+    return `<tr>
+      <td>${time}</td>
+      <td class="bold">Round completed</td>
+      <td style="color:var(--txt3)">${name}</td>
+      <td>${s.deck_icon||''} ${s.deck_name} · ${s.correct_count} correct · score ${s.score}</td>
+      <td><span class="pill pill-yellow">●</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function renderUsersReal(){
+  const sb = getSB();
+  const grid = document.getElementById('users-grid');
+  if(!grid) return;
+  const { data: profiles, count } = await sb.from('profiles')
+    .select('id, display_name, avatar_url, created_at', { count:'exact' })
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if(!profiles){ grid.innerHTML='<p style="color:var(--txt3);padding:16px">No users yet</p>'; return; }
+
+  const avColors = ['linear-gradient(135deg,#F7C948,#FF7A3D)','linear-gradient(135deg,#2EE68A,#4A9EFF)',
+    'linear-gradient(135deg,#9B7EFF,#FF6EBC)','linear-gradient(135deg,#4A9EFF,#2EE68A)'];
+
+  setEl('u-online', (count||profiles.length).toString());
+  setEl('online-count', (count||profiles.length).toString());
+  setEl('nav-online', (count||profiles.length).toString());
+
+  grid.innerHTML = profiles.map((u,i)=>{
+    const joined = new Date(u.created_at).toLocaleDateString();
+    const initials = (u.display_name||'?')[0].toUpperCase();
+    return `<div class="user-card">
+      <div class="user-ava" style="background:${avColors[i%4]}">${initials}</div>
+      <div class="user-info">
+        <div class="user-id">${u.display_name} <span style="color:var(--txt3);font-weight:400">(${u.id.slice(0,8)}…)</span></div>
+        <div class="user-meta">Joined ${joined}</div>
+      </div>
+      <span class="pill pill-ghost">Registered</span>
+    </div>`;
+  }).join('');
+}
+
+async function refreshUsers(){
+  await renderUsersReal();
+  toast('Users refreshed','ok');
+  addLog('User list refreshed from Supabase','ok');
+}
+
+function setEl(id, val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+/* ════════════════════════════════════
+   DATA STORE (localStorage-backed)
+════════════════════════════════════ */
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem('hb_admin_'+k)||'null') }catch(e){return null} },
+  set(k,v){ localStorage.setItem('hb_admin_'+k, JSON.stringify(v)) }
+};
+
+/* ════════════════════════════════════
+   DECKS DATA
+════════════════════════════════════ */
+let DECKS = store.get('decks') || [
+  {id:'movies',name:'Movies',icon:'🎬',type:'free',featured:true,words:15,plays:8240,correct_pct:68},
+  {id:'animals',name:'Animals',icon:'🦁',type:'free',featured:false,words:15,plays:6120,correct_pct:72},
+  {id:'famous',name:'Famous People',icon:'⭐',type:'free',featured:true,words:15,plays:5430,correct_pct:64},
+  {id:'tv',name:'TV Series',icon:'📺',type:'free',featured:false,words:15,plays:4890,correct_pct:66},
+  {id:'kids',name:'Kids Mode',icon:'🌈',type:'free',featured:false,words:15,plays:3210,correct_pct:81},
+];
+const saveDECKS=()=>store.set('decks',DECKS);
+
+/* ════════════════════════════════════
+   WORDS DATA (sample)
+════════════════════════════════════ */
+const WORDS_DB = {
+  movies:[
+    {w:'The Lion King',h:'Disney animated classic',plays:540,correct_pct:74},
+    {w:'Titanic',h:'Epic romance on a ship',plays:510,correct_pct:71},
+    {w:'Inception',h:'Dreams within dreams',plays:488,correct_pct:58},
+    {w:'The Avengers',h:'Marvel superhero team-up',plays:620,correct_pct:82},
+    {w:'Jurassic Park',h:'Dinosaurs escape the park',plays:430,correct_pct:78},
+  ],
+  animals:[
+    {w:'Elephant',h:'Largest land animal',plays:410,correct_pct:88},
+    {w:'Penguin',h:'Tuxedo bird that cannot fly',plays:380,correct_pct:85},
+    {w:'Chameleon',h:'Changes color to hide',plays:290,correct_pct:61},
+  ],
+  famous:[
+    {w:'Albert Einstein',h:'E=mc²',plays:380,correct_pct:79},
+    {w:'Cristiano Ronaldo',h:'Football superstar',plays:460,correct_pct:92},
+  ],
+  tv:[{w:'Breaking Bad',h:'Chemistry teacher turns criminal',plays:340,correct_pct:75}],
+  kids:[{w:'Rainbow',h:'Appears after rain',plays:280,correct_pct:94}],
+};
+
+/* ════════════════════════════════════
+   IAP PRODUCTS
+════════════════════════════════════ */
+let IAP_PRODUCTS = store.get('iap') || [
+  {id:'com.headband.deck.sports',name:'Sports Stars Pack',price:1.99,deck:'Sports',sales:28,revenue:55.72,status:'active'},
+  {id:'com.headband.deck.bollywood',name:'Bollywood Pack',price:0.99,deck:'Bollywood',sales:19,revenue:18.81,status:'active'},
+];
+
+/* ════════════════════════════════════
+   AD SLOTS
+════════════════════════════════════ */
+let AD_SLOTS = store.get('adslots') || [
+  {name:'Between Rounds',id:'ca-app-pub-XXXX/1234567890',format:'Interstitial',platform:'Both',impressions:32400,revenue:67.20,status:'active'},
+  {name:'Score Screen Banner',id:'ca-app-pub-XXXX/0987654321',format:'Banner',platform:'Android Only',impressions:15900,revenue:36.80,status:'active'},
+];
+
+/* ════════════════════════════════════
+   SIMULATED LIVE USERS
+════════════════════════════════════ */
+const USER_NAMES=['Ali K','Sara M','Ahmed R','Zara T','Omar F','Nadia J','Bilal S','Hira W'];
+const DECKS_LIST=['Movies','Animals','Famous People','TV Series','Kids Mode'];
+const REGIONS=['🇵🇰 PK','🇮🇳 IN','🇺🇸 US','🇬🇧 UK','🇦🇪 AE'];
+const AV_COLORS=['linear-gradient(135deg,#F7C948,#FF7A3D)','linear-gradient(135deg,#2EE68A,#4A9EFF)',
+  'linear-gradient(135deg,#9B7EFF,#FF6EBC)','linear-gradient(135deg,#4A9EFF,#2EE68A)'];
+
+let liveUsers=[];
+function genUsers(){
+  const n=Math.floor(Math.random()*8)+2;
+  liveUsers=Array.from({length:n},(_,i)=>({
+    id:'USR-'+Math.random().toString(36).substr(2,6).toUpperCase(),
+    name:USER_NAMES[i%USER_NAMES.length],
+    state:Math.random()>.4?'playing':'menu',
+    deck:DECKS_LIST[Math.floor(Math.random()*DECKS_LIST.length)],
+    region:REGIONS[Math.floor(Math.random()*REGIONS.length)],
+    avColor:AV_COLORS[i%AV_COLORS.length],
+    since: new Date(Date.now()-Math.random()*600000)
+  }));
+}
+
+/* ════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════ */
+function nav(page){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(page==='users')renderUsersReal();
+  if(page==='decks')renderDecks();
+  if(page==='words')renderWords();
+  if(page==='payments')renderPayments();
+  if(page==='ads')renderAds();
+}
+
+/* ════════════════════════════════════
+   ACTIVITY FEED
+════════════════════════════════════ */
+const EVENTS=[
+  {type:'session',e:'New session started',u:'USR-A4F2',d:'Movies deck'},
+  {type:'purchase',e:'IAP purchase',u:'USR-B8K1',d:'Sports Stars Pack · $1.99'},
+  {type:'complete',e:'Round completed',u:'USR-C3M7',d:'12 correct · 3 skipped'},
+  {type:'ad',e:'Ad impression',u:'USR-D1P9',d:'Between Rounds · $0.003'},
+  {type:'install',e:'New install',u:'USR-E7R2',d:'Android · Pakistan'},
+  {type:'session',e:'Session ended',u:'USR-F5T8',d:'4 rounds · 8m 24s'},
+];
+const STATUS_MAP={session:'blue',purchase:'green',complete:'yellow',ad:'purple',install:'green'};
+
+function pushActivity(){
+  const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  const tbody=document.getElementById('activity-tbody');
+  if(!tbody)return;
+  const tr=document.createElement('tr');
+  const now=new Date();
+  tr.innerHTML=`<td>${now.toLocaleTimeString()}</td>
+    <td class="bold">${ev.e}</td>
+    <td style="color:var(--txt3)">${ev.u}</td>
+    <td>${ev.d}</td>
+    <td><span class="pill pill-${STATUS_MAP[ev.type]||'ghost'}">●</span></td>`;
+  tbody.insertBefore(tr,tbody.firstChild);
+  while(tbody.children.length>20)tbody.removeChild(tbody.lastChild);
+}
+
+/* ════════════════════════════════════
+   USERS
+════════════════════════════════════ */
+function renderUsers(){
+  const grid=document.getElementById('users-grid');
+  if(!grid)return;
+  genUsers();
+  const playing=liveUsers.filter(u=>u.state==='playing').length;
+  const menu=liveUsers.filter(u=>u.state==='menu').length;
+  const n=liveUsers.length;
+  ['online-count','nav-online','stat-sessions','u-online'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent=n;
+  });
+  document.getElementById('u-playing').textContent=playing;
+  document.getElementById('u-menu').textContent=menu;
+  grid.innerHTML=liveUsers.map(u=>`
+    <div class="user-card">
+      <div class="user-ava" style="background:${u.avColor}">${u.name[0]}</div>
+      <div class="user-info">
+        <div class="user-id">${u.name} <span style="color:var(--txt3);font-weight:400">(${u.id})</span></div>
+        <div class="user-meta">${u.region} · ${u.state==='playing'?u.deck:'In Menu'}</div>
+      </div>
+      <span class="pill ${u.state==='playing'?'pill-green':'pill-ghost'}">${u.state==='playing'?'▶ Playing':'Menu'}</span>
+    </div>`).join('');
+}
+
+
+/* ════════════════════════════════════
+   DECKS
+════════════════════════════════════ */
+function renderDecks(){
+  const grid=document.getElementById('decks-grid');
+  if(!grid)return;
+  grid.innerHTML=DECKS.map((d,i)=>`
+    <div class="deck-admin-card ${d.featured?'featured':''}">
+      <div class="da-top">
+        <div class="da-icon">${d.icon}</div>
+        <div class="da-badges">
+          ${d.featured?'<span class="pill pill-yellow">⭐ Featured</span>':''}
+          <span class="pill ${d.type==='paid'?'pill-green':'pill-ghost'}">${d.type==='paid'?'💰 Paid':'Free'}</span>
+        </div>
+      </div>
+      <div class="da-name">${d.name}</div>
+      <div class="da-meta">${d.words} words · ID: ${d.id}</div>
+      <div class="da-stats">
+        <div class="da-stat"><div class="da-stat-v">${(d.plays/1000).toFixed(1)}K</div><div class="da-stat-l">Plays</div></div>
+        <div class="da-stat"><div class="da-stat-v">${d.correct_pct}%</div><div class="da-stat-l">Correct</div></div>
+      </div>
+      <div class="da-actions">
+        <button class="btn btn-ghost btn-sm" onclick="toggleFeatured(${i})">${d.featured?'★ Unfeature':'☆ Feature'}</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleDeckType(${i})">${d.type==='paid'?'→ Free':'→ Paid'}</button>
+        <button class="btn btn-danger btn-sm" onclick="removeDeck(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleFeatured(i){
+  DECKS[i].featured=!DECKS[i].featured;saveDECKS();renderDecks();
+  toast(`${DECKS[i].name} ${DECKS[i].featured?'marked featured':'unfeatured'}`,'ok');
+  addLog(`Deck "${DECKS[i].name}" featured=${DECKS[i].featured}`,'ok');
+}
+function toggleDeckType(i){
+  DECKS[i].type=DECKS[i].type==='paid'?'free':'paid';saveDECKS();renderDecks();
+  toast(`${DECKS[i].name} is now ${DECKS[i].type}`,'warn');
+}
+function removeDeck(i){
+  if(!confirm(`Delete deck "${DECKS[i].name}"?`))return;
+  const name=DECKS[i].name;
+  DECKS.splice(i,1);saveDECKS();renderDecks();
+  toast(`Deck "${name}" deleted`,'warn');
+  addLog(`Deck "${name}" deleted`,'warn');
+}
+function addDeck(){
+  const name=document.getElementById('new-deck-name').value.trim();
+  const icon=document.getElementById('new-deck-icon').value.trim()||'📦';
+  const type=document.getElementById('new-deck-type').value;
+  const featured=document.getElementById('new-deck-featured').checked;
+  if(!name){toast('Enter a deck name','warn');return;}
+  DECKS.push({id:name.toLowerCase().replace(/\s+/g,'_'),name,icon,type,featured,words:0,plays:0,correct_pct:0});
+  saveDECKS();renderDecks();closeModal('modal-add-deck');
+  toast(`Deck "${name}" created`,'ok');
+  addLog(`New deck added: ${icon} ${name}`,'ok');
+}
+
+/* ════════════════════════════════════
+   WORDS
+════════════════════════════════════ */
+function renderWords(){
+  const deckId=document.getElementById('word-deck-sel').value;
+  const words=WORDS_DB[deckId]||[];
+  const tbody=document.getElementById('words-tbody');
+  if(!tbody)return;
+  tbody.innerHTML=words.map((w,i)=>`
+    <tr>
+      <td style="color:var(--txt3)">${i+1}</td>
+      <td class="bold">${w.w}</td>
+      <td style="color:var(--txt2)">${w.h}</td>
+      <td>${w.plays}</td>
+      <td><span style="color:${w.correct_pct>=70?'var(--cor)':w.correct_pct>=50?'var(--acc)':'var(--dan)'}">${w.correct_pct}%</span></td>
+      <td><div class="flex gap-8">
+        <button class="btn btn-ghost btn-sm" onclick="editWord(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="removeWord('${deckId}',${i})">✕</button>
+      </div></td>
+    </tr>`).join('');
+}
+function addWord(){
+  const deckId=document.getElementById('word-deck-sel').value;
+  const w=document.getElementById('new-word').value.trim();
+  const h=document.getElementById('new-hint').value.trim();
+  if(!w){toast('Enter a word','warn');return;}
+  if(!WORDS_DB[deckId])WORDS_DB[deckId]=[];
+  WORDS_DB[deckId].push({w,h,plays:0,correct_pct:0});
+  renderWords();closeModal('modal-add-word');
+  toast(`"${w}" added`,'ok');
+  document.getElementById('new-word').value='';
+  document.getElementById('new-hint').value='';
+}
+function removeWord(deckId,i){
+  const word=WORDS_DB[deckId][i].w;
+  WORDS_DB[deckId].splice(i,1);renderWords();
+  toast(`"${word}" removed`,'warn');
+}
+function editWord(i){toast('Edit mode — click cell to modify (coming soon)','warn')}
+
+/* ════════════════════════════════════
+   PAYMENTS
+════════════════════════════════════ */
+const TXN_SAMPLE=[
+  {id:'TXN-8A4F',user:'USR-A4F2',product:'Sports Stars Pack',amount:'$1.99',platform:'Android',date:'2025-04-28',status:'success'},
+  {id:'TXN-7B3E',user:'USR-B8K1',product:'Bollywood Pack',amount:'$0.99',platform:'iOS',date:'2025-04-27',status:'success'},
+  {id:'TXN-6C2D',user:'USR-C3M7',product:'Sports Stars Pack',amount:'$1.99',platform:'Android',date:'2025-04-27',status:'refunded'},
+  {id:'TXN-5D1C',user:'USR-D1P9',product:'Sports Stars Pack',amount:'$1.99',platform:'iOS',date:'2025-04-26',status:'success'},
+];
+function renderPayments(){
+  const tbody=document.getElementById('iap-tbody');
+  if(tbody)tbody.innerHTML=IAP_PRODUCTS.map(p=>`
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--txt3)">${p.id}</td>
+      <td class="bold">${p.name}</td>
+      <td style="color:var(--cor)">$${p.price.toFixed(2)}</td>
+      <td><span class="pill pill-blue">One-time</span></td>
+      <td>${p.sales}</td>
+      <td style="color:var(--cor)">$${p.revenue.toFixed(2)}</td>
+      <td><span class="pill ${p.status==='active'?'pill-green':'pill-red'}">${p.status}</span></td>
+      <td><div class="flex gap-8">
+        <button class="btn btn-ghost btn-sm">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="toast('Product paused','warn')">Pause</button>
+      </div></td>
+    </tr>`).join('');
+  const txnBody=document.getElementById('txn-tbody');
+  if(txnBody)txnBody.innerHTML=TXN_SAMPLE.map(t=>`
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--txt3)">${t.id}</td>
+      <td>${t.user}</td>
+      <td>${t.product}</td>
+      <td style="color:var(--cor)">${t.amount}</td>
+      <td>${t.platform}</td>
+      <td style="color:var(--txt3)">${t.date}</td>
+      <td><span class="pill ${t.status==='success'?'pill-green':'pill-red'}">${t.status}</span></td>
+    </tr>`).join('');
+}
+
+/* ════════════════════════════════════
+   ADS
+════════════════════════════════════ */
+let admobConnected=store.get('admob_connected')||false;
+function renderAds(){
+  document.getElementById('admob-connect-block').style.display=admobConnected?'none':'block';
+  document.getElementById('admob-connected-block').style.display=admobConnected?'block':'none';
+  const wrap=document.getElementById('ad-slots-wrap');
+  if(!wrap)return;
+  wrap.innerHTML=AD_SLOTS.map((s,i)=>`
+    <div class="ad-slot">
+      <div class="ad-slot-name">${s.name}</div>
+      <div class="ad-slot-id">${s.id}</div>
+      <div class="flex gap-8" style="margin-bottom:8px">
+        <span class="pill pill-blue">${s.format}</span>
+        <span class="pill pill-ghost">${s.platform}</span>
+        <span class="pill ${s.status==='active'?'pill-green':'pill-red'}">${s.status}</span>
+      </div>
+      <div class="ad-slot-stats">
+        <span>${s.impressions.toLocaleString()} impr.</span>
+        <span style="color:var(--cor)">$${s.revenue.toFixed(2)}</span>
+        <div class="flex gap-8">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="toggleAdSlot(${i})">${s.status==='active'?'⏸':'▶'}</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="removeAdSlot(${i})">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function connectAdMob(){
+  const appId=document.getElementById('admob-app-id').value.trim();
+  const pubId=document.getElementById('admob-pub-id').value.trim();
+  if(!appId||!pubId){toast('Enter both App ID and Publisher ID','warn');return;}
+  admobConnected=true;store.set('admob_connected',true);
+  document.getElementById('admob-acc-label').textContent=pubId;
+  store.set('admob_pub',pubId);
+  renderAds();toast('AdMob connected successfully!','ok');
+  addLog('AdMob account connected: '+pubId,'ok');
+}
+function disconnectAdMob(){
+  if(!confirm('Disconnect AdMob? Ads will stop serving.'))return;
+  admobConnected=false;store.set('admob_connected',false);
+  renderAds();toast('AdMob disconnected','warn');
+}
+function toggleAdSlot(i){
+  AD_SLOTS[i].status=AD_SLOTS[i].status==='active'?'paused':'active';
+  store.set('adslots',AD_SLOTS);renderAds();
+  toast(`Slot "${AD_SLOTS[i].name}" ${AD_SLOTS[i].status}`,'ok');
+}
+function removeAdSlot(i){
+  if(!confirm('Delete this ad slot?'))return;
+  const n=AD_SLOTS[i].name;AD_SLOTS.splice(i,1);
+  store.set('adslots',AD_SLOTS);renderAds();toast(`Slot "${n}" deleted`,'warn');
+}
+function addAdSlot(){
+  AD_SLOTS.push({name:'New Slot',id:'ca-app-pub-XXXX/0000000000',format:'Interstitial',platform:'Both',impressions:0,revenue:0,status:'active'});
+  store.set('adslots',AD_SLOTS);renderAds();toast('Ad slot added — update the Unit ID','warn');
+}
+
+/* ════════════════════════════════════
+   MODALS
+════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.addEventListener('click',e=>{
+  if(e.target.classList.contains('modal-backdrop'))e.target.classList.remove('open');
+});
+// Deck type change — show/hide price
+document.getElementById('new-deck-type').addEventListener('change',function(){
+  document.getElementById('deck-price-row').style.display=this.value==='paid'?'flex':'none';
+});
+
+/* ════════════════════════════════════
+   TOAST
+════════════════════════════════════ */
+function toast(msg, type='ok'){
+  const w=document.getElementById('toast-wrap');
+  const icons={ok:'✓',warn:'⚠',err:'✕'};
+  const t=document.createElement('div');
+  t.className=`toast ${type}`;
+  t.innerHTML=`<span style="color:var(--${type==='ok'?'cor':type==='warn'?'acc':'dan'})">${icons[type]}</span> ${msg}`;
+  w.appendChild(t);
+  setTimeout(()=>t.style.opacity='0',2500);
+  setTimeout(()=>t.remove(),2800);
+}
+
+/* ════════════════════════════════════
+   LOG STREAM
+════════════════════════════════════ */
+const LOG_MSGS=[
+  {m:'Firebase sync complete — 12 events pushed',t:'ok'},
+  {m:'New session registered USR-'+Math.random().toString(36).substr(2,4).toUpperCase(),t:''},
+  {m:'IAP restore request received',t:''},
+  {m:'Ad impression served — interstitial',t:''},
+  {m:'Crashlytics: no crashes in last 24h',t:'ok'},
+  {m:'WARNING: Ad fill rate dropped to 88%',t:'warn'},
+];
+function addLog(msg,type=''){
+  const wrap=document.getElementById('log-stream');
+  if(!wrap)return;
+  const now=new Date().toLocaleTimeString();
+  const div=document.createElement('div');
+  div.className='log-line';
+  div.innerHTML=`<span class="log-ts">[${now}]</span><span class="log-msg ${type}">${msg}</span>`;
+  wrap.insertBefore(div,wrap.firstChild);
+  while(wrap.children.length>80)wrap.removeChild(wrap.lastChild);
+}
+function clearLogs(){document.getElementById('log-stream').innerHTML='';toast('Logs cleared','ok')}
+
+/* ════════════════════════════════════
+   CLOCK + LIVE TICK
+════════════════════════════════════ */
+function tick(){
+  document.getElementById('tb-clock').textContent=new Date().toLocaleTimeString();
+}
+setInterval(tick,1000);tick();
+
+// Refresh real activity feed every 30s (once logged in)
+setInterval(()=>{
+  if(document.getElementById('admin-login-overlay').style.display==='none'){
+    loadActivityFeed();
+    const l=LOG_MSGS[Math.floor(Math.random()*LOG_MSGS.length)];
+    addLog(l.m,l.t);
+  }
+},30000);
+
+// Initial data push — fake log lines only; real data loaded by checkAdminSession
+setTimeout(()=>{
+  for(let i=0;i<6;i++)setTimeout(()=>{const l=LOG_MSGS[Math.floor(Math.random()*LOG_MSGS.length)];addLog(l.m,l.t)},i*200);
+},100);
+
+// Boot: check if already signed in
+checkAdminSession();
+</script>
+
+<!-- ═══ ADMIN LOGIN OVERLAY ═══ -->
+<div id="admin-login-overlay" style="position:fixed;inset:0;background:rgba(10,5,0,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px)">
+  <div style="background:var(--s2);border:1px solid rgba(255,214,10,0.2);border-radius:var(--rL);padding:40px 36px;width:100%;max-width:360px;font-family:var(--font-mono);box-shadow:0 32px 80px rgba(0,0,0,0.7),0 0 60px rgba(255,107,0,0.08)">
+    <div style="text-align:center;margin-bottom:20px">
+      <img src="logo.png" alt="Wam Bam" style="height:176px;width:auto;filter:drop-shadow(0 0 28px rgba(255,214,10,0.6)) drop-shadow(0 6px 18px rgba(255,40,0,0.4))">
+    </div>
+    <div style="font-size:11px;color:var(--txt3);margin-bottom:24px;letter-spacing:1.5px;font-weight:700;text-align:center">ADMIN CONTROL CENTER</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Email</div>
+      <input id="login-email" type="email" placeholder="admin@example.com"
+        style="width:100%;background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--rS);padding:10px 12px;color:var(--txt);font-family:var(--font-mono);font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()">
+    </div>
+    <div style="margin-bottom:20px">
+      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Password</div>
+      <input id="login-pwd" type="password" placeholder="••••••••"
+        style="width:100%;background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--rS);padding:10px 12px;color:var(--txt);font-family:var(--font-mono);font-size:13px;outline:none"
+        onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+    <button onclick="adminLogin()"
+      style="width:100%;background:linear-gradient(135deg,#FFD60A,#FF9500);color:#0A0500;border:none;border-radius:var(--rS);padding:13px;font-family:var(--font-display);font-size:16px;font-weight:900;cursor:pointer;letter-spacing:.3px;box-shadow:0 4px 24px rgba(255,214,10,0.35)">
+      Sign In →
+    </button>
+    <div id="login-err" style="margin-top:12px;font-size:12px;color:var(--dan);min-height:18px;text-align:center"></div>
+  </div>
+</div>
+
+</body>
+</html>
