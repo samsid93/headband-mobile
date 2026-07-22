@@ -27,7 +27,18 @@
       "PowerShell(supabase functions *)",
       "Bash(npm install *)",
       "Bash(npx cap *)",
-      "Bash(grep -rnE \"sbp_[a-z0-9]{20,}|service_role|6206c6f753ac3937|bdMMYTP0A7XB\" --include=\"*.html\" --include=\"*.sql\" --include=\"*.ts\" --include=\"*.md\" --include=\"*.txt\" --include=\"*.json\" .)"
+      "Bash(grep -rnE \"sbp_[a-z0-9]{20,}|service_role|6206c6f753ac3937|bdMMYTP0A7XB\" --include=\"*.html\" --include=\"*.sql\" --include=\"*.ts\" --include=\"*.md\" --include=\"*.txt\" --include=\"*.json\" .)",
+      "PowerShell($gh = \\(Get-Command gh -ErrorAction SilentlyContinue\\); if \\($gh\\) { Write-Output $gh.Source; gh run list --limit 6 --repo samsid93/headband-mobile } else { Write-Output \"gh not installed\" })",
+      "Bash(curl -s \"https://api.github.com/repos/samsid93/headband-mobile/actions/runs?per_page=5\")",
+      "Bash(curl -s \"https://api.github.com/repos/samsid93/headband-mobile/actions/runs?per_page=1&head_sha=3d464e9\")",
+      "Bash(curl -s \"https://api.github.com/repos/samsid93/headband-mobile/actions/runs?per_page=1\")",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(\\(Get-Item \"C:\\\\Users\\\\DELL LATITUDE E 5450\\\\Desktop\\\\project claude code - Copy\\\\Final Logo.svg\"\\).Length)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\DELL LATITUDE E 5450\\\\Desktop\\\\project claude code - Copy\\\\Final Logo.svg\" -TotalCount 5 | ForEach-Object { if \\($_.Length -gt 500\\) { $_.Substring\\(0,500\\) } else { $_ } })",
+      "Bash(python -m http.server 8791)",
+      "Bash(npx -y http-server -p 8791 -s)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell($paths = @\\(\".claude\", \"$env:USERPROFILE\\\\.claude\"\\); foreach \\($p in $paths\\) { Write-Output \"=== $p ===\"; Get-ChildItem -Path $p -Recurse -Force -ErrorAction SilentlyContinue | Where-Object { $_.Name -match \"cavem\" } | Select-Object FullName })"
     ]
   }
 }

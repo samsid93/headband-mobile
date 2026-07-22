@@ -1,0 +1,100 @@
+WHAM BAM — CUSTOM SMTP (unlocks branded emails, free)
+=====================================================
+Why: Supabase free tier + the DEFAULT email provider does NOT allow editing
+email templates or subjects (that's the "not available for free tier" error).
+Configuring a custom SMTP provider fixes this AND removes the Supabase sender
+branding — emails then come from your own domain.
+
+This is free. No Supabase plan upgrade needed.
+
+--------------------------------------------------------------------
+STEP 1 — Pick an SMTP provider and get credentials
+--------------------------------------------------------------------
+Any SMTP server works. Two good options:
+
+OPTION A — HOSTINGER (use the hosting you already pay for; no extra signup)
+  Good to start with. Note: shared-hosting mail has lower daily send limits
+  (~100-500/day depending on plan) and shared-IP deliverability, so more
+  risk of landing in spam than a dedicated transactional provider.
+  1. hPanel > Emails > create the mailbox:  no-reply@whambam.games
+     (set a password — this is your SMTP password).
+  2. hPanel > Emails > (your mailbox) > Configuration / Connect Devices
+     to see the exact SMTP host. Typical values:
+        Host:   smtp.hostinger.com     (or smtp.titan.email if your plan
+                                         uses Titan email)
+        Port:   465   (SSL)   [or 587 for STARTTLS]
+        User:   no-reply@whambam.games   (the FULL email address)
+        Pass:   the mailbox password
+        From:   no-reply@whambam.games
+  3. Because your domain DNS is at Hostinger, SPF/DKIM are usually set up
+     automatically for Hostinger mail — good for inbox placement.
+  REQUIREMENT: the sender / SMTP user must be the full @whambam.games
+  mailbox you created; Hostinger won't send "from" an address you don't own.
+
+OPTION B — RESEND (dedicated transactional; better limits + deliverability)
+  Free: 3,000 emails/mo, 100/day. (Alternatives: Brevo 300/day, Postmark,
+  Mailgun, Amazon SES, SendGrid.)
+  1. Sign up at resend.com.
+  2. Add + verify domain "whambam.games" (add the SPF/DKIM/MX DNS records
+     Resend shows, at your DNS host / Hostinger DNS).
+  3. Create an API key.
+  4. SMTP settings:
+        Host:   smtp.resend.com
+        Port:   465   (SSL)   [or 587 for STARTTLS]
+        User:   resend
+        Pass:   <your Resend API key>
+        From:   no-reply@whambam.games   (must be on the verified domain)
+
+TIP: Start with Hostinger. If confirmation emails hit spam or you exceed
+the daily limit, switch to Resend later — same set-smtp.ps1, just different
+values.
+
+--------------------------------------------------------------------
+STEP 2 — Push the SMTP config to Supabase
+--------------------------------------------------------------------
+In PowerShell (values from Step 1). Keep the token/secret in your shell only.
+
+  # --- Hostinger (Option A) ---
+  $env:SUPABASE_ACCESS_TOKEN = "<Supabase PAT>"     # Dashboard > Account > Access Tokens
+  $env:SMTP_HOST         = "smtp.hostinger.com"     # or smtp.titan.email
+  $env:SMTP_PORT         = "465"
+  $env:SMTP_USER         = "no-reply@whambam.games" # full mailbox address
+  $env:SMTP_PASS         = "<mailbox password>"
+  $env:SMTP_SENDER_EMAIL = "no-reply@whambam.games"
+  $env:SMTP_SENDER_NAME  = "Wham Bam"
+
+  # --- Resend (Option B) — same vars, different values:
+  #   $env:SMTP_HOST = "smtp.resend.com"
+  #   $env:SMTP_USER = "resend"
+  #   $env:SMTP_PASS = "<Resend API key>"
+
+  cd "C:\Users\Supreme Traders\Desktop\project claude code - Copy"
+  powershell -ExecutionPolicy Bypass -File .\set-smtp.ps1
+
+--------------------------------------------------------------------
+STEP 3 — Apply the branded confirmation template
+--------------------------------------------------------------------
+Now that custom SMTP is active, the template edit is allowed (same PowerShell
+window, token still set):
+
+  powershell -ExecutionPolicy Bypass -File .\update-auth-email.ps1
+
+That sets:
+  Subject: "Confirm your Wham Bam account 🎉"
+  Body:    supabase/templates/confirmation.html  (WhamBam branded)
+
+--------------------------------------------------------------------
+STEP 4 — Test
+--------------------------------------------------------------------
+  - Sign up on the site with a real address.
+  - Confirm the email arrives from no-reply@whambam.games with the WhamBam
+    design and new subject.
+  - If it lands in spam, your domain SPF/DKIM aren't fully verified yet.
+
+--------------------------------------------------------------------
+SECURITY
+--------------------------------------------------------------------
+- ROTATE the Supabase access token you already used (it was exposed):
+  Dashboard > Account > Access Tokens > revoke the old one, generate a new one.
+- Never commit tokens / SMTP passwords. They live only in env vars.
+- These helper scripts read secrets from env vars, not from the files.

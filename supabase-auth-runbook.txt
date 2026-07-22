@@ -1,0 +1,115 @@
+WHAM BAM — SUPABASE CLI AUTH RUNBOOK
+====================================
+Applies the branded confirm email + Google-provider settings to the
+hosted project using the Supabase CLI. Files this uses:
+    supabase/config.toml                (the config)
+    supabase/templates/confirmation.html (the branded email body)
+
+Project ref: izxzlxtowubbjiatouci   (already linked)
+
+READ FIRST
+----------
+- `supabase config push` is DECLARATIVE: it makes remote [auth] match
+  supabase/config.toml. It prints a diff and asks you to confirm —
+  REVIEW IT before typing yes, so you don't turn off something you use.
+- Secrets are NOT in the file. They come from env vars at push time.
+- The Google Cloud Console steps (Part 3) CANNOT be done by the CLI.
+  Without them, Google login keeps failing even after a perfect push.
+
+
+--------------------------------------------------------------------
+PART 0 — INSTALL CLI (if needed)
+--------------------------------------------------------------------
+The CLI is not installed on this machine. Install one of:
+    Windows (Scoop):   scoop install supabase
+    Windows (winget):  winget install Supabase.CLI
+    npx (no install):  use "npx supabase@latest ..." in every command below
+Check:
+    supabase --version        (need a recent version for hosted auth push)
+
+
+--------------------------------------------------------------------
+PART 1 — LOG IN + LINK
+--------------------------------------------------------------------
+1. Log in (opens a browser to authorize your account):
+       supabase login
+
+2. The project is already linked (supabase/.temp/linked-project.json).
+   If a command says it isn't, re-link:
+       supabase link --project-ref izxzlxtowubbjiatouci
+
+
+--------------------------------------------------------------------
+PART 2 — SET SECRETS, THEN PUSH CONFIG
+--------------------------------------------------------------------
+config.toml reads these env vars. Set them in your shell for the push.
+
+  PowerShell:
+     $env:SUPABASE_AUTH_GOOGLE_CLIENT_ID = "<google-oauth-client-id>"
+     $env:SUPABASE_AUTH_GOOGLE_SECRET    = "<google-oauth-client-secret>"
+     # only if you enabled the SMTP block:
+     # $env:SMTP_PASSWORD = "<smtp-provider-password>"
+
+  Git Bash / macOS / Linux:
+     export SUPABASE_AUTH_GOOGLE_CLIENT_ID="<google-oauth-client-id>"
+     export SUPABASE_AUTH_GOOGLE_SECRET="<google-oauth-client-secret>"
+     # export SMTP_PASSWORD="<smtp-provider-password>"
+
+Push (review the printed diff, then confirm):
+     supabase config push
+
+That applies, in one shot:
+  - Site URL = https://whambam.games
+  - Redirect allow-list (whambam.games + /*)
+  - "Confirm signup" subject = "Confirm your Wham Bam account 🎉"
+  - "Confirm signup" body = supabase/templates/confirmation.html (WhamBam)
+  - Google provider enabled with your client id/secret
+
+Verify: open Supabase Dashboard > Authentication > Email Templates and
+Providers, or send yourself a test signup.
+
+
+--------------------------------------------------------------------
+PART 3 — GOOGLE CLOUD CONSOLE (manual — CLI can't do this)
+--------------------------------------------------------------------
+This is the usual cause of "access denied / invalid". Do BOTH:
+
+A. Authorized redirect URI
+   console.cloud.google.com > APIs & Services > Credentials >
+   your OAuth 2.0 Client ID (Web application) >
+   Authorized redirect URIs > ADD exactly:
+       https://izxzlxtowubbjiatouci.supabase.co/auth/v1/callback
+   Also add Authorized JavaScript origins:
+       https://whambam.games
+       https://izxzlxtowubbjiatouci.supabase.co
+   Save. Copy the Client ID + Secret -> use them in PART 2 env vars.
+
+B. Publish the consent screen
+   APIs & Services > OAuth consent screen.
+   If "Publishing status" = Testing, only test users can sign in and
+   everyone else gets access_denied -> click PUBLISH APP (Production).
+   App name = Wham Bam, add authorized domain: whambam.games.
+
+Error -> cause map:
+   redirect_uri_mismatch          -> A: redirect URI wrong/missing
+   access_denied                  -> B: consent screen still in Testing
+   "requested path is invalid"    -> Supabase redirect allow-list (Part 2)
+
+
+--------------------------------------------------------------------
+PART 4 — FULL EMAIL DE-BRAND (optional, custom SMTP)
+--------------------------------------------------------------------
+Part 2 brands the email CONTENT. The SENDER stays a supabase.io address
+until you add SMTP. To send from no-reply@whambam.games:
+  1. Create a sender (Resend/Postmark/SES/Mailgun/Brevo), verify the
+     whambam.games domain (add their SPF/DKIM DNS records).
+  2. Uncomment [auth.email.smtp] in supabase/config.toml, fill host/
+     port/user/admin_email/sender_name.
+  3. Set $env:SMTP_PASSWORD (Part 2) and run `supabase config push` again.
+
+
+--------------------------------------------------------------------
+DO NOT COMMIT SECRETS
+--------------------------------------------------------------------
+Never put the Google secret or SMTP password in config.toml or git.
+They live only in env vars at push time. config.toml uses env(...) refs.

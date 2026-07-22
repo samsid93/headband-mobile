@@ -1,0 +1,130 @@
+WHAM BAM — AUTH FIXES (Supabase + Google)
+=========================================
+Both issues are dashboard configuration, not code. The website code is
+correct. Do the steps below in the Supabase and Google dashboards.
+
+Project ref: izxzlxtowubbjiatouci
+Supabase project URL: https://izxzlxtowubbjiatouci.supabase.co
+Site: https://whambam.games
+
+
+====================================================================
+PART A — BRAND THE CONFIRMATION EMAIL (remove Supabase branding)
+====================================================================
+
+There are TWO layers of "Supabase branding":
+  1. The email CONTENT (subject + body)  -> fixed via Email Templates
+  2. The SENDER ADDRESS + footer          -> only removable via custom SMTP
+
+--- A1. Change the subject + body (removes branding from the content) ---
+1. Supabase Dashboard > Authentication > Email Templates.
+2. Select the "Confirm signup" template.
+3. Subject heading — set to:
+       Confirm your Wham Bam account 🎉
+   (Other good options:
+       Welcome to Wham Bam — confirm your email
+       Your Wham Bam account is almost ready 🎮 )
+4. Message body — switch to source/HTML view, delete the default
+   Supabase markup, and paste the full contents of:
+       whambam-confirm-email.html
+   (Keep the {{ .ConfirmationURL }} variable — it is required.)
+5. Save. Send yourself a test signup to confirm it looks right.
+
+Repeat the same branding for the other templates users may hit:
+   - "Magic Link"        (if you enable it)
+   - "Reset Password"    subject e.g. "Reset your Wham Bam password"
+   - "Change Email Address"
+   - "Invite user"
+
+--- A2. Remove the Supabase SENDER + footer (full de-brand) ---
+By default Supabase sends from a supabase.io address with its own
+footer and rate limits (~3-4 emails/hour). To send from your own domain
+(e.g. no-reply@whambam.games) with zero Supabase branding, add custom SMTP:
+
+1. Create a transactional email sender (any of): Resend, Postmark,
+   SendGrid, Mailgun, Amazon SES, Brevo. Verify your domain
+   (add their SPF/DKIM DNS records to whambam.games).
+2. Supabase Dashboard > Project Settings > Authentication > SMTP Settings
+   (also shown under Authentication > Emails > SMTP).
+3. Enable "Custom SMTP" and fill in:
+       Sender name:    Wham Bam
+       Sender email:   no-reply@whambam.games
+       Host / Port / Username / Password  -> from your SMTP provider
+4. Save. Now emails come from your domain with no Supabase footer,
+   and the hourly limit is lifted.
+
+NOTE: A1 alone makes the email LOOK fully WhamBam-branded in the body,
+but the "from" address stays a supabase.io address until you do A2.
+
+
+====================================================================
+PART B — FIX GOOGLE SIGN-IN ("access denied / invalid")
+====================================================================
+The redirect the site requests is:  https://whambam.games/  (origin +
+path). "Access denied / invalid" almost always means one of the URLs
+below is not allow-listed, OR the Google consent screen is still in
+Testing mode. Check ALL of these:
+
+--- B1. Supabase URL configuration ---
+1. Supabase Dashboard > Authentication > URL Configuration.
+2. Site URL:
+       https://whambam.games
+3. Redirect URLs — ADD (one per line):
+       https://whambam.games
+       https://whambam.games/
+       https://whambam.games/*
+   (If the game is served as /index.html, also add:
+       https://whambam.games/index.html )
+4. Save.
+
+--- B2. Enable Google provider in Supabase ---
+1. Supabase Dashboard > Authentication > Providers > Google.
+2. Toggle it ON.
+3. Paste the Google OAuth Client ID and Client Secret (from B3).
+4. Note the callback URL Supabase shows you — it is:
+       https://izxzlxtowubbjiatouci.supabase.co/auth/v1/callback
+   You will paste this into Google in B3. Save.
+
+--- B3. Google Cloud Console OAuth client ---
+1. https://console.cloud.google.com  > select your project.
+2. APIs & Services > Credentials > your OAuth 2.0 Client ID
+   (type: Web application). Create one if it doesn't exist.
+3. Authorized JavaScript origins — ADD:
+       https://whambam.games
+       https://izxzlxtowubbjiatouci.supabase.co
+4. Authorized redirect URIs — ADD EXACTLY (this is the usual culprit):
+       https://izxzlxtowubbjiatouci.supabase.co/auth/v1/callback
+5. Save. Copy the Client ID + Client Secret into Supabase (B2).
+
+--- B4. OAuth consent screen (the OTHER usual culprit) ---
+1. Google Cloud Console > APIs & Services > OAuth consent screen.
+2. If "Publishing status" = Testing, then only listed test users can
+   sign in — everyone else gets "access_denied".
+   -> Click "PUBLISH APP" to move it to Production.
+   (While in Testing, you can instead add specific test-user emails
+    under "Test users" to try it before publishing.)
+3. Make sure these scopes are present (default): email, profile, openid.
+4. Fill required fields: app name = Wham Bam, support email, and the
+   authorized domain: whambam.games. Add a privacy policy URL if asked.
+
+--- B5. Propagation + test ---
+- Google changes can take a few minutes (sometimes up to an hour) to
+  take effect.
+- Test in an incognito window. Clear the old error first.
+- If it still fails, read the exact error on Google's screen:
+     "redirect_uri_mismatch" -> B3 step 4 URL is wrong/missing
+     "access_denied"         -> B4 consent screen is in Testing
+     "requested path is invalid" (Supabase) -> B1 redirect URLs
+
+--------------------------------------------------------------------
+QUICK CHECKLIST
+--------------------------------------------------------------------
+[ ] Email subject changed to a Wham Bam subject
+[ ] Confirm-signup body replaced with whambam-confirm-email.html
+[ ] (optional) Custom SMTP set for no-reply@whambam.games
+[ ] Supabase Site URL = https://whambam.games
+[ ] Supabase Redirect URLs include whambam.games (+ /*)
+[ ] Google provider enabled in Supabase with Client ID/Secret
+[ ] Google redirect URI = .../auth/v1/callback added
+[ ] Google JS origins include whambam.games + the supabase.co URL
+[ ] OAuth consent screen PUBLISHED (not Testing)

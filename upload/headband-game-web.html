@@ -7,12 +7,12 @@
 <meta name="description" content="Wham Bam — the ultimate forehead guessing party game. Hold it. Guess it. WIN it. 11 decks, tilt controls, voice commands, team play.">
 <meta property="og:title" content="Wham Bam — Party Word Game">
 <meta property="og:description" content="Hold it. Guess it. WIN it. The ultimate forehead guessing party game — 11 decks, tilt controls, team play.">
-<meta property="og:image" content="https://whambam.games/logo.png">
+<meta property="og:image" content="https://whambam.games/logo.png?v=2">
 <meta property="og:url" content="https://whambam.games">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" type="image/png" href="logo.png">
-<link rel="apple-touch-icon" href="logo.png">
+<link rel="icon" type="image/png" href="logo.png?v=2">
+<link rel="apple-touch-icon" href="logo.png?v=2">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,8 +93,10 @@ body::after{content:'';position:fixed;inset:0;
 .back-btn:active{transform:scale(.88) translateY(1px);background:rgba(255,214,10,.22);border-color:rgba(255,214,10,.72);color:var(--acc);box-shadow:0 0 22px rgba(255,214,10,.32)}
 /* Pinned to the TOP-LEFT corner — well away from the Skip / Correct action row
    so it can't be tapped by accident mid-round. */
-#play-back-btn{position:fixed;top:12px;left:12px;z-index:45;height:34px;padding:0 15px 0 11px;border-radius:17px;background:rgba(18,8,0,.9);border:1.5px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:12.5px;font-weight:700;color:rgba(255,255,255,.82);-webkit-tap-highlight-color:transparent;transition:transform .14s,background .14s,border-color .14s,color .14s;letter-spacing:.2px}
-#play-back-btn::before{content:'←';font-size:15px}
+/* Icon-only circle in the top-left corner — compact enough to never touch the
+   centred score cluster, and far from the Skip / Correct action row. */
+#play-back-btn{position:fixed;top:10px;left:10px;z-index:45;width:36px;height:36px;padding:0;border-radius:50%;background:rgba(18,8,0,.9);border:1.5px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:0;color:rgba(255,255,255,.85);-webkit-tap-highlight-color:transparent;transition:transform .14s,background .14s,border-color .14s,color .14s}
+#play-back-btn::before{content:'←';font-size:18px;font-weight:700}
 #play-back-btn:active{transform:scale(.9)!important;background:rgba(255,214,10,.22)!important;border-color:rgba(255,214,10,.7)!important;color:var(--acc)!important}
 #mute-btn{position:absolute;top:14px;right:12px;z-index:30;height:42px;width:42px;border-radius:21px;background:linear-gradient(135deg,rgba(255,214,10,0.2),rgba(255,107,0,0.15));border:2px solid rgba(255,214,10,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;backdrop-filter:blur(18px);-webkit-tap-highlight-color:transparent;transition:transform .14s ease,background .14s,border-color .14s;box-shadow:0 4px 22px rgba(0,0,0,.5),0 0 14px rgba(255,214,10,0.2);user-select:none}
 #mute-btn:active{transform:scale(.88);background:rgba(255,214,10,.22)}
@@ -485,7 +487,7 @@ body::after{content:'';position:fixed;inset:0;
    landscape (Up Top). */
 .play-land{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;min-height:0;gap:8px;padding:4px 4px calc(42px + env(safe-area-inset-bottom))}
 /* Centred cluster — leaves both top corners free (back button lives top-left) */
-.ptopbar{display:flex;align-items:center;justify-content:center;width:100%;max-width:560px;flex-shrink:0;gap:20px;padding:0 52px}
+.ptopbar{display:flex;align-items:center;justify-content:center;width:100%;max-width:560px;flex-shrink:0;gap:16px;padding:0 44px}
 .sbubble{display:flex;flex-direction:column;align-items:center;background:rgba(26,12,0,.85);border:1px solid var(--bdr2);border-radius:12px;padding:5px 14px;min-width:74px}
 .sbval{font-size:30px;font-weight:900;line-height:1}
 .sbval.c{color:var(--cor);text-shadow:0 0 18px rgba(0,232,122,.6)}
@@ -535,7 +537,6 @@ body::after{content:'';position:fixed;inset:0;
 .tobadge.gold{background:linear-gradient(135deg,#FFE835,#FFB400);color:#4A2E00;box-shadow:0 0 44px rgba(255,180,0,.7)}
 
 /* ── DAILY DECK ── */
-.deck-daily{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;background:linear-gradient(135deg,#FFD60A,#FF9500);color:#0A0500;border-radius:10px;padding:2px 8px;white-space:nowrap;z-index:3;letter-spacing:.4px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 
 /* ── ACHIEVEMENTS ── */
 .achv-title{font-size:14px;font-weight:900;margin:18px 0 10px;width:100%;max-width:370px;color:var(--txt);font-family:'Nunito',sans-serif}
@@ -871,13 +872,13 @@ body::after{content:'';position:fixed;inset:0;
 <div class="screen active" id="screen-splash" style="z-index:200">
   <div class="splash-variant sv-mobile">
     <div class="splash-art">
-      <img src="splash.png" class="splash-img" alt="Wham Bam — the ultimate 2 in 1 party charades game">
+      <img src="splash.png?v=2" class="splash-img" alt="Wham Bam — the TOP 3 party games in 1 app">
       <button class="splash-start" style="left:13.5%;right:13.5%;top:82.5%;height:8.5%" onclick="startFromSplash()" aria-label="Start Now"></button>
     </div>
   </div>
   <div class="splash-variant sv-desktop">
     <div class="splash-art">
-      <img src="splash-desktop.png" class="splash-img" alt="Wham Bam — the ultimate 2 in 1 party charades game">
+      <img src="splash-desktop.png?v=2" class="splash-img" alt="Wham Bam — the TOP 3 party games in 1 app">
       <button class="splash-start" style="left:34.5%;right:34.5%;top:81.5%;height:9%" onclick="startFromSplash()" aria-label="Start Now"></button>
     </div>
   </div>
@@ -923,7 +924,7 @@ body::after{content:'';position:fixed;inset:0;
 
   <!-- Logo -->
   <div class="home-logo-wrap">
-    <img src="logo.png" class="home-logo-img" alt="Wam Bam">
+    <img src="logo.png?v=2" class="home-logo-img" alt="Wam Bam">
   </div>
 
   <div class="home-sub">The TOP 3 Party Games in 1 App Now !!</div>
@@ -1188,8 +1189,8 @@ body::after{content:'';position:fixed;inset:0;
     </div>
     <!-- Charades tips (portrait, button-only) -->
     <div class="tips-card tc-charades" id="tips-charades" style="display:none">
-      <div class="tip-row"><div class="ti">📱</div><div class="tt"><b>Hold the phone facing outward</b><span>The screen points at your team so only they see the word</span></div></div>
-      <div class="tip-row"><div class="ti">🤐</div><div class="tt"><b>Act it out — stay silent</b><span>No speaking and no sound effects, gestures only</span></div></div>
+      <div class="tip-row"><div class="ti">🙈</div><div class="tt"><b>Keep the word to yourself</b><span>Only you read the screen — don't show it to your team</span></div></div>
+      <div class="tip-row"><div class="ti">🤐</div><div class="tt"><b>Act it out — stay silent</b><span>No speaking and no sounds, gestures only, while your team guesses</span></div></div>
       <div class="tip-row"><div class="ti">✋</div><div class="tt"><b>Tap to score</b><span>Hit Correct ✓ when they guess it, Skip ✗ to pass</span></div></div>
       <div class="tip-row"><div class="ti">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl-c">60s</strong> to act out as many words as you can</span></div></div>
     </div>
@@ -1394,7 +1395,7 @@ body::after{content:'';position:fixed;inset:0;
       <div class="ad-goog-badge">Ad</div>
       <div class="ad-goog-choices" title="AdChoices">i</div>
       <div class="ad-goog-image" style="height:55%">
-        <img src="logo.png" class="ad-goog-logo-img" style="height:80px" alt="Wam Bam" onerror="this.style.display='none';this.parentNode.innerHTML+='<div style=\'font-size:36px;font-weight:900;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.5)\'>WAM BAM!</div>'">
+        <img src="logo.png?v=2" class="ad-goog-logo-img" style="height:80px" alt="Wam Bam" onerror="this.style.display='none';this.parentNode.innerHTML+='<div style=\'font-size:36px;font-weight:900;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.5)\'>WAM BAM!</div>'">
       </div>
       <div class="ad-goog-body" style="padding:16px 20px">
         <div>
@@ -1557,12 +1558,6 @@ function applyDeckTint(){
 /* ═══════════════════════════
    PASS 4 — DAILY DECK / HAPTICS / COUNT-UP / CONFETTI / ACHIEVEMENTS
 ═══════════════════════════ */
-const DAILY_DECK=(()=>{
-  const free=DECKS.filter(d=>!d.premium);
-  const t=new Date();
-  return free[(t.getFullYear()*372+t.getMonth()*31+t.getDate())%free.length];
-})();
-
 /* ═══════════════════════════
    DECK CATALOG — Supabase, cache-first (IndexedDB)
    Inline DECKS above = offline fallback seed; DB catalog replaces it at runtime.
@@ -1597,7 +1592,7 @@ async function loadCatalog(){
   const cached=await catIdb('get');
   if(cached)applyCatalog(cached);
   try{
-    const sb=typeof getSB==='function'?getSB():null;if(!sb)return;
+    const sb=typeof getSharedSB==='function'?getSharedSB():null;if(!sb)return;
     const {data:allDecks,error:de}=await sb.from('decks')
       .select('id,name,icon,color,is_premium,mode,updated_at').eq('active',true).order('sort');
     if(de||!allDecks||!allDecks.length)return;
@@ -2982,7 +2977,14 @@ const SUPABASE_ANON = 'sb_publishable_Q6pr9JEFYrhUuQvnojz1Mg_MbPuinDh';
 let __SB_CLIENT = null;
 function getSharedSB(){
   if(!__SB_CLIENT && typeof supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL'){
-    __SB_CLIENT = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    __SB_CLIENT = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,   // exchange the ?code= after an OAuth redirect
+        flowType: 'pkce'
+      }
+    });
   }
   return __SB_CLIENT;
 }
@@ -3345,6 +3347,21 @@ const HB_AUTH = (() => {
   async function init() {
     const sb = _client();
     if (!sb) { _updatePill(); return; }
+    // Did we just come back from a Google (OAuth) redirect? URL carries ?code=
+    // (PKCE) or #access_token= (implicit). If so, land the user on Home with a
+    // welcome, and strip the auth params from the address bar.
+    const _oauthReturn = /[?&]code=/.test(location.search) || /access_token=|error=/.test(location.hash);
+    let _oauthHandled = false;
+    const _finishOAuth = () => {
+      if (_oauthHandled) return;
+      _oauthHandled = true;
+      try { history.replaceState({}, document.title, location.origin + location.pathname); } catch(e){}
+      if (_user) {
+        const nm = _user.user_metadata?.full_name || _user.user_metadata?.name || _user.email?.split('@')[0] || 'Player';
+        if (typeof goTo === 'function') goTo('screen-home');
+        if (typeof showToast === 'function') showToast('👋 Signed in as ' + nm);
+      }
+    };
     try {
       const { data, error } = await sb.auth.getSession();
       if (error) console.warn('HB_AUTH session:', error.message);
@@ -3353,8 +3370,13 @@ const HB_AUTH = (() => {
       sb.auth.onAuthStateChange((_evt, session) => {
         _user = session?.user || null;
         _updatePill();
-        if (_evt === 'SIGNED_IN') { hideAuthModal(); applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements(); }
+        if (_evt === 'SIGNED_IN') {
+          hideAuthModal(); applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements();
+          if (_oauthReturn) _finishOAuth();
+        }
       });
+      // If the session was already resolved synchronously from the URL, handle now too
+      if (_oauthReturn && _user) _finishOAuth();
     } catch(e) {
       console.warn('HB_AUTH init:', e.message);
     } finally {
@@ -3416,7 +3438,9 @@ const HB_AUTH = (() => {
     const googleBtn = document.querySelector('.auth-google-btn');
     if (googleBtn) { googleBtn.disabled = true; googleBtn.style.opacity = '.6'; }
     try {
-      const redirectTo = window.location.origin + window.location.pathname;
+      // Redirect to the site root so it matches the Supabase Site URL /
+      // allow-list exactly (avoids /index.html style mismatches).
+      const redirectTo = window.location.origin + '/';
       const { error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo }
@@ -3704,7 +3728,7 @@ function makeDeckCard(d){
   }
   el.className=cls;
   el.id='dk-'+d.id;
-  el.innerHTML=`${d.id===DAILY_DECK.id?'<div class="deck-daily">⭐ TODAY\'S DECK</div>':''}<div class="deck-icon">${d.icon}</div><div class="deck-name">${d.name}</div>${!d.premium?'<div class="deck-free-badge">FREE</div>':''}${d.premium&&!isUnlocked?'<div class="deck-lock-overlay">🔒</div>':''}${d.id===G.deck?'<div class="deck-sel-overlay"><span class="deck-sel-badge">✓ Selected</span></div>':''}`;
+  el.innerHTML=`<div class="deck-icon">${d.icon}</div><div class="deck-name">${d.name}</div>${!d.premium?'<div class="deck-free-badge">FREE</div>':''}${d.premium&&!isUnlocked?'<div class="deck-lock-overlay">🔒</div>':''}${d.id===G.deck?'<div class="deck-sel-overlay"><span class="deck-sel-badge">✓ Selected</span></div>':''}`;
   el.onclick=()=>{SFX.tap();d.premium&&!isUnlocked?showUnlockModal(d.id):selDeck(d.id)};
   return el;
 }

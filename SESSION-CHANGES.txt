@@ -1,0 +1,171 @@
+WHAM BAM — SESSION CHANGE LOG
+=============================
+All changes to the web app (headband-game-web.html) and its deploy assets.
+
+--------------------------------------------------------------------
+SETUP / ENV
+--------------------------------------------------------------------
+- Added caveman-mode statusline to ~/.claude/settings.json.
+
+--------------------------------------------------------------------
+GAME SETUP SCREEN (screen-setup)
+--------------------------------------------------------------------
+- Removed the Landscape option from Charades mode — Charades is now
+  always portrait (removed orientation picker + dead selCharadesOrient
+  code).
+- Added a centred per-game HERO BANNER at the top ("SETTING UP" ->
+  game name -> hint -> CHANGE GAME), tinted per mode (Up Top green,
+  Charades pink, Don't Say It blue). Replaced the small easy-to-miss
+  "Game" chip row.
+- Don't Say It: removed the deck info block entirely (mode uses one
+  fixed mega-deck).
+- Fixed flex-shrink clipping bug (title/sections were being squashed).
+
+Premium deck carousel:
+- Desktop horizontal scroll fixed — added arrow buttons (< >) + a
+  visible scrollbar + vertical-wheel-to-horizontal mapping.
+- Clear swipe affordances: first-view auto-nudge animation, animated
+  "SWIPE >>>" chip, right-edge fade, section attention glow. All cues
+  auto-dismiss once the user scrolls.
+- Purchased decks now graduate to the main 2-column grid (fixed
+  All-Access bug where unlocked decks stayed locked in the carousel).
+- Locked-deck title readability: removed the dark full-cover scrim +
+  centre lock; lock is now a small top-right corner badge; brighter
+  premium title with shadow.
+- Deck SELECTED state made unmistakable — translucent scrim + a
+  "SELECTED" badge over the chosen deck (was only a yellow outline,
+  lost among the many deck colours).
+
+--------------------------------------------------------------------
+HOME / ONBOARDING SCREEN (screen-home)
+--------------------------------------------------------------------
+- Main button text: "Play Now" -> "Select Game Mode" -> "Select Game"
+  (controller icon removed).
+- Removed the Leaderboard button from home (still reachable from the
+  score screen).
+- Removed the 4 feature badges (Tilt / Voice / Modes / Teams) and the
+  "PARTY GAME" chip.
+- Feature highlight "11 Decks" -> "3 Game Modes".
+- Tagline synced to the splash: "The TOP 3 Party Games in 1 App Now !!"
+- Added a prominent onboarding card: bold "Sign Up Free" (gold, with a
+  periodic nudge) + "Sign In" — both open the auth modal on the correct
+  tab.
+- New transparent logo (bgless), edge-safe padding so it never clips.
+
+--------------------------------------------------------------------
+SPLASH / LANDING SCREEN (screen-splash) — NEW
+--------------------------------------------------------------------
+- Added a brand-new splash screen shown FIRST, before home.
+- Separate art per orientation: splash.png (portrait/phones),
+  splash-desktop.png (landscape/desktop), switched by viewport aspect.
+- Dual-min() contain sizing so the whole poster always fits and never
+  zoom-crops on any screen (fixed desktop zoom + mobile zoom bugs).
+- "Start Now" is a clickable hit-zone over the artwork button ->
+  startFromSplash() (sound + fullscreen + go home; hardened so nav
+  never blocks).
+- CTA cue: soft blurred radial glow rising from behind the button
+  (transparent centre, no hard ring/outline, no button-shaped edge) +
+  gentle breathing scale. Consistent on mobile and desktop.
+- fs-btn hidden on the splash.
+
+--------------------------------------------------------------------
+PICK YOUR GAME SCREEN (screen-mode)
+--------------------------------------------------------------------
+- Rebuilt from comic poster artwork: mode-poster.svg (portrait, stacked
+  panels) + mode-poster-desktop.png (landscape, side-by-side columns),
+  switched by viewport aspect. Fully responsive, dual-min() contain,
+  never zoom-crops.
+- The three game panels are the buttons (hit-zones over the art);
+  portrait zones tilt with the slanted panels (--rot per panel).
+- CTA glow on each panel (same blurred-halo treatment as Start Now).
+- Extracted the inline poster SVG to an external file (was ~1MB inline).
+
+--------------------------------------------------------------------
+READY SCREEN (screen-ready)
+--------------------------------------------------------------------
+- Instruction cards made interactive/prominent: bold headline on line 1,
+  readable description on the next line (brighter colour, bigger),
+  tinted icon badges, per-game accent colour, staggered slide-in.
+- Up Top: condensed 6 rows -> 4 so the Start button fits without
+  scrolling; top-aligned so the "Ready?" title is never clipped.
+
+--------------------------------------------------------------------
+GAMEPLAY SCREEN (screen-play) — UNIFIED FOR ALL 3 MODES
+--------------------------------------------------------------------
+- Single uniform layout: compact TOP BAR (Skipped score . timer .
+  Correct score), one BIG prominent yellow word card, and BOTH action
+  buttons on ONE bottom row (Skip / Correct, plus BUZZ for Don't Say It).
+- Up Top word card is now as big/prominent as the other modes (was
+  squeezed between two side panels).
+- Larger word text (clamp up to 66-68px).
+- Works in portrait (Charades / Don't Say It) and landscape (Up Top);
+  landscape media query compacts the chrome so nothing clips.
+- In-round back button moved from bottom-centre (mis-tappable between
+  Skip/Correct) to a small icon-only circle in the TOP-LEFT corner;
+  top bar centred so it never overlaps the score bubbles.
+- Countdown: back button hidden on the full-yellow "LET'S GO!!!" frame
+  (it was blending into the yellow).
+
+Don't Say It readability:
+- Bigger, bolder target word.
+- Bigger, higher-contrast forbidden-word chips.
+
+--------------------------------------------------------------------
+SCORE SCREEN (screen-score)
+--------------------------------------------------------------------
+- "Change Deck" button hidden in Don't Say It mode (no deck to change).
+
+--------------------------------------------------------------------
+PERFORMANCE
+--------------------------------------------------------------------
+- Hidden screens: visibility:hidden + paused animations (stop paying for
+  off-screen screens/animations during gameplay).
+- Poster SVG extracted to a file (HTML back to ~230KB from ~1MB).
+- Ambient background canvas: pre-rendered orb sprites + static grid +
+  30fps + pause when tab hidden (was allocating gradients every frame).
+- Dropped several backdrop-filter blur layers (deck cards, team splash,
+  tips cards, home feature cards).
+- onMotion: cached DOM refs (no getElementById at ~60Hz).
+- Score screen added to the ambient-canvas battery list.
+
+--------------------------------------------------------------------
+ASSETS / LOGO
+--------------------------------------------------------------------
+- New transparent logo.png (from bgless source; trimmed + safe padding;
+  ~110KB).
+- splash.png (338KB), splash-desktop.png (375KB), mode-poster.svg
+  (770KB), mode-poster-desktop.png (389KB).
+- Cache-busting: all reused/overwritten filenames referenced with ?v=2
+  (splash.png, splash-desktop.png, logo.png) so browsers/CDN fetch fresh
+  instead of serving stale cached copies.
+
+--------------------------------------------------------------------
+DEPLOY
+--------------------------------------------------------------------
+Files to upload to the site root (flat, same folder):
+  headband-game-web.html   (game; also copied to index.html)
+  logo.png
+  splash.png
+  splash-desktop.png
+  mode-poster.svg
+  mode-poster-desktop.png
+The upload/ folder holds this bundle + README-DEPLOY.txt.
+NOTE: logo.png must sit at the domain root (og:image uses an absolute
+URL). After replacing an asset in place, bump its ?v= number.
+
+--------------------------------------------------------------------
+XSOLLA
+--------------------------------------------------------------------
+- Drafted a reply to Xsolla's content-review email
+  (xsolla-reply-draft.txt): scope = Wham Bam only; subscriptions =
+  in-game premium decks (no real-world value); applicant Rohini Paralkar
+  = business partner/co-founder; tournaments = in-game prizes only,
+  never withdrawable/convertible, no entry fees.
+
+--------------------------------------------------------------------
+GIT
+--------------------------------------------------------------------
+- Committed the web-app overhaul + deploy assets + upload/ bundle and
+  pushed to origin/main (commit "feat: web app UX overhaul — splash,
+  poster mode-select, unified gameplay").
+- Later fixes (back-button overlap, cache-busting) not yet committed.

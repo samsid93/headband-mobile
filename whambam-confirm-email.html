@@ -1,0 +1,69 @@
+<!--
+  WHAM BAM — Confirm signup email template
+  Paste this into: Supabase Dashboard > Authentication > Email Templates
+  > "Confirm signup" > Message body (source/HTML).
+  Keeps the required {{ .ConfirmationURL }} variable.
+  Table-based + inline styles so it renders in Gmail / Outlook / Apple Mail.
+-->
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#0A0500;margin:0;padding:24px 0;font-family:Arial,Helvetica,sans-serif;">
+  <tr>
+    <td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" role="presentation" style="width:480px;max-width:92%;background:#16100A;border:2px solid #FFD60A;border-radius:18px;overflow:hidden;">
+
+        <!-- Header / wordmark -->
+        <tr>
+          <td align="center" style="background:linear-gradient(135deg,#FFD60A,#FF6B00);padding:26px 20px;">
+            <div style="font-size:34px;font-weight:900;letter-spacing:1px;color:#1A0A00;font-family:'Arial Black',Arial,sans-serif;">
+              WHAM&#33;&#33; BAM&#33;&#33;
+            </div>
+            <div style="font-size:12px;font-weight:bold;color:#3A1A00;letter-spacing:1px;margin-top:4px;">
+              THE TOP 3 PARTY GAMES IN 1 APP
+            </div>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:30px 30px 10px;color:#FFF8E0;">
+            <div style="font-size:22px;font-weight:900;color:#FFD60A;margin-bottom:10px;">
+              You're almost in&#33; 🎉
+            </div>
+            <div style="font-size:14px;line-height:1.6;color:#D8C9A8;">
+              Thanks for joining <b style="color:#FFF8E0;">Wham Bam</b> — the ultimate forehead-guessing party game.
+              Tap the button below to confirm your email and start playing.
+            </div>
+          </td>
+        </tr>
+
+        <!-- Button -->
+        <tr>
+          <td align="center" style="padding:26px 30px 8px;">
+            <a href="{{ .ConfirmationURL }}"
+               style="display:inline-block;background:linear-gradient(135deg,#00E87A,#00BA62);color:#001A0D;font-size:16px;font-weight:900;text-decoration:none;padding:15px 40px;border-radius:30px;">
+              Confirm my email &#8594;
+            </a>
+          </td>
+        </tr>
+
+        <!-- Fallback link -->
+        <tr>
+          <td style="padding:14px 30px 4px;color:#9A8060;font-size:11px;line-height:1.6;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="{{ .ConfirmationURL }}" style="color:#FFD60A;word-break:break-all;">{{ .ConfirmationURL }}</a>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 30px 26px;color:#7A6648;font-size:11px;line-height:1.6;border-top:1px solid rgba(255,214,10,0.18);">
+            You received this email because someone signed up for Wham Bam with this address.
+            If that wasn't you, you can safely ignore it — no account will be created.
+            <br><br>
+            &copy; Wham Bam &middot; <a href="https://whambam.games" style="color:#FFD60A;text-decoration:none;">whambam.games</a>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
