@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Wam Bam</title>
-<meta name="description" content="Wham Bam — the ultimate forehead guessing party game. Hold it. Guess it. WIN it. 11 decks, tilt controls, voice commands, team play.">
+<title>Wham Bam — Party Word Game</title>
+<meta name="description" content="Wham Bam — the TOP 3 party games in 1 app. Up Top, Charades and Don't Say It!! Hold it. Guess it. WIN it. 24 decks, tilt controls, voice commands, team play.">
 <meta property="og:title" content="Wham Bam — Party Word Game">
-<meta property="og:description" content="Hold it. Guess it. WIN it. The ultimate forehead guessing party game — 11 decks, tilt controls, team play.">
+<meta property="og:description" content="Hold it. Guess it. WIN it. The TOP 3 party games in 1 app — Up Top, Charades and Don't Say It!! 24 decks, tilt controls, team play.">
 <meta property="og:image" content="https://whambam.games/logo.png?v=2">
 <meta property="og:url" content="https://whambam.games">
 <meta property="og:type" content="website">
@@ -88,7 +88,9 @@ body::after{content:'';position:fixed;inset:0;
 .tslider::before{content:'';position:absolute;width:24px;height:24px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform .25s cubic-bezier(.34,1.56,.64,1);box-shadow:0 2px 8px rgba(0,0,0,.5)}
 .toggle input:checked+.tslider{background:var(--acc);border-color:var(--acc)}
 .toggle input:checked+.tslider::before{transform:translateX(20px)}
-.back-btn{position:fixed;top:14px;left:12px;z-index:30;height:42px;padding:0 18px 0 12px;border-radius:21px;background:linear-gradient(135deg,rgba(255,214,10,0.2),rgba(255,107,0,0.15));border:2px solid rgba(255,214,10,0.55);display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;font-weight:700;color:#FFD60A;backdrop-filter:blur(18px);-webkit-tap-highlight-color:transparent;transition:transform .14s ease,background .14s,border-color .14s,color .14s,box-shadow .14s;box-shadow:0 4px 22px rgba(0,0,0,.5),0 0 14px rgba(255,214,10,0.2);letter-spacing:.2px;white-space:nowrap;user-select:none}
+.back-btn{position:fixed;top:14px;left:12px;z-index:30;height:42px;padding:0 18px 0 12px;border-radius:21px;background:linear-gradient(135deg,rgba(255,214,10,0.2),rgba(255,107,0,0.15));border:2px solid rgba(255,214,10,0.55);display:inline-flex;align-items:center;gap:7px;cursor:pointer;font:inherit;font-size:14px;font-weight:700;color:#FFD60A;backdrop-filter:blur(18px);-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:transform .14s ease,background .14s,border-color .14s,color .14s,box-shadow .14s;box-shadow:0 4px 22px rgba(0,0,0,.5),0 0 14px rgba(255,214,10,0.2);letter-spacing:.2px;white-space:nowrap;user-select:none}
+/* Keyboard users get a visible focus ring; mouse/touch users never see it */
+.back-btn:focus-visible,.tpreset:focus-visible,.mode-btn:focus-visible,.sidebtn:focus-visible,#play-back-btn:focus-visible{outline:3px solid #FFD60A;outline-offset:3px}
 .back-btn::before{content:'←';font-size:18px;line-height:1;flex-shrink:0}
 .back-btn:active{transform:scale(.88) translateY(1px);background:rgba(255,214,10,.22);border-color:rgba(255,214,10,.72);color:var(--acc);box-shadow:0 0 22px rgba(255,214,10,.32)}
 /* Pinned to the TOP-LEFT corner — well away from the Skip / Correct action row
@@ -104,7 +106,11 @@ body::after{content:'';position:fixed;inset:0;
 #fs-btn{position:fixed;bottom:20px;right:16px;z-index:999;height:42px;padding:0 18px;border-radius:21px;background:rgba(26,12,0,.9);border:1.5px solid rgba(255,255,255,.18);display:none;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:700;color:var(--txt);backdrop-filter:blur(18px);-webkit-tap-highlight-color:transparent;transition:transform .14s,background .14s,border-color .14s,box-shadow .14s;box-shadow:0 4px 20px rgba(0,0,0,.5)}
 #fs-btn:active{transform:scale(.88);background:rgba(59,158,255,.2);border-color:rgba(59,158,255,.6);color:var(--blu)}
 /* ── SPLASH / LANDING ── full-bleed artwork with a clickable Start Now ── */
-#screen-splash{padding:0;overflow:hidden;background:#0a0016;display:flex;align-items:center;justify-content:center}
+/* The art is contained, never cropped (deliberate — filling the width would
+   reintroduce the zoom-crop). So on wide monitors there IS spare space beside
+   it; brand it as a vignette rather than leaving flat black bars (M-9). */
+#screen-splash{padding:0;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:#0a0016 radial-gradient(ellipse 85% 70% at 50% 45%,rgba(90,30,140,.30),rgba(30,8,60,.18) 55%,rgba(6,0,14,0) 100%)}
 /* Two separate art files — portrait for phones, landscape for desktop — so
    neither is ever stretched/cropped into the other's shape. Only one shows
    at a time, picked by viewport aspect. */
@@ -259,6 +265,10 @@ body::after{content:'';position:fixed;inset:0;
 .deck-card.premium .deck-name{color:#FFD60A}
 .deck-card.premium .deck-icon{filter:drop-shadow(0 0 8px rgba(255,214,10,0.5))}
 .deck-card.premium-unlocked{border-color:var(--acc);box-shadow:0 0 28px rgba(255,214,10,0.3),inset 0 1px 0 rgba(255,220,100,0.15)}
+/* Ad-unlocked: playable but NOT owned — stays in the carousel. Green edge
+   marks "you have words here", distinct from the yellow owned glow. */
+.deck-card.premium-adunlocked{border-color:rgba(46,230,138,.75);box-shadow:0 0 20px rgba(46,230,138,.28),inset 0 1px 0 rgba(150,255,200,.14)}
+.deck-card.premium-adunlocked .deck-cnt{color:#2EE68A;font-weight:800}
 /* Per-deck vivid colors */
 #dk-movies{background:linear-gradient(145deg,rgba(220,45,45,0.38),rgba(180,20,20,0.18));border-color:rgba(255,70,70,0.55)}
 #dk-animals{background:linear-gradient(145deg,rgba(30,200,80,0.35),rgba(10,160,50,0.15));border-color:rgba(40,220,90,0.55)}
@@ -316,6 +326,19 @@ body::after{content:'';position:fixed;inset:0;
 .prem-lbl .swipe-hint{font-size:10px;font-weight:700;color:var(--mut);text-transform:none;letter-spacing:.2px;margin-left:auto}
 .deck-card.aa-card{border-color:rgba(255,214,10,.65);background:linear-gradient(145deg,rgba(255,214,10,.16),rgba(255,107,0,.08))}
 .deck-card.aa-card .deck-name{color:var(--acc)}
+/* All Access bundle — full-width row under the carousel, visibly not a deck */
+.aa-bundle{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:13px 15px;border-radius:var(--rM);border:2px solid rgba(255,214,10,.6);background:linear-gradient(135deg,rgba(255,214,10,.18),rgba(255,107,0,.09));font:inherit;color:var(--txt);cursor:pointer;text-align:left;transition:transform .16s cubic-bezier(.34,1.56,.64,1),box-shadow .16s;box-shadow:0 0 20px rgba(255,214,10,.14)}
+.aa-bundle:active{transform:scale(.975)}
+.aa-bundle:hover,.aa-bundle:focus-visible{box-shadow:0 0 28px rgba(255,214,10,.3)}
+.aa-bundle-star{font-size:24px;flex-shrink:0}
+.aa-bundle-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.aa-bundle-ttl{font-size:14px;font-weight:900;color:var(--acc)}
+.aa-bundle-sub{font-size:11px;color:var(--mut);line-height:1.35}
+.aa-bundle-tag{flex-shrink:0;font-size:9px;font-weight:900;letter-spacing:.5px;padding:4px 8px;border-radius:10px;background:var(--acc);color:#2A1500}
+/* Restore is available on web too — the note explains what it does there */
+.unlock-restore{display:block;width:100%;margin-top:12px;padding:4px;background:none;border:none;font:inherit;font-size:12px;font-weight:600;color:var(--mut);text-decoration:underline;cursor:pointer;text-align:center}
+.unlock-restore:hover,.unlock-restore:focus-visible{color:var(--acc)}
+.unlock-restore-note{margin-top:4px;font-size:10.5px;line-height:1.45;color:rgba(216,201,168,.55);text-align:center}
 .opt-card{padding:16px 18px;background:rgba(255,255,255,0.11);border:1.5px solid rgba(255,255,255,0.28);border-radius:var(--rM);backdrop-filter:blur(8px)}
 .opt-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .opt-row+.opt-row{margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr)}
@@ -625,9 +648,18 @@ body::after{content:'';position:fixed;inset:0;
 .score-title{font-size:30px;font-weight:900;font-family:'Nunito',sans-serif}
 .sc-wordlist{width:100%;max-width:380px;margin-bottom:10px}
 .sc-wl-title{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center;font-weight:700}
-.wl-wrap{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;border-radius:var(--rS);padding:2px 0}
-.wl-wrap::-webkit-scrollbar{width:3px}
-.wl-wrap::-webkit-scrollbar-thumb{background:var(--s4);border-radius:2px}
+/* The list has always scrolled, but nothing said so — the fade and a wider,
+   brighter bar make the overflow discoverable (M-7). */
+.wl-scroll{position:relative}
+.wl-scroll::after{content:'';position:absolute;left:0;right:0;bottom:0;height:34px;pointer-events:none;border-radius:0 0 var(--rS) var(--rS);background:linear-gradient(180deg,rgba(10,5,0,0),rgba(10,5,0,.92));opacity:1;transition:opacity .25s}
+.wl-scroll.at-end::after{opacity:0}
+.wl-more{margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--acc);text-align:center;opacity:.85;transition:opacity .25s}
+.wl-scroll.at-end+.wl-more{opacity:0}
+.wl-wrap{display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--rS);padding:2px 0;scrollbar-width:thin;scrollbar-color:rgba(255,214,10,.55) transparent}
+.wl-wrap::-webkit-scrollbar{width:7px}
+.wl-wrap::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:4px}
+.wl-wrap::-webkit-scrollbar-thumb{background:rgba(255,214,10,.55);border-radius:4px}
+.wl-wrap::-webkit-scrollbar-thumb:hover{background:rgba(255,214,10,.8)}
 .wl-row{display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 14px;gap:10px}
 .wl-word{font-size:13px;color:var(--txt);font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wl-badge{font-size:10px;font-weight:800;padding:3px 10px;border-radius:12px;flex-shrink:0;letter-spacing:.3px}
@@ -715,9 +747,14 @@ body::after{content:'';position:fixed;inset:0;
 .htp-title{font-size:28px;font-weight:900;text-align:center;margin-bottom:4px;font-family:'Nunito',sans-serif}
 .htp-sub{font-size:13px;color:var(--mut);text-align:center;margin-top:-8px;margin-bottom:6px}
 .htp-step{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.10);border:1.5px solid rgba(255,255,255,0.28);border-left:4px solid rgba(255,255,255,0.35);border-radius:var(--rM);padding:15px 18px}
-.htp-wrap>.htp-step:nth-child(3){border-left:4px solid rgba(0,150,255,0.8);background:linear-gradient(135deg,rgba(0,130,255,0.18),rgba(0,130,255,0.06))}
-#htp-tilt-step{border-left:4px solid rgba(255,149,0,0.8) !important;background:linear-gradient(135deg,rgba(255,120,0,0.18),rgba(255,120,0,0.06)) !important}
-.htp-wrap>.htp-step:nth-child(6){border-left:4px solid rgba(255,45,85,0.8);background:linear-gradient(135deg,rgba(255,40,80,0.18),rgba(255,40,80,0.06))}
+/* Steps are generated per mode, so accents cycle by position instead of being
+   pinned to specific step ids — any mode, any number of steps, still colourful */
+#htp-steps{display:flex;flex-direction:column;gap:14px}
+#htp-steps .htp-step:nth-child(1){border-left:4px solid rgba(0,150,255,0.8);background:linear-gradient(135deg,rgba(0,130,255,0.18),rgba(0,130,255,0.06))}
+#htp-steps .htp-step:nth-child(2){border-left:4px solid rgba(255,149,0,0.8);background:linear-gradient(135deg,rgba(255,120,0,0.18),rgba(255,120,0,0.06))}
+#htp-steps .htp-step:nth-child(3){border-left:4px solid rgba(46,230,138,0.8);background:linear-gradient(135deg,rgba(0,200,110,0.18),rgba(0,200,110,0.06))}
+#htp-steps .htp-step:nth-child(4){border-left:4px solid rgba(255,45,85,0.8);background:linear-gradient(135deg,rgba(255,40,80,0.18),rgba(255,40,80,0.06))}
+#htp-team-step{border-left:4px solid rgba(191,90,242,0.85);background:linear-gradient(135deg,rgba(170,70,240,0.18),rgba(170,70,240,0.06))}
 .htp-icon{font-size:32px;flex-shrink:0;width:44px;text-align:center}
 .htp-txt{font-size:14px;line-height:1.5}
 .htp-txt strong{display:block;font-size:15px;margin-bottom:2px;color:var(--txt)}
@@ -730,7 +767,8 @@ body::after{content:'';position:fixed;inset:0;
 /* Comic mode-select poster — the game panels are the buttons.
    Two art files: portrait (stacked panels) and landscape (side-by-side columns),
    switched by viewport aspect so neither is ever squeezed into the other's shape. */
-#screen-mode.poster-mode{padding:0;overflow:hidden;justify-content:center;align-items:center}
+#screen-mode.poster-mode{padding:0;overflow:hidden;justify-content:center;align-items:center;
+  background:var(--bg) radial-gradient(ellipse 85% 70% at 50% 45%,rgba(255,150,0,.16),rgba(120,40,0,.10) 55%,rgba(10,5,0,0) 100%)}
 .gm-variant{display:none;width:100%;height:100%;align-items:center;justify-content:center}
 .gv-mobile{display:flex}
 @media (min-aspect-ratio:1/1){.gv-mobile{display:none}.gv-desktop{display:flex}}
@@ -844,6 +882,37 @@ body::after{content:'';position:fixed;inset:0;
 .auth-msg{padding:10px 14px;border-radius:var(--rS);font-size:13px;margin-bottom:12px}
 .auth-msg-err{background:rgba(255,45,85,0.12);border:1px solid rgba(255,45,85,0.3);color:#FF6B88}
 .auth-msg-ok{background:rgba(0,232,122,0.10);border:1px solid rgba(0,232,122,0.3);color:#00E87A}
+/* L-3 — consent bar. Hidden until asked for, so it never blocks a returning player */
+#cookie-bar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:900;
+  padding:16px 18px calc(16px + env(safe-area-inset-bottom,0px));
+  background:rgba(14,7,0,.97);backdrop-filter:blur(16px);
+  border-top:2px solid rgba(255,214,10,.45);box-shadow:0 -8px 34px rgba(0,0,0,.6);
+  align-items:center;gap:16px;flex-wrap:wrap}
+#cookie-bar.show{display:flex}
+.ck-txt{flex:1;min-width:230px}
+.ck-ttl{font-size:14px;font-weight:900;color:var(--acc);margin-bottom:3px}
+.ck-body{font-size:11.5px;line-height:1.5;color:var(--mut)}
+.ck-body a{color:var(--acc)}
+.ck-btns{display:flex;gap:9px;flex-shrink:0}
+.ck-btn{padding:11px 17px;border-radius:22px;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.28);background:rgba(255,255,255,.09);color:var(--txt);
+  transition:transform .14s,background .14s}
+.ck-btn:active{transform:scale(.95)}
+.ck-yes{background:linear-gradient(135deg,#FFD60A,#FF9500);border-color:transparent;color:#2A1500}
+.ck-btn:focus-visible{outline:3px solid #FFD60A;outline-offset:3px}
+@media (max-width:520px){.ck-btns{width:100%}.ck-btn{flex:1}}
+/* L-1 — agreement notice on the sign-up tab, and a persistent footer link */
+.auth-legal{margin-top:14px;font-size:11px;line-height:1.5;color:var(--mut);text-align:center}
+.auth-legal a{color:var(--acc);text-decoration:underline}
+.home-legal{margin-top:14px;font-size:11px;color:rgba(216,201,168,.5);text-align:center}
+.home-legal a{color:rgba(216,201,168,.72);text-decoration:underline;margin:0 5px}
+.home-legal a:hover{color:var(--acc)}
+/* L-2 — errors sit against the field they describe, not only in the banner */
+.field-error{display:none;margin-top:5px;font-size:11.5px;font-weight:600;color:#FF6B88;line-height:1.35}
+.field-error.show{display:block}
+.inp.field-invalid{border-color:rgba(255,45,85,.75)!important;box-shadow:0 0 0 3px rgba(255,45,85,.14)!important}
+.auth-forgot{display:block;width:100%;margin-top:10px;padding:4px;background:none;border:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--mut);text-decoration:underline;cursor:pointer;text-align:center}
+.auth-forgot:hover,.auth-forgot:focus-visible{color:var(--acc)}
 .auth-divider{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:12px;margin:14px 0}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bdr2)}
 .auth-google-btn{background:rgba(255,255,255,0.06);color:var(--txt);border:1.5px solid rgba(255,255,255,0.15);font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:0}
@@ -865,10 +934,14 @@ body::after{content:'';position:fixed;inset:0;
 </style>
 </head>
 <body>
-<canvas id="bg-canvas"></canvas>
+<!-- Ambient background art only — never announced -->
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
 <div id="fs-btn" onclick="enterFS()">⛶ Fullscreen</div>
 
 <!-- SPLASH / LANDING — shows first, Start Now enters the game -->
+<!-- Landmark for assistive tech. .screen children are position:absolute, so this
+     wrapper generates no layout of its own. -->
+<main>
 <div class="screen active" id="screen-splash" style="z-index:200">
   <div class="splash-variant sv-mobile">
     <div class="splash-art">
@@ -917,14 +990,14 @@ body::after{content:'';position:fixed;inset:0;
   </div>
 
   <!-- Floating confetti -->
-  <div class="home-floaties" id="home-floaties"></div>
+  <div class="home-floaties" id="home-floaties" aria-hidden="true"></div>
 
   <!-- Mute toggle -->
   <button id="mute-btn" onclick="toggleMuteBtn()">🔊</button>
 
   <!-- Logo -->
   <div class="home-logo-wrap">
-    <img src="logo.png?v=2" class="home-logo-img" alt="Wam Bam">
+    <img src="logo.png?v=2" class="home-logo-img" alt="Wham Bam">
   </div>
 
   <div class="home-sub">The TOP 3 Party Games in 1 App Now !!</div>
@@ -950,12 +1023,15 @@ body::after{content:'';position:fixed;inset:0;
     <div id="home-user-pill" onclick="HB_AUTH.showAuthModal()" style="cursor:pointer;margin-bottom:10px"></div>
     <button class="btn btn-pri" onclick="enterFS();goTo('screen-mode');SFX.tap()" style="font-size:19px;padding:20px 24px">Select Game</button>
   </div>
+  <div class="home-legal">
+    <a href="terms.html" target="_blank" rel="noopener">Terms</a>·<a href="privacy.html" target="_blank" rel="noopener">Privacy</a>·<a href="#" onclick="openCookiePrefs();return false">Cookie settings</a>
+  </div>
 </div>
 
 <!-- SETUP -->
 <!-- MODE SELECT — 3 games -->
 <div class="screen poster-mode" id="screen-mode">
-  <div class="back-btn" onclick="goTo('screen-home');SFX.tap()">Go back</div>
+  <button type="button" class="back-btn" onclick="goTo('screen-home');SFX.tap()">Go back</button>
   <!-- Portrait art: three stacked panels -->
   <div class="gm-variant gv-mobile">
     <div class="gm-poster">
@@ -977,7 +1053,7 @@ body::after{content:'';position:fixed;inset:0;
 </div>
 
 <div class="screen scroll" id="screen-setup">
-  <div class="back-btn" onclick="goTo('screen-mode');SFX.tap()">Go back</div>
+  <button type="button" class="back-btn" onclick="goTo('screen-mode');SFX.tap()">Go back</button>
   <!-- Which game is being set up — big, centred, tap to change -->
   <div class="setup-mode-banner smb-headsup" id="setup-mode-banner" onclick="goTo('screen-mode');SFX.tap()">
     <div class="smb-lbl">Setting up</div>
@@ -987,9 +1063,9 @@ body::after{content:'';position:fixed;inset:0;
   </div>
   <div class="setup-section">
     <div class="lbl">Game Mode</div>
-    <div class="mode-row">
-      <div class="mode-btn on" id="mode-classic" onclick="selMode('classic')">🎯 Classic</div>
-      <div class="mode-btn" id="mode-team" onclick="selMode('team')">👥 Team</div>
+    <div class="mode-row" role="group" aria-label="Game mode">
+      <button type="button" class="mode-btn on" id="mode-classic" aria-pressed="true" onclick="selMode('classic')"><span aria-hidden="true">🎯</span> Classic</button>
+      <button type="button" class="mode-btn" id="mode-team" aria-pressed="false" onclick="selMode('team')"><span aria-hidden="true">👥</span> Team</button>
     </div>
   </div>
   <div class="setup-section" id="team-count-section" style="display:none">
@@ -1001,7 +1077,7 @@ body::after{content:'';position:fixed;inset:0;
     </div>
   </div>
   <div class="setup-section" id="deck-section">
-    <div class="lbl">Choose a Deck <span style="font-size:11px;font-weight:600;color:var(--cor);margin-left:6px">8 free · 16 premium</span></div>
+    <div class="lbl">Choose a Deck <span id="deck-mix-lbl" style="font-size:11px;font-weight:600;color:var(--cor);margin-left:6px"></span></div>
     <div class="deck-grid" id="deck-grid"></div>
     <div id="prem-section">
       <div class="prem-lbl">🔒 Premium Decks <span id="prem-cnt"></span><span class="swipe-hint" id="swipe-hint">swipe to see all <b>⟶</b></span></div>
@@ -1011,6 +1087,15 @@ body::after{content:'';position:fixed;inset:0;
         <button class="carousel-arrow right" onclick="scrollCarousel(1)" aria-label="Scroll right">›</button>
         <div class="swipe-cue" id="swipe-cue" aria-hidden="true">SWIPE <b>›››</b></div>
       </div>
+      <!-- Bundle, not a deck — kept out of the carousel so the count matches -->
+      <button type="button" class="aa-bundle" id="aa-bundle" style="display:none" onclick="allAccessUpgrade()">
+        <span class="aa-bundle-star" aria-hidden="true">⭐</span>
+        <span class="aa-bundle-txt">
+          <span class="aa-bundle-ttl">All Access · $4.99 / year</span>
+          <span class="aa-bundle-sub" id="aa-bundle-sub">Unlocks every premium deck</span>
+        </span>
+        <span class="aa-bundle-tag">BEST VALUE</span>
+      </button>
     </div>
   </div>
   <div class="setup-section">
@@ -1020,22 +1105,22 @@ body::after{content:'';position:fixed;inset:0;
       <div class="tdisplay"><div class="tbig" id="t-big">60</div><div class="tunit" id="t-unit">seconds</div></div>
       <button class="tsb" id="t-plus">+</button>
     </div>
-    <div class="tpresets">
-      <div class="tpreset" onclick="setTimer(30)">30s</div>
-      <div class="tpreset" onclick="setTimer(45)">45s</div>
-      <div class="tpreset" onclick="setTimer(60)">60s</div>
-      <div class="tpreset" onclick="setTimer(90)">90s</div>
-      <div class="tpreset" onclick="setTimer(120)">2 min</div>
-      <div class="tpreset" onclick="setTimer(180)">3 min</div>
+    <div class="tpresets" id="timer-presets" role="group" aria-label="Round timer presets">
+      <button type="button" class="tpreset" data-t="30"  aria-pressed="false" onclick="setTimer(30)">30s</button>
+      <button type="button" class="tpreset" data-t="45"  aria-pressed="false" onclick="setTimer(45)">45s</button>
+      <button type="button" class="tpreset" data-t="60"  aria-pressed="false" onclick="setTimer(60)">60s</button>
+      <button type="button" class="tpreset" data-t="90"  aria-pressed="false" onclick="setTimer(90)">90s</button>
+      <button type="button" class="tpreset" data-t="120" aria-pressed="false" onclick="setTimer(120)">2 min</button>
+      <button type="button" class="tpreset" data-t="180" aria-pressed="false" onclick="setTimer(180)">3 min</button>
     </div>
   </div>
   <div class="setup-section">
     <div class="lbl">Number of Rounds</div>
-    <div class="tpresets">
-      <div class="tpreset rp-active" id="rp-free" onclick="setMaxRounds(0)">∞ Free Play</div>
-      <div class="tpreset" id="rp-3" onclick="setMaxRounds(3)">3 Rounds</div>
-      <div class="tpreset" id="rp-5" onclick="setMaxRounds(5)">5 Rounds</div>
-      <div class="tpreset" id="rp-7" onclick="setMaxRounds(7)">7 Rounds</div>
+    <div class="tpresets" role="group" aria-label="Number of rounds">
+      <button type="button" class="tpreset rp-active" id="rp-free" aria-pressed="true" onclick="setMaxRounds(0)">∞ Free Play</button>
+      <button type="button" class="tpreset" id="rp-3" aria-pressed="false" onclick="setMaxRounds(3)">3 Rounds</button>
+      <button type="button" class="tpreset" id="rp-5" aria-pressed="false" onclick="setMaxRounds(5)">5 Rounds</button>
+      <button type="button" class="tpreset" id="rp-7" aria-pressed="false" onclick="setMaxRounds(7)">7 Rounds</button>
     </div>
     <div style="font-size:11px;color:var(--mut);margin-top:6px;padding:0 2px">Each team plays the selected number of rounds, then game ends with a winner</div>
   </div>
@@ -1064,7 +1149,7 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- TEAM SETUP -->
 <div class="screen scroll" id="screen-teams">
-  <div class="back-btn" onclick="goTo('screen-setup');SFX.tap()">Go back</div>
+  <button type="button" class="back-btn" onclick="goTo('screen-setup');SFX.tap()">Go back</button>
   <div style="font-size:22px;font-weight:900;margin-bottom:18px;width:100%;max-width:370px">👥 Team Setup</div>
   <div id="team-blocks-wrap" style="width:100%;max-width:370px;display:flex;flex-direction:column;gap:16px"></div>
   <div class="opt-card" style="width:100%;max-width:370px;margin-bottom:12px;margin-top:16px">
@@ -1074,28 +1159,44 @@ body::after{content:'';position:fixed;inset:0;
 </div>
 
 <!-- HOW TO PLAY MODAL (not a .screen — floats as overlay, never intercepts navigation) -->
+<!-- COOKIE / STORAGE CONSENT (L-3) -->
+<div id="cookie-bar" role="dialog" aria-live="polite" aria-label="Cookie and storage choices">
+  <div class="ck-txt">
+    <div class="ck-ttl">Your privacy</div>
+    <div class="ck-body">
+      We store your game settings and progress on your device so the game works.
+      We would also like to measure anonymous usage to improve it — that part is
+      entirely your choice. <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
+    </div>
+  </div>
+  <div class="ck-btns">
+    <button type="button" class="ck-btn ck-no" onclick="setCookieConsent(false)">Essential only</button>
+    <button type="button" class="ck-btn ck-yes" onclick="setCookieConsent(true)">Accept all</button>
+  </div>
+</div>
+
+<!-- RESUME INTERRUPTED GAME (M-2) -->
+<div id="resume-modal" style="display:none;position:fixed;inset:0;z-index:620;background:rgba(10,5,0,.94);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:24px 16px">
+  <div class="fp-modal-wrap">
+    <div class="fp-hero" aria-hidden="true">⏸</div>
+    <div class="fp-title">Game in progress</div>
+    <div class="fp-sub" id="resume-detail"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+      <button class="btn btn-pri" onclick="resumeGame()">▶ Resume game</button>
+      <button class="btn btn-out" onclick="declineResume()">Start something new</button>
+    </div>
+  </div>
+</div>
+
 <div id="howto-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(10,5,0,.92);backdrop-filter:blur(8px);overflow-y:auto;-webkit-overflow-scrolling:touch;align-items:center;justify-content:center;padding:24px 16px">
   <div class="htp-wrap" style="max-width:380px;width:100%">
     <div class="htp-title">How to Play 🎮</div>
-    <div class="htp-sub">Quick guide for first-timers</div>
-    <div class="htp-step">
-      <div class="htp-icon">📱</div>
-      <div class="htp-txt"><strong>Hold phone on forehead</strong>Word appears on screen — others give verbal clues</div>
-    </div>
-    <div class="htp-step" id="htp-tilt-step">
-      <div class="htp-icon">↕️</div>
-      <div class="htp-txt"><strong>Tilt to answer</strong>Tilt UP ✓ correct · Tilt DOWN ✗ skip</div>
-    </div>
-    <div class="htp-step" id="htp-voice-step" style="display:none">
-      <div class="htp-icon">🎤</div>
-      <div class="htp-txt"><strong>Voice commands</strong>Say "correct" or "skip" to answer hands-free</div>
-    </div>
-    <div class="htp-step">
-      <div class="htp-icon">⏱</div>
-      <div class="htp-txt"><strong>Race the timer</strong>Score as many words as possible before time runs out</div>
-    </div>
+    <div class="htp-sub" id="htp-sub">Quick guide for first-timers</div>
+    <!-- Steps are built at runtime from the selected mode's tips card, so the
+         guide can never disagree with the Ready screen. See buildHowToSteps(). -->
+    <div id="htp-steps"></div>
     <div class="htp-step" id="htp-team-step" style="display:none">
-      <div class="htp-icon">👥</div>
+      <div class="htp-icon" aria-hidden="true">👥</div>
       <div class="htp-txt"><strong>Team turns</strong>Teams take turns — highest score wins!</div>
     </div>
     <button class="btn btn-pri" style="margin-top:14px;width:100%" onclick="dismissHowTo()">Got it! Let's Play 🎉</button>
@@ -1104,7 +1205,7 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- ROTATE + TILT TUTORIAL -->
 <div class="screen" id="screen-rotate" style="z-index:50;background:var(--bg)">
-  <div class="back-btn" onclick="abortRotate();SFX.tap()">Go back</div>
+  <button type="button" class="back-btn" onclick="abortRotate();SFX.tap()">Go back</button>
   <div class="tut-wrap">
     <div class="tut-title">📱 Rotate to Landscape</div>
     <div class="tut-sub">Turn phone <strong style="color:var(--acc)">sideways</strong> to enable tilt controls. Game starts automatically once rotated.</div>
@@ -1113,7 +1214,7 @@ body::after{content:'';position:fixed;inset:0;
     <div class="tut-panels">
       <!-- SKIP panel -->
       <div class="tut-panel skip-p">
-        <div class="tut-panel-icon">⬆️</div>
+        <div class="tut-panel-icon" aria-hidden="true">⬆️</div>
         <div class="phone-demo" style="width:100%;height:90px">
           <div class="demo-phone anim-correct">
             <div class="demo-screen"><div class="demo-word">WORD</div></div>
@@ -1127,7 +1228,7 @@ body::after{content:'';position:fixed;inset:0;
 
       <!-- CORRECT panel -->
       <div class="tut-panel cor-p">
-        <div class="tut-panel-icon">⬇️</div>
+        <div class="tut-panel-icon" aria-hidden="true">⬇️</div>
         <div class="phone-demo" style="width:100%;height:90px">
           <div class="demo-phone anim-skip">
             <div class="demo-screen"><div class="demo-word">WORD</div></div>
@@ -1176,34 +1277,34 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- READY -->
 <div class="screen scroll" id="screen-ready" style="gap:0;justify-content:flex-start;padding-top:52px;padding-bottom:24px">
-  <div class="back-btn" onclick="goReadyBack();SFX.tap()">Go back</div>
+  <button type="button" class="back-btn" onclick="goReadyBack();SFX.tap()">Go back</button>
   <div class="rwrap">
     <div class="rtitle">Ready?</div>
     <div class="rsub" id="ready-sub">Hold phone to forehead — others see the word!</div>
     <!-- HeadsUp tips (default) -->
     <div class="tips-card tc-headsup" id="tips-headsup">
-      <div class="tip-row"><div class="ti">📱</div><div class="tt"><b>Landscape mode required</b><span>Turn your phone sideways — orientation locks for the round</span></div></div>
-      <div class="tip-row"><div class="ti">↕️</div><div class="tt"><b>Tilt to play</b><span>Port to the floor = <strong>Correct ✓</strong> · to the sky = <strong>Skip ✗</strong></span></div></div>
-      <div class="tip-row"><div class="ti">🎙️</div><div class="tt"><b>Voice commands</b><span>Say “Correct” / “Yes” to score · “Skip” / “Next” to pass</span></div></div>
-      <div class="tip-row"><div class="ti">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl">60s</strong> to score as many as you can</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">📱</div><div class="tt"><b>Landscape mode required</b><span>Turn your phone sideways — orientation locks for the round</span></div></div>
+      <div class="tip-row" data-req="tilt"><div class="ti" aria-hidden="true">↕️</div><div class="tt"><b>Tilt to play</b><span>Port to the floor = <strong>Correct ✓</strong> · to the sky = <strong>Skip ✗</strong></span></div></div>
+      <div class="tip-row" data-req="voice"><div class="ti" aria-hidden="true">🎙️</div><div class="tt"><b>Voice commands</b><span>Say “Correct” / “Yes” to score · “Skip” / “Next” to pass</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl">60s</strong> to score as many as you can</span></div></div>
     </div>
     <!-- Charades tips (portrait, button-only) -->
     <div class="tips-card tc-charades" id="tips-charades" style="display:none">
-      <div class="tip-row"><div class="ti">🙈</div><div class="tt"><b>Keep the word to yourself</b><span>Only you read the screen — don't show it to your team</span></div></div>
-      <div class="tip-row"><div class="ti">🤐</div><div class="tt"><b>Act it out — stay silent</b><span>No speaking and no sounds, gestures only, while your team guesses</span></div></div>
-      <div class="tip-row"><div class="ti">✋</div><div class="tt"><b>Tap to score</b><span>Hit Correct ✓ when they guess it, Skip ✗ to pass</span></div></div>
-      <div class="tip-row"><div class="ti">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl-c">60s</strong> to act out as many words as you can</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">🙈</div><div class="tt"><b>Keep the word to yourself</b><span>Only you read the screen — don't show it to your team</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">🤐</div><div class="tt"><b>Act it out — stay silent</b><span>No speaking and no sounds, gestures only, while your team guesses</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">✋</div><div class="tt"><b>Tap to score</b><span>Hit Correct ✓ when they guess it, Skip ✗ to pass</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl-c">60s</strong> to act out as many words as you can</span></div></div>
     </div>
     <div class="tips-card tc-dontsayit" id="tips-dontsayit" style="display:none">
-      <div class="tip-row"><div class="ti">🗣️</div><div class="tt"><b>Describe the target word</b><span>Your team keeps shouting guesses until they land it</span></div></div>
-      <div class="tip-row"><div class="ti">🚫</div><div class="tt"><b>Six forbidden words</b><span>Never say them — and never say the target word itself</span></div></div>
-      <div class="tip-row"><div class="ti">🚨</div><div class="tt"><b>Slipped up? Hit BUZZ</b><span>Tap the buzzer and that card costs you 1 point</span></div></div>
-      <div class="tip-row"><div class="ti">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl-d">60s</strong> to clear as many cards as you can</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">🗣️</div><div class="tt"><b>Describe the target word</b><span>Your team keeps shouting guesses until they land it</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">🚫</div><div class="tt"><b>Six forbidden words</b><span>Never say them — and never say the target word itself</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">🚨</div><div class="tt"><b>Slipped up? Hit BUZZ</b><span>Tap the buzzer and that card costs you 1 point</span></div></div>
+      <div class="tip-row"><div class="ti" aria-hidden="true">⏱</div><div class="tt"><b>Round timer</b><span>You have <strong id="ready-timer-lbl-d">60s</strong> to clear as many cards as you can</span></div></div>
     </div>
     <!-- Tilt perm -->
     <div id="tilt-perm-block" style="display:none">
       <div class="perm-card tilt-p">
-        <div class="perm-icon">📱</div>
+        <div class="perm-icon" aria-hidden="true">📱</div>
         <div class="perm-title">Motion sensor needed</div>
         <div class="perm-sub">iOS requires permission to use the tilt sensor. Tap below.</div>
         <button class="btn perm-btn-tilt" id="tilt-perm-btn" onclick="requestTiltPerm()">Enable Tilt Sensor</button>
@@ -1213,7 +1314,7 @@ body::after{content:'';position:fixed;inset:0;
     <!-- HTTPS warn -->
     <div id="https-warn-block" style="display:none">
       <div class="perm-card err-p">
-        <div class="perm-icon">⚠️</div>
+        <div class="perm-icon" aria-hidden="true">⚠️</div>
         <div class="perm-title">HTTPS required for tilt</div>
         <div class="perm-sub">Serve the game over HTTPS. Using buttons instead.</div>
       </div>
@@ -1221,7 +1322,7 @@ body::after{content:'';position:fixed;inset:0;
     <!-- Mic perm — optional pre-grant, does NOT block Start -->
     <div id="mic-perm-block" style="display:none">
       <div class="perm-card mic-p">
-        <div class="perm-icon">🎙️</div>
+        <div class="perm-icon" aria-hidden="true">🎙️</div>
         <div class="perm-title">Microphone access</div>
         <div class="perm-sub">Tap below to grant mic access now, <strong>or just tap Start</strong> — the browser will ask automatically.</div>
         <button class="btn perm-btn-mic" id="mic-perm-btn" onclick="requestMicPermission()">Allow Microphone (optional)</button>
@@ -1236,7 +1337,7 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- COUNTDOWN -->
 <div class="screen" id="screen-countdown" style="z-index:10;gap:0">
-  <div class="back-btn" style="z-index:60" onclick="abortCountdown()">Go back</div>
+  <button type="button" class="back-btn" style="z-index:60" onclick="abortCountdown()">Go back</button>
   <div class="cdnum" id="cd-num">3</div>
   <div class="cdlbl" id="cd-lbl">Get ready…</div>
 </div>
@@ -1290,7 +1391,7 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- SCORE -->
 <div class="screen" id="screen-score" style="gap:0">
-  <div class="score-hero"><div class="score-emoji" id="sc-emoji">🎉</div><div class="score-title" id="sc-title">Round Over!</div><div class="score-sub" id="sc-sub"></div></div>
+  <div class="score-hero"><div class="score-emoji" aria-hidden="true" id="sc-emoji">🎉</div><div class="score-title" id="sc-title">Round Over!</div><div class="score-sub" id="sc-sub"></div></div>
   <div id="sc-round-info" style="display:none;font-size:12px;font-weight:700;color:var(--mut);letter-spacing:.5px;margin:4px 0 8px;text-align:center"></div>
   <div id="sc-gameover-banner" style="display:none;width:100%;max-width:380px;margin:0 0 12px;padding:14px 16px;background:linear-gradient(135deg,rgba(255,196,0,.15),rgba(255,196,0,.05));border:1.5px solid rgba(255,196,0,.4);border-radius:16px;text-align:center">
     <div style="font-size:22px;font-weight:900;color:var(--acc)">Game Over!</div>
@@ -1299,7 +1400,10 @@ body::after{content:'';position:fixed;inset:0;
   <div id="sc-cards"></div>
   <div class="sc-wordlist" id="sc-wordlist" style="display:none">
     <div class="sc-wl-title">Words This Round</div>
-    <div class="wl-wrap" id="sc-wl-rows"></div>
+    <div class="wl-scroll" id="sc-wl-scroll">
+      <div class="wl-wrap" id="sc-wl-rows" tabindex="0" role="group" aria-label="Words played this round"></div>
+    </div>
+    <div class="wl-more" id="sc-wl-more">Scroll for more ↓</div>
   </div>
   <div class="sc-btns">
     <button class="btn btn-pri" style="width:100%" id="sc-play-again-btn" onclick="playAgain()">▶ Play Again</button>
@@ -1311,7 +1415,7 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- LEADERBOARD -->
 <div class="screen scroll" id="screen-leaderboard">
-  <div class="back-btn" onclick="goTo('screen-home');SFX.tap()">Go back</div>
+  <button type="button" class="back-btn" onclick="goTo('screen-home');SFX.tap()">Go back</button>
   <div class="lb-hdr">🏆 Leaderboard</div>
   <div id="lb-tabs" style="display:flex;gap:8px;width:100%;max-width:370px;margin-bottom:12px">
     <button id="lb-tab-local" class="lb-tab lb-tab-active" onclick="HB_AUTH.switchLBTab('local')">My Scores</button>
@@ -1327,21 +1431,21 @@ body::after{content:'';position:fixed;inset:0;
 <div class="screen" id="screen-unlock" style="z-index:100">
   <div class="unlock-card">
     <div class="unlock-glow"></div>
-    <div class="unlock-icon">🔒</div>
+    <div class="unlock-icon" aria-hidden="true">🔒</div>
     <div class="unlock-title" id="unlock-modal-title">Premium Deck</div>
     <div class="unlock-deck-name" id="unlock-deck-name">Bollywood Movies</div>
     <div class="unlock-sub" id="unlock-modal-sub">Choose how to unlock</div>
     <div class="unlock-price" id="unlock-price"></div>
     <div class="unlock-options" id="unlock-options-wrap">
       <div class="unlock-option" id="unlock-opt-ad" onclick="selectUnlockMethod('ad')">
-        <div class="uo-icon">📺</div>
-        <div class="uo-title" id="unlock-ad-label">Watch 60s Ad</div>
-        <div class="uo-sub" id="unlock-ad-sub">100 words · 24 hours</div>
+        <div class="uo-icon" aria-hidden="true">📺</div>
+        <div class="uo-title" id="unlock-ad-label">Watch 30s Ad</div>
+        <div class="uo-sub" id="unlock-ad-sub">30 more words</div>
       </div>
       <div class="unlock-option" id="unlock-opt-pay" onclick="selectUnlockMethod('pay')">
-        <div class="uo-icon">💳</div>
+        <div class="uo-icon" aria-hidden="true">💳</div>
         <div class="uo-title" id="unlock-pay-label">$0.99 / year</div>
-        <div class="uo-sub" id="unlock-pay-sub">300 words · annual</div>
+        <div class="uo-sub" id="unlock-pay-sub">Unlocks the full category</div>
       </div>
     </div>
     <div class="fp-allaccess" onclick="selectUnlockMethod('allaccess')">
@@ -1350,19 +1454,20 @@ body::after{content:'';position:fixed;inset:0;
       <div style="font-size:11px;color:var(--mut);margin-top:3px">All decks · no ads · all future decks</div>
     </div>
     <button class="btn btn-out" onclick="goTo('screen-setup');SFX.tap()">← Back</button>
-    <div id="unlock-restore" style="display:none;margin-top:10px;font-size:12px;color:var(--mut);text-decoration:underline;cursor:pointer" onclick="PAYMENTS.restore()">Restore purchases</div>
+    <button type="button" id="unlock-restore" class="unlock-restore" onclick="PAYMENTS.restore()">Restore purchases</button>
+    <div id="unlock-restore-note" class="unlock-restore-note">Already subscribed? Your purchases follow your account — sign in to restore them.</div>
   </div>
 </div>
 
 <!-- FREE WORD LIMIT PAYWALL -->
 <div id="free-paywall-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(10,5,0,.96);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:24px 16px">
   <div class="fp-modal-wrap">
-    <div class="fp-hero">⚡</div>
+    <div class="fp-hero" aria-hidden="true">⚡</div>
     <div class="fp-title">Word Limit Reached</div>
-    <div class="fp-sub" id="fp-deck-info">You've used your 50 free words on this deck.<br>Watch an ad for 50 more, or subscribe.</div>
+    <div class="fp-sub" id="fp-deck-info">You've used your 50 free words on this deck.<br>Watch an ad for 30 more, or subscribe.</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
-      <button class="btn btn-pur" onclick="freePaywallAd()">📺 Watch 30s Ad → 50 more words (24hr)</button>
-      <button class="btn btn-pri" onclick="freePaywallSub()">💳 $0.99 / year → 300 words</button>
+      <button class="btn btn-pur" onclick="freePaywallAd()">📺 Watch 30s Ad → 30 more words</button>
+      <button class="btn btn-pri" onclick="freePaywallSub()">💳 $0.99 / year → full category</button>
     </div>
     <div class="fp-allaccess" onclick="allAccessUpgrade()">
       <div class="fp-allaccess-tag">⭐ Best Value</div>
@@ -1395,12 +1500,12 @@ body::after{content:'';position:fixed;inset:0;
       <div class="ad-goog-badge">Ad</div>
       <div class="ad-goog-choices" title="AdChoices">i</div>
       <div class="ad-goog-image" style="height:55%">
-        <img src="logo.png?v=2" class="ad-goog-logo-img" style="height:80px" alt="Wam Bam" onerror="this.style.display='none';this.parentNode.innerHTML+='<div style=\'font-size:36px;font-weight:900;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.5)\'>WAM BAM!</div>'">
+        <img src="logo.png?v=2" class="ad-goog-logo-img" style="height:80px" alt="Wham Bam" onerror="this.style.display='none';this.parentNode.innerHTML+='<div style=\'font-size:36px;font-weight:900;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.5)\'>WHAM BAM!</div>'">
       </div>
       <div class="ad-goog-body" style="padding:16px 20px">
         <div>
-          <div class="ad-goog-title" style="font-size:18px">Wam Bam! — Ultimate Party Game</div>
-          <div class="ad-goog-desc" style="font-size:13px;margin-top:6px">Play the hilarious word-guessing game with friends &amp; family. 11 exciting decks, endless fun for all ages!</div>
+          <div class="ad-goog-title" style="font-size:18px">Wham Bam! — Ultimate Party Game</div>
+          <div class="ad-goog-desc" style="font-size:13px;margin-top:6px">Play the hilarious word-guessing game with friends &amp; family. 24 exciting decks, endless fun for all ages!</div>
         </div>
         <div class="ad-goog-footer" style="margin-top:16px">
           <div class="ad-goog-url" style="font-size:12px">whambam.games</div>
@@ -1707,11 +1812,11 @@ function getDeckCntLabel(d){
   if(G.allAccess) return d.words.length+' entries';
   if(!d.premium){
     const sub=getTmpPool(d.id,_subKey);
-    if(sub) return '300 entries';
-    return '50 free';
+    if(sub) return d.words.length+' entries';
+    return FREE_LIMIT+' free';
   } else {
     const psub=getTmpPool(d.id,_psubKey);
-    if(psub) return '300 entries';
+    if(psub) return d.words.length+' entries';
     return '';
   }
 }
@@ -1721,7 +1826,10 @@ function goTo(id){
   // Sleep ambient canvas + floaties on battery-critical screens
   window._bgOn=!['screen-play','screen-countdown','screen-rotate','screen-ready','screen-ad','screen-score'].includes(id);
   if(id==='screen-leaderboard'){renderLB();renderAchv();}
-  if(id==='screen-setup'&&typeof primeCarouselHint==='function')primeCarouselHint();
+  // M-2: offer to pick up an interrupted game, once, on Home
+  if(id==='screen-home'&&typeof maybeOfferResume==='function')setTimeout(maybeOfferResume,420);
+  // Rebuild on entry so ad-word counters and relocked decks stay accurate
+  if(id==='screen-setup'){refreshDeckGrid();syncTimerPresets();if(typeof primeCarouselHint==='function')primeCarouselHint();}
   // Unlock orientation for menu/setup screens (allows portrait)
   if(['screen-home','screen-mode','screen-setup','screen-score','screen-teams','screen-leaderboard','screen-unlock'].includes(id))unlockOrient();
   updateFSBtn();
@@ -1734,7 +1842,8 @@ refreshDeckGrid();
 
 function selDeck(id){
   const deck=DECKS.find(d=>d.id===id);
-  if(deck&&deck.premium&&!G.unlockedDecks.includes(id))return;
+  // Ad-unlocked decks are selectable even though they are not owned
+  if(deck&&deck.premium&&!hasDeckAccess(deck))return;
   G.deck=id;
   document.querySelectorAll('.deck-card').forEach(c=>{
     c.classList.remove('on');
@@ -1747,7 +1856,16 @@ function selDeck(id){
   ov.innerHTML='<span class="deck-sel-badge">✓ Selected</span>';
   card.appendChild(ov);
 }
-function selMode(m){SFX.tap();G.mode=m;document.getElementById('mode-classic').classList.toggle('on',m==='classic');document.getElementById('mode-team').classList.toggle('on',m==='team');document.getElementById('team-count-section').style.display=m==='team'?'block':'none'}
+function selMode(m){
+  SFX.tap();G.mode=m;
+  [['mode-classic','classic'],['mode-team','team']].forEach(([id,val])=>{
+    const el=document.getElementById(id);if(!el)return;
+    const on=m===val;
+    el.classList.toggle('on',on);
+    el.setAttribute('aria-pressed',on?'true':'false');
+  });
+  document.getElementById('team-count-section').style.display=m==='team'?'block':'none';
+}
 function goReadyBack(){if(G.mode==='team')goTo('screen-teams');else goTo('screen-setup')}
 function selGameStyle(s){
   SFX.tap();G.gameStyle=s;
@@ -1758,7 +1876,7 @@ function selGameStyle(s){
   if(chip)chip.textContent=CHIPS[s];
   const h=document.getElementById('style-hint');
   const HINTS={headsup:'Phone on forehead — others give verbal clues',
-    charades:'Hold phone up, face out — act it out without speaking',
+    charades:'Only you read the word — act it out without speaking',
     dontsayit:'Describe the word to your team — never say the forbidden words!'};
   if(h)h.textContent=HINTS[s];
   const tiltRow=document.getElementById('tilt-opt-row');
@@ -1804,11 +1922,13 @@ function renderTeamBlocks(){
 /* Rounds selector */
 function setMaxRounds(n){
   G.maxRounds=n;
-  ['rp-free','rp-3','rp-5','rp-7'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.classList.remove('rp-active');
-  });
   const active=n===0?'rp-free':n===3?'rp-3':n===5?'rp-5':'rp-7';
-  const el=document.getElementById(active);if(el)el.classList.add('rp-active');
+  ['rp-free','rp-3','rp-5','rp-7'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const on=id===active;
+    el.classList.toggle('rp-active',on);
+    el.setAttribute('aria-pressed',on?'true':'false');
+  });
 }
 function isGameOver(){
   if(G.maxRounds===0)return false;
@@ -1816,9 +1936,161 @@ function isGameOver(){
   return G.gameTurnCount>=turnsNeeded;
 }
 
+/* ═══════════════════════════
+   L-3 — STORAGE / ANALYTICS CONSENT
+   Gameplay storage (settings, unlocks, scores) is strictly necessary and needs no
+   consent — without it the game cannot function and nothing leaves the device.
+   Anything optional is gated behind an explicit yes, defaulting to NO.
+═══════════════════════════ */
+const CONSENT_KEY='hb_consent';
+function getCookieConsent(){
+  try{return localStorage.getItem(CONSENT_KEY)}catch(e){return null}
+}
+/* True only after an explicit opt-in. Check this before loading anything
+   non-essential — it is the single gate for optional tracking. */
+function analyticsAllowed(){return getCookieConsent()==='all'}
+function setCookieConsent(accepted){
+  try{localStorage.setItem(CONSENT_KEY,accepted?'all':'essential')}catch(e){}
+  const bar=document.getElementById('cookie-bar');
+  if(bar)bar.classList.remove('show');
+  try{SFX.tap()}catch(e){}
+  if(accepted)enableOptionalAnalytics();
+  showToast(accepted?'Thanks — that helps us improve the game':'Saved — essential storage only');
+}
+/* Deliberately a no-op. No optional analytics ship in the app today; this is the
+   single place to add them, so nothing can ever load before consent is given.
+   Called on load for returning opt-ins and once at the moment of opting in. */
+function enableOptionalAnalytics(){
+  /* e.g. inject an analytics tag here — never outside this function */
+}
+function openCookiePrefs(){
+  const bar=document.getElementById('cookie-bar');
+  if(bar)bar.classList.add('show');
+}
+(function initConsent(){
+  if(!getCookieConsent()){
+    // Let the splash land first — a legal bar as the very first thing a player
+    // sees reads as a malfunction.
+    setTimeout(()=>{const b=document.getElementById('cookie-bar');if(b)b.classList.add('show')},2200);
+  }else if(analyticsAllowed()){
+    enableOptionalAnalytics();
+  }
+})();
+
+/* ═══════════════════════════
+   M-2 — GAME PROGRESS RECOVERY
+   Saved at round boundaries, never mid-round: a round with 12 seconds left on
+   the clock cannot be resumed fairly, and the real loss players complained about
+   is accumulated team scores in a long game, not one interrupted round.
+═══════════════════════════ */
+const GAME_SAVE_KEY='hb_game_progress';
+const GAME_SAVE_TTL=24*60*60*1000;
+let _resumeOffered=false;
+
+function saveGameProgress(){
+  // Nothing worth restoring before a round has actually been played
+  if(!G.gameTurnCount||G.gameTurnCount<1)return;
+  try{
+    localStorage.setItem(GAME_SAVE_KEY,JSON.stringify({
+      ts:Date.now(),
+      gameStyle:G.gameStyle, deck:G.deck, mode:G.mode,
+      timer:G.timer, maxRounds:G.maxRounds,
+      teamCount:G.teamCount, curTeam:G.curTeam,
+      classicTotal:G.classicTotal, gameTurnCount:G.gameTurnCount, turnCount:G.turnCount,
+      teams:(G.teams||[]).slice(0,G.teamCount).map(t=>({
+        name:t.name, score:t.score, players:t.players||[], playerIdx:t.playerIdx||0
+      })),
+      settings:{
+        skipDeduct:!!G.skipDeduct, voiceEnabled:!!G.voiceEnabled,
+        tiltEnabled:!!G.tiltEnabled, charadesOrientation:G.charadesOrientation
+      }
+    }));
+  }catch(e){/* storage full or blocked — recovery is a nicety, never fail the game */}
+}
+function loadGameProgress(){
+  try{
+    const s=JSON.parse(localStorage.getItem(GAME_SAVE_KEY)||'null');
+    if(!s||!s.ts||Date.now()-s.ts>GAME_SAVE_TTL)return null;
+    if(!s.gameStyle||!s.gameTurnCount)return null;
+    return s;
+  }catch(e){return null}
+}
+function clearGameProgress(){
+  try{localStorage.removeItem(GAME_SAVE_KEY)}catch(e){}
+}
+
+/* Offer the resume once per page load, on Home — the splash is pure artwork and
+   a dialogue over it reads as an error. */
+function maybeOfferResume(){
+  if(_resumeOffered)return;
+  const s=loadGameProgress();
+  if(!s)return;
+  _resumeOffered=true;
+  const NAMES={headsup:'Up Top!!',charades:'Charades!!',dontsayit:"Don't Say It!!"};
+  const modal=document.getElementById('resume-modal');
+  if(!modal)return;
+  const roundsPer=s.mode==='team'?s.teamCount:1;
+  const roundNum=Math.min(Math.ceil(s.gameTurnCount/roundsPer)+ (s.maxRounds?0:0), s.maxRounds||99);
+  const lines=[];
+  lines.push(`<b>${NAMES[s.gameStyle]||'Game'}</b> · ${s.mode==='team'?s.teamCount+' teams':'Classic'}`);
+  if(s.maxRounds)lines.push(`Round ${Math.min(roundNum+1,s.maxRounds)} of ${s.maxRounds}`);
+  else lines.push(`${s.gameTurnCount} round${s.gameTurnCount===1?'':'s'} played`);
+  if(s.mode==='team'){
+    const top=[...s.teams].sort((a,b)=>b.score-a.score);
+    lines.push(top.map(t=>`${esc(t.name)} ${t.score}`).join(' · '));
+  }else{
+    lines.push(`Score so far: ${s.classicTotal} pts`);
+  }
+  document.getElementById('resume-detail').innerHTML=lines.join('<br>');
+  modal.style.display='flex';
+  SFX.tap();
+}
+function resumeGame(){
+  const s=loadGameProgress();
+  document.getElementById('resume-modal').style.display='none';
+  if(!s){showToast('That game has expired');return}
+  SFX.tap();
+  G.gameStyle=s.gameStyle; G.deck=s.deck; G.mode=s.mode;
+  G.timer=s.timer; G.maxRounds=s.maxRounds;
+  G.teamCount=s.teamCount; G.curTeam=s.curTeam;
+  G.classicTotal=s.classicTotal; G.gameTurnCount=s.gameTurnCount; G.turnCount=s.turnCount||0;
+  G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:t.players||[],playerIdx:t.playerIdx||0}));
+  while(G.teams.length<G.teamCount)G.teams.push({name:'Team '+(G.teams.length+1),players:[],score:0});
+  const st=s.settings||{};
+  G.skipDeduct=!!st.skipDeduct; G.voiceEnabled=!!st.voiceEnabled; G.tiltEnabled=!!st.tiltEnabled;
+  if(st.charadesOrientation)G.charadesOrientation=st.charadesOrientation;
+  // Mirror the restored settings back into the setup controls, so a later
+  // playAgain() (which reads the toggles) does not silently undo them.
+  const tg=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=v};
+  tg('tog-skip',G.skipDeduct); tg('tog-voice',G.voiceEnabled); tg('tog-tilt',G.tiltEnabled);
+  selGameStyle(G.gameStyle);          // repaints the setup banner + sensor rows
+  selMode(G.mode); setMaxRounds(G.maxRounds); setTimer(G.timer);
+  if(typeof refreshDeckGrid==='function')refreshDeckGrid();
+  if(G.deck&&G.deck!=='dontsayit'&&typeof selDeck==='function')selDeck(G.deck);
+  showToast('▶ Game resumed');
+  // playAgain() advances the team and lands on Ready — exactly the state the
+  // player was in when they closed the tab.
+  playAgain();
+}
+function declineResume(){
+  SFX.tap();
+  clearGameProgress();
+  document.getElementById('resume-modal').style.display='none';
+}
+
 /* Timer stepper */
 const MIN_T=10,MAX_T=600;
-function setTimer(v){SFX.stepTimer();G.timer=Math.max(MIN_T,Math.min(MAX_T,v));updateTimerDisplay()}
+function setTimer(v){SFX.stepTimer();G.timer=Math.max(MIN_T,Math.min(MAX_T,v));updateTimerDisplay();syncTimerPresets()}
+/* Highlight the preset matching the current timer — the stepper can land on a
+   value no preset covers, in which case none is active. Without this the
+   presets gave no feedback at all and read as broken. */
+function syncTimerPresets(){
+  document.querySelectorAll('#timer-presets .tpreset').forEach(el=>{
+    const on=Number(el.dataset.t)===G.timer;
+    el.classList.toggle('rp-active',on);
+    el.setAttribute('aria-pressed',on?'true':'false');
+  });
+}
 function stepTimer(d){setTimer(G.timer+d)}
 function updateTimerDisplay(){
   const el=document.getElementById('t-big'),un=document.getElementById('t-unit');
@@ -1882,17 +2154,55 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
+/* The How to Play guide is shown once PER MODE, not once per browser — each
+   game has different rules, so seeing Up Top's guide must not suppress the
+   others. */
+const HOWTO_TITLES={headsup:'🙆 Up Top!!',charades:'🤫 Charades!!',dontsayit:"🚫 Don't Say It!!"};
+function _howToKey(){return 'hb_howto_seen_'+G.gameStyle}
+/* Migrate the old single browser-wide flag: whoever saw the old guide only ever
+   saw Up Top's, so credit that mode and let the other two show theirs once. */
+(function(){
+  try{
+    if(localStorage.getItem('hb_howtoplay_seen')){
+      localStorage.setItem('hb_howto_seen_headsup','1');
+      localStorage.removeItem('hb_howtoplay_seen');
+    }
+  }catch(e){}
+})();
+
+/* Build the guide's steps from the selected mode's tips card. Single source of
+   truth: the copy lives in the Ready-screen markup only, so the two screens
+   cannot drift apart the way they did before. */
+function buildHowToSteps(){
+  const box=document.getElementById('htp-steps');
+  const card=activeTipsCard();
+  if(!box||!card)return;
+  box.innerHTML='';
+  card.querySelectorAll('.tip-row').forEach(row=>{
+    if(!tipReqMet(row))return;               // honours the tilt / voice toggles
+    const icon=row.querySelector('.ti');
+    const head=row.querySelector('.tt b');
+    const body=row.querySelector('.tt span');
+    const step=document.createElement('div');
+    step.className='htp-step';
+    step.innerHTML=`<div class="htp-icon" aria-hidden="true">${icon?icon.textContent:'•'}</div>`
+      +`<div class="htp-txt"><strong>${esc(head?head.textContent:'')}</strong>${esc(body?body.textContent:'')}</div>`;
+    box.appendChild(step);
+  });
+}
 function checkShowHowTo(){
-  if(localStorage.getItem('hb_howtoplay_seen')) return false;
-  document.getElementById('htp-tilt-step').style.display=G.tiltEnabled?'flex':'none';
-  document.getElementById('htp-voice-step').style.display=G.voiceEnabled?'flex':'none';
+  if(localStorage.getItem(_howToKey())) return false;
+  syncTipsCards();                            // pick the card + fill timer labels
+  buildHowToSteps();
+  const sub=document.getElementById('htp-sub');
+  if(sub)sub.textContent='Quick guide for '+(HOWTO_TITLES[G.gameStyle]||'this game');
   document.getElementById('htp-team-step').style.display=G.mode==='team'?'flex':'none';
   document.getElementById('howto-modal').style.display='flex';
   return true;
 }
 function dismissHowTo(){
   SFX.tap();
-  localStorage.setItem('hb_howtoplay_seen','1');
+  localStorage.setItem(_howToKey(),'1');
   document.getElementById('howto-modal').style.display='none';
   goTo('screen-ready'); updateReadyScreen();
 }
@@ -1904,6 +2214,7 @@ function proceedSetup(){
   G.tiltEnabled=document.getElementById('tog-tilt').checked;
   if(G.mode==='team'){renderTeamBlocks();goTo('screen-teams');}
   else{
+    clearGameProgress();   // starting fresh — abandon any earlier checkpoint
     G.gameTurnCount=0;
     G.classicTotal=0;
     for(let i=0;i<G.teamCount;i++)G.teams[i].score=0;
@@ -1917,6 +2228,7 @@ function remP(t,i){G.teams[t-1].players.splice(i,1);SFX.tap();renderPlayers(t)}
 function renderPlayers(t){const el=document.getElementById('t'+t+'pw'),ps=G.teams[t-1].players;if(!el)return;el.innerHTML=ps.length===0?'<span style="font-size:12px;color:var(--mut)">No players added</span>':ps.map((p,i)=>`<span class="ptag">${esc(p)}<span class="prem" onclick="remP(${t},${i})">×</span></span>`).join('')}
 function startGame(){
   SFX.tap();
+  clearGameProgress();   // starting fresh — abandon any earlier checkpoint
   for(let i=0;i<G.teamCount;i++){
     const inp=document.getElementById('tn'+(i+1));
     G.teams[i].name=(inp?inp.value.trim():'')||'Team '+(i+1);
@@ -1931,10 +2243,42 @@ function startGame(){
   // voiceEnabled + tiltEnabled already set by proceedSetup(); don't overwrite from missing elements
   setupPermissions(); if(!checkShowHowTo()){goTo('screen-ready'); updateReadyScreen();}
 }
-function updateReadyScreen(){
+/* A tip row tagged data-req="tilt" / "voice" only applies when that control is
+   switched on — otherwise the Ready screen promises a feature the player
+   deliberately turned off. */
+function tipReqMet(row){
+  const req=row.getAttribute('data-req');
+  if(req==='tilt') return !!G.tiltEnabled;
+  if(req==='voice') return !!G.voiceEnabled;
+  return true;
+}
+function activeTipsCard(){
+  const id=G.gameStyle==='charades'?'tips-charades':G.gameStyle==='dontsayit'?'tips-dontsayit':'tips-headsup';
+  return document.getElementById(id);
+}
+/* Shows the right tips card, fills its timer label and applies the toggle
+   filtering. Shared by the Ready screen and the How to Play guide. */
+function syncTipsCards(){
   const lbl=G.timer>=60?`${Math.floor(G.timer/60)}m ${G.timer%60>0?G.timer%60+'s':''}`:G.timer+'s';
-  const tl=document.getElementById('ready-timer-lbl');if(tl)tl.textContent=lbl;
-  const tl2=document.getElementById('ready-timer-lbl-c');if(tl2)tl2.textContent=lbl;
+  ['ready-timer-lbl','ready-timer-lbl-c','ready-timer-lbl-d'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent=lbl;
+  });
+  const active=activeTipsCard();
+  ['tips-headsup','tips-charades','tips-dontsayit'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display=(el===active)?'':'none';
+  });
+  if(active)active.querySelectorAll('.tip-row').forEach(r=>{
+    r.style.display=tipReqMet(r)?'':'none';
+  });
+}
+const READY_SUBS={
+  headsup:'Hold phone to forehead — others see the word!',
+  // Charades: the actor reads the word himself and never shows the screen.
+  charades:'Only you see the word — act it out, no talking!',
+  dontsayit:'Hold phone facing YOU — describe the word to your team!'
+};
+function updateReadyScreen(){
   const rb=document.getElementById('ready-btn');
   if(rb){
     if(G.mode==='team'){
@@ -1942,15 +2286,9 @@ function updateReadyScreen(){
       rb.textContent=player?`Start — ${player} (${G.teams[G.curTeam].name})`:`Start — ${G.teams[G.curTeam].name}'s Turn!`;
     } else rb.textContent='Start Round!';
   }
-  const isCharades=G.gameStyle==='charades';
-  const isTaboo=G.gameStyle==='dontsayit';
-  const tl3=document.getElementById('ready-timer-lbl-d');if(tl3)tl3.textContent=lbl;
-  const hu=document.getElementById('tips-headsup');const ch=document.getElementById('tips-charades');const ds=document.getElementById('tips-dontsayit');
-  if(hu)hu.style.display=(isCharades||isTaboo)?'none':'';
-  if(ch)ch.style.display=isCharades?'':'none';
-  if(ds)ds.style.display=isTaboo?'':'none';
+  syncTipsCards();
   const sub=document.getElementById('ready-sub');
-  if(sub)sub.textContent=isTaboo?'Hold phone facing YOU — describe the word to your team!':isCharades?'Hold phone facing out — others see the word!':'Hold phone to forehead — others see the word!';
+  if(sub)sub.textContent=READY_SUBS[G.gameStyle]||READY_SUBS.headsup;
 }
 
 /* ═══════════════════════════
@@ -2428,10 +2766,19 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
    FREE WORD TRACKING
 ═══════════════════════════ */
 const FREE_LIMIT=50;
-const FREE_AD_BATCH=50;
-const PREM_AD_BATCH=100;
-const WORDS_PER_YEAR_FREE=300;
-const WORDS_PER_YEAR_PREM=300;
+/* One ad policy everywhere: a 30s ad always grants 30 more words.
+   Free vs premium decks no longer differ in ad length or reward. */
+const AD_SECS=30;
+const AD_WORD_BATCH=30;
+const FREE_AD_BATCH=AD_WORD_BATCH;
+const PREM_AD_BATCH=AD_WORD_BATCH;
+/* Ad words are a quota, not a rental — they last until they are spent.
+   Long window kept only so getTmpPool()'s exp check stays valid. */
+const AD_GRANT_MS=365*24*60*60*1000;
+/* $0.99/year opens the full category — no word cap is advertised or applied. */
+const SUB_UNLIMITED=999999;
+const WORDS_PER_YEAR_FREE=SUB_UNLIMITED;
+const WORDS_PER_YEAR_PREM=SUB_UNLIMITED;
 
 function _fwKey(id){return'hb_fw_'+id}
 function _tmpKey(id){return'hb_tmp_'+id}
@@ -2459,6 +2806,21 @@ function getRoundWordLimit(deckId){
   const sub=getTmpPool(deckId,_subKey);if(sub){G.wordPool='sub';return sub.rem}
   const tmp=getTmpPool(deckId,_tmpKey);if(tmp){G.wordPool='tmp';return tmp.rem}
   const used=getFreeUsed(deckId);G.wordPool='lifetime';return Math.max(0,FREE_LIMIT-used);
+}
+
+/* Owned = bought outright (deck purchase or All Access). Only owned decks
+   graduate out of the premium carousel into the main grid.
+   An ad grant buys words, not ownership, so it must never promote the deck. */
+function isDeckOwned(d){return !d.premium||G.allAccess||G.unlockedDecks.includes(d.id)}
+/* Playable = owned, or currently holding a word pool from an ad / category sub. */
+function hasDeckAccess(d){
+  if(isDeckOwned(d))return true;
+  return !!(getTmpPool(d.id,_psubKey)||getTmpPool(d.id,_ptmpKey));
+}
+/* Words left on a premium deck that is playable but not owned. */
+function premWordsLeft(d){
+  const p=getTmpPool(d.id,_psubKey)||getTmpPool(d.id,_ptmpKey);
+  return p?p.rem:0;
 }
 
 function recordWordUsed(deckId,count){
@@ -2840,10 +3202,33 @@ function showScore(){
         <span class="wl-badge ${r.result==='correct'?'c':'s'}">${r.result==='correct'?'✓ Correct':r.result==='buzz'?'🚨 Buzzed':'✗ Skip'}</span>
       </div>`).join('');
     wlWrap.style.display='block';
+    wlRows.scrollTop=0;
+    updateWordListCue();
   } else {
     wlWrap.style.display='none';
   }
+  // M-2: the score screen is a round boundary — the safe point to checkpoint.
+  // A finished game has nothing left to resume, so drop the save instead.
+  if(gameOver)clearGameProgress(); else saveGameProgress();
 }
+
+/* Show the fade + "scroll for more" only while there is actually more to see.
+   The list always scrolled; players just had no way to know (M-7). */
+function updateWordListCue(){
+  const rows=document.getElementById('sc-wl-rows');
+  const scroll=document.getElementById('sc-wl-scroll');
+  const more=document.getElementById('sc-wl-more');
+  if(!rows||!scroll)return;
+  const overflowing=rows.scrollHeight>rows.clientHeight+2;
+  const atEnd=!overflowing||rows.scrollTop+rows.clientHeight>=rows.scrollHeight-4;
+  scroll.classList.toggle('at-end',atEnd);
+  if(more)more.style.display=overflowing?'':'none';
+}
+(function(){
+  const rows=document.getElementById('sc-wl-rows');
+  if(rows)rows.addEventListener('scroll',updateWordListCue,{passive:true});
+  window.addEventListener('resize',updateWordListCue);
+})();
 
 function changeDeck(){
   SFX.tap();
@@ -2929,7 +3314,7 @@ function showInterstitialAd(cb){
   const adNote=document.getElementById('ad-note');
   setTimeout(()=>{
     if(statusTitle)statusTitle.textContent='📺 Quick Ad Break';
-    if(statusSub)statusSub.textContent='Thanks for keeping Wam Bam free!';
+    if(statusSub)statusSub.textContent='Thanks for keeping Wham Bam free!';
     if(adNote)adNote.textContent='Your results are ready after this';
     // Re-wire the interval completion to use adCallback
     clearInterval(adInterval);
@@ -3141,7 +3526,17 @@ const PAYMENTS = {
   },
   restore(){
     if(PLATFORM.isNative) return RCAT.restore();
-    showToast('Restore is handled automatically on web');
+    // Web purchases ride on the Supabase session, so "restoring" is really
+    // "sign in" — say so instead of leaving the player with nothing to act on.
+    if(typeof HB_AUTH!=='undefined' && HB_AUTH.getUser && HB_AUTH.getUser()){
+      applySubFromProfile();
+      showToast('✅ Purchases synced to this device');
+    }else{
+      showToast('Sign in to restore your purchases');
+      if(typeof HB_AUTH!=='undefined' && HB_AUTH.showAuthModal){
+        setTimeout(()=>{HB_AUTH.showAuthModal();HB_AUTH.switchTab('in')},900);
+      }
+    }
   }
 };
 
@@ -3242,7 +3637,7 @@ const XSOLLA = (() => {
 
   function _resetPayBtn(){
     const btn = document.getElementById('unlock-opt-pay');
-    if(btn){ btn.style.opacity='1'; btn.innerHTML=`<div class="uo-icon">💳</div><div class="uo-title">$0.99 / year</div><div class="uo-sub">300 words · annual</div>`; }
+    if(btn){ btn.style.opacity='1'; btn.innerHTML=`<div class="uo-icon" aria-hidden="true">💳</div><div class="uo-title">$0.99 / year</div><div class="uo-sub">Unlocks the full category</div>`; }
   }
 
   return { buy };
@@ -3283,6 +3678,7 @@ const HB_AUTH = (() => {
   let _sb = null;
   let _user = null;
   let _lbTab = 'local'; // 'local' | 'global'
+  let _recovery = false; // true while the player is setting a new password
 
   function _client() {
     if (!_sb) _sb = getSharedSB();
@@ -3312,7 +3708,68 @@ const HB_AUTH = (() => {
     }
   }
 
+  /* Never show a raw Supabase error object to a player. A 500 with an empty body
+     arrives as the string "{}", which is what the QA report saw on screen.
+     Map what we recognise, fall back to something actionable otherwise. */
+  function _authErrMsg(err) {
+    if (!err) return 'Something went wrong. Please try again.';
+    const raw = (typeof err === 'string' ? err : err.message || '').trim();
+    const status = err.status || err.code;
+    const m = raw.toLowerCase();
+    if (!raw || raw === '{}' || raw === '[object Object]')
+      return 'Our sign-in service is having a moment. Please try again shortly.';
+    if (m.includes('already registered') || m.includes('already been registered') || status === 422)
+      return 'That email already has an account. Try signing in instead.';
+    if (m.includes('invalid login credentials'))
+      return 'Email or password is incorrect.';
+    if (m.includes('email not confirmed'))
+      return 'Please confirm your email first — check your inbox for the link.';
+    if (m.includes('password should be at least') || m.includes('password is too short'))
+      return 'Password is too short — use at least 6 characters.';
+    if (m.includes('unable to validate email') || m.includes('invalid email'))
+      return 'That email address does not look right.';
+    if (m.includes('rate limit') || m.includes('too many') || status === 429)
+      return 'Too many attempts. Please wait a minute and try again.';
+    if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('network request failed'))
+      return 'No connection. Check your internet and try again.';
+    if (status >= 500)
+      return 'Our sign-in service is temporarily unavailable. Please try again shortly.';
+    return raw.length > 4 && raw.length < 120 ? raw : 'Unable to complete that right now. Please try again.';
+  }
+  /* L-2 — put the message against the field it belongs to. The banner is kept
+     as a summary for anything not attributable to one input. */
+  const FIELD_ERR = { email: 'auth-email-err', pass: 'auth-pass-err' };
+  function _fieldErr(which, msg) {
+    const box = document.getElementById(FIELD_ERR[which]);
+    const inp = document.getElementById(which === 'email' ? 'auth-email' : 'auth-pass');
+    if (box) { box.textContent = msg; box.classList.add('show'); }
+    if (inp) { inp.classList.add('field-invalid'); }
+  }
+  function _clearFieldErrs() {
+    Object.values(FIELD_ERR).forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.textContent = ''; b.classList.remove('show'); }
+    });
+    ['auth-email','auth-pass'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('field-invalid');
+    });
+  }
+  /* Route a mapped message to a field when we can tell which one is at fault. */
+  function _routeErr(msg) {
+    const m = msg.toLowerCase();
+    // "Email or password is incorrect" must be tested BEFORE the password-only
+    // patterns, or it matches "password is incorrect" and blames only that field.
+    if (/email or password is incorrect/.test(m)) return 'both';
+    if (/email address does not look right|already has an account|confirm your email/.test(m)) return 'email';
+    if (/password is too short|password is incorrect/.test(m)) return 'pass';
+    return null;
+  }
   function _showErr(msg) {
+    const target = _routeErr(msg);
+    if (target === 'email') { _fieldErr('email', msg); return; }
+    if (target === 'pass')   { _fieldErr('pass', msg); return; }
+    if (target === 'both')   { _fieldErr('email', msg); _fieldErr('pass', ''); return; }
     const el = document.getElementById('auth-error');
     if (!el) return;
     el.textContent = msg; el.style.display = 'block';
@@ -3327,6 +3784,7 @@ const HB_AUTH = (() => {
   function _clearMsg() {
     const e=document.getElementById('auth-error'),s=document.getElementById('auth-success');
     if(e)e.style.display='none';if(s)s.style.display='none';
+    _clearFieldErrs();
   }
 
   function _renderSignedIn() {
@@ -3370,13 +3828,22 @@ const HB_AUTH = (() => {
       sb.auth.onAuthStateChange((_evt, session) => {
         _user = session?.user || null;
         _updatePill();
+        // Following a reset link also produces a session, so this must be checked
+        // BEFORE the SIGNED_IN branch or the player is silently logged in with
+        // the old password and never gets to set a new one.
+        if (_evt === 'PASSWORD_RECOVERY') { _recovery = true; showResetForm(); return; }
         if (_evt === 'SIGNED_IN') {
+          if (_recovery) return;          // mid-reset: leave the form up
           hideAuthModal(); applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements();
           if (_oauthReturn) _finishOAuth();
         }
       });
+      // A reset link carries type=recovery; catch it even if the event already fired
+      if (/type=recovery/.test(location.hash) || /[?&]type=recovery/.test(location.search)) {
+        _recovery = true; showResetForm();
+      }
       // If the session was already resolved synchronously from the URL, handle now too
-      if (_oauthReturn && _user) _finishOAuth();
+      else if (_oauthReturn && _user) _finishOAuth();
     } catch(e) {
       console.warn('HB_AUTH init:', e.message);
     } finally {
@@ -3384,13 +3851,25 @@ const HB_AUTH = (() => {
     }
     const modal = document.getElementById('auth-modal');
     if (modal) modal.addEventListener('click', function(e){ if(e.target===this) HB_AUTH.hideAuthModal(); });
+    // L-2: clear a field's error as soon as the player starts correcting it
+    ['auth-email','auth-pass'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => {
+        el.classList.remove('field-invalid');
+        const box = document.getElementById(id + '-err');
+        if (box) { box.textContent = ''; box.classList.remove('show'); }
+      });
+    });
   }
 
   function showAuthModal() {
     const modal = document.getElementById('auth-modal');
     if (!modal) return;
+    if (_recovery) { showResetForm(); return; }   // don't bury a half-finished reset
     _clearMsg();
     modal.style.display = 'flex';
+    document.getElementById('auth-reset').style.display = 'none';
     if (_user) _renderSignedIn(); else _renderSignedOut();
   }
   function hideAuthModal() {
@@ -3403,8 +3882,19 @@ const HB_AUTH = (() => {
     document.getElementById('auth-tab-in').classList.toggle('auth-tab-active', !isUp);
     document.getElementById('auth-tab-up').classList.toggle('auth-tab-active', isUp);
     document.getElementById('auth-name-wrap').style.display = isUp ? 'block' : 'none';
+    // L-1: the agreement notice belongs on the tab where an account is created
+    const legal = document.getElementById('auth-legal');
+    if (legal) legal.style.display = isUp ? 'block' : 'none';
     document.getElementById('auth-submit-btn').textContent = isUp ? 'Create Account' : 'Sign In';
     document.getElementById('auth-pass').autocomplete = isUp ? 'new-password' : 'current-password';
+    // M-8: the red ring is the browser's own :invalid state on a type=email input,
+    // not an attribute we set — so it only clears when the value does. Reset the
+    // fields so an error from the other tab cannot bleed into this one.
+    ['auth-email','auth-pass','auth-name'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('auth-reset').style.display = 'none';
     _clearMsg();
   }
 
@@ -3415,21 +3905,88 @@ const HB_AUTH = (() => {
     const pass  = document.getElementById('auth-pass').value;
     const name  = document.getElementById('auth-name').value.trim();
     const isUp  = document.getElementById('auth-tab-up').classList.contains('auth-tab-active');
-    if (!email || !pass) { _showErr('Email and password required.'); return; }
+    // L-2: validate each field on its own so the player sees WHICH one is wrong
+    _clearMsg();
+    let bad = false;
+    if (!email) { _fieldErr('email', 'Enter your email address.'); bad = true; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { _fieldErr('email', 'That does not look like a valid email.'); bad = true; }
+    if (!pass) { _fieldErr('pass', 'Enter your password.'); bad = true; }
+    else if (isUp && pass.length < 6) { _fieldErr('pass', 'Use at least 6 characters.'); bad = true; }
+    if (bad) return;
     const btn = document.getElementById('auth-submit-btn');
     btn.disabled = true; btn.textContent = '…';
-    let error;
-    if (isUp) {
-      const { error: e } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name || email.split('@')[0] } } });
-      error = e;
-      if (!e) _showOk('Check your email to confirm your account!');
-    } else {
-      const { data, error: e } = await sb.auth.signInWithPassword({ email, password: pass });
-      error = e;
-      if (!e && data?.user) { _user = data.user; _renderSignedIn(); _updatePill(); }
+    try {
+      if (isUp) {
+        const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name || email.split('@')[0] } } });
+        if (error) throw error;
+        _showOk('Check your email to confirm your account!');
+      } else {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+        if (data?.user) { _user = data.user; _renderSignedIn(); _updatePill(); }
+      }
+    } catch (err) {
+      _showErr(_authErrMsg(err));
+    } finally {
+      btn.disabled = false; btn.textContent = isUp ? 'Create Account' : 'Sign In';
     }
-    if (error) _showErr(error.message);
-    btn.disabled = false; btn.textContent = isUp ? 'Create Account' : 'Sign In';
+  }
+
+  /* H-4 — password recovery. The branded recovery email template is already
+     deployed; until now nothing in the UI could trigger it. */
+  async function forgotPassword() {
+    const sb = _client();
+    if (!sb) { _showErr('Auth service unavailable. Check your connection.'); return; }
+    const email = document.getElementById('auth-email').value.trim();
+    if (!email) { _showErr('Enter your email above, then tap "Forgot password?" again.'); return; }
+    const link = document.getElementById('auth-forgot');
+    if (link) { link.style.pointerEvents = 'none'; link.style.opacity = '.55'; }
+    try {
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
+      if (error) throw error;
+      // Deliberately not confirming whether the address exists — that would let
+      // anyone enumerate registered users.
+      _showOk('If that email has an account, a reset link is on its way.');
+    } catch (err) {
+      _showErr(_authErrMsg(err));
+    } finally {
+      if (link) { link.style.pointerEvents = ''; link.style.opacity = ''; }
+    }
+  }
+
+  /* Shown when the player follows the reset link from their inbox. Supabase has
+     already established a recovery session by this point, so all that is left is
+     to set the new password. */
+  function showResetForm() {
+    const modal = document.getElementById('auth-modal');
+    if (!modal) return;
+    _clearMsg();
+    modal.style.display = 'flex';
+    document.getElementById('auth-signed-out').style.display = 'none';
+    document.getElementById('auth-signed-in').style.display = 'none';
+    document.getElementById('auth-reset').style.display = 'block';
+    document.getElementById('auth-new-pass').value = '';
+  }
+  async function submitNewPassword() {
+    const sb = _client();
+    if (!sb) { _showErr('Auth service unavailable.'); return; }
+    const pass = document.getElementById('auth-new-pass').value;
+    if (!pass || pass.length < 6) { _showErr('Use at least 6 characters.'); return; }
+    const btn = document.getElementById('auth-reset-btn');
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const { error } = await sb.auth.updateUser({ password: pass });
+      if (error) throw error;
+      _recovery = false;
+      document.getElementById('auth-reset').style.display = 'none';
+      _showOk('Password updated — you are signed in.');
+      try { history.replaceState({}, document.title, location.origin + location.pathname); } catch(e){}
+      setTimeout(() => { hideAuthModal(); if (typeof goTo === 'function') goTo('screen-home'); }, 1400);
+    } catch (err) {
+      _showErr(_authErrMsg(err));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Set new password';
+    }
   }
 
   async function googleSignIn() {
@@ -3445,9 +4002,9 @@ const HB_AUTH = (() => {
         provider: 'google',
         options: { redirectTo }
       });
-      if (error) _showErr('Google sign-in failed: ' + error.message);
+      if (error) throw error;
     } catch(e) {
-      _showErr('Google sign-in error: ' + (e.message || 'Unknown error'));
+      _showErr(_authErrMsg(e));
     } finally {
       if (googleBtn) { googleBtn.disabled = false; googleBtn.style.opacity = ''; }
     }
@@ -3505,7 +4062,7 @@ const HB_AUTH = (() => {
   function getTab() { return _lbTab; }
   function getUser() { return _user; }
 
-  return { init, showAuthModal, hideAuthModal, switchTab, submit, googleSignIn, signOut, syncScore, fetchGlobalLB, switchLBTab, getTab, getUser };
+  return { init, showAuthModal, hideAuthModal, switchTab, submit, googleSignIn, signOut, syncScore, fetchGlobalLB, switchLBTab, getTab, getUser, forgotPassword, submitNewPassword, _authErrMsg };
 })();
 
 // backdrop listener wired in init() after DOM is ready
@@ -3585,10 +4142,10 @@ function showUnlockModal(deckId){
   const deck=DECKS.find(d=>d.id===deckId);
   if(!deck)return;
   document.getElementById('unlock-deck-name').textContent=deck.name+' '+deck.icon;
-  document.getElementById('unlock-ad-label').textContent='Watch 60s Ad';
-  document.getElementById('unlock-ad-sub').textContent='100 words · 24 hours';
+  document.getElementById('unlock-ad-label').textContent=`Watch ${AD_SECS}s Ad`;
+  document.getElementById('unlock-ad-sub').textContent=`${AD_WORD_BATCH} more words`;
   document.getElementById('unlock-pay-label').textContent='$0.99 / year';
-  document.getElementById('unlock-pay-sub').textContent='300 words · annual';
+  document.getElementById('unlock-pay-sub').textContent='Unlocks the full category';
   document.getElementById('unlock-price').textContent=`${deck.words.length} available words`;
   goTo('screen-unlock');
 }
@@ -3599,7 +4156,7 @@ function showFreePaywall(deckId){
   const modal=document.getElementById('free-paywall-modal');
   if(!modal)return;
   const info=document.getElementById('fp-deck-info');
-  if(info&&deck)info.textContent=`You've used your ${FREE_LIMIT} free words on ${deck.name}. Watch an ad for ${FREE_AD_BATCH} more, or subscribe.`;
+  if(info&&deck)info.textContent=`You've used your ${FREE_LIMIT} free words on ${deck.name}. Watch an ad for ${AD_WORD_BATCH} more, or subscribe.`;
   modal.style.display='flex';
   SFX.tap();
 }
@@ -3609,16 +4166,16 @@ function closeFreePaywall(){
 }
 function freePaywallAd(){
   document.getElementById('free-paywall-modal').style.display='none';
-  startAdWatch(30,()=>{
-    setTmpPool(G.pendingUnlockDeck,_tmpKey,FREE_AD_BATCH,86400000);
-    showToast(`✅ ${FREE_AD_BATCH} words unlocked for 24hrs!`);
+  startAdWatch(AD_SECS,()=>{
+    setTmpPool(G.pendingUnlockDeck,_tmpKey,AD_WORD_BATCH,AD_GRANT_MS);
+    showToast(`✅ ${AD_WORD_BATCH} more words unlocked!`);
     setTimeout(()=>beginRound(),800);
   });
 }
 function freePaywallSub(){
   document.getElementById('free-paywall-modal').style.display='none';
   PAYMENTS.buy('standard_yearly', ()=>{
-    showToast(`✅ ${WORDS_PER_YEAR_FREE} words unlocked!`);
+    showToast('✅ Full category unlocked for a year!');
     setTimeout(()=>beginRound(),800);
   });
 }
@@ -3633,19 +4190,22 @@ function allAccessUpgrade(){
 function selectUnlockMethod(method){
   SFX.tap();
   if(method==='pay') unlockDeckWithPayment();
-  else if(method==='ad') startAdWatch(60,()=>completePremiumAdUnlock());
+  else if(method==='ad') startAdWatch(AD_SECS,()=>completePremiumAdUnlock());
   else if(method==='allaccess') unlockAllAccess();
 }
 
 function unlockDeckWithPayment(){
   const btn=document.getElementById('unlock-opt-pay');
-  if(btn){btn.style.opacity='0.7';btn.innerHTML=`<div class="uo-icon">⏳</div><div class="uo-title">Opening payment…</div><div class="uo-sub">Please wait</div>`;}
+  if(btn){btn.style.opacity='0.7';btn.innerHTML=`<div class="uo-icon" aria-hidden="true">⏳</div><div class="uo-title">Opening payment…</div><div class="uo-sub">Please wait</div>`;}
   PAYMENTS.buy('standard_yearly', ()=>{
-    if(btn){btn.style.opacity='1';btn.innerHTML=`<div class="uo-icon">💳</div><div class="uo-title">$0.99 / year</div><div class="uo-sub">300 words · annual</div>`;}
+    if(btn){btn.style.opacity='1';btn.innerHTML=`<div class="uo-icon" aria-hidden="true">💳</div><div class="uo-title">$0.99 / year</div><div class="uo-sub">Unlocks the full category</div>`;}
     if(!G.unlockedDecks.includes(G.pendingUnlockDeck)){G.unlockedDecks.push(G.pendingUnlockDeck);localStorage.setItem('hb_unlocked',JSON.stringify(G.unlockedDecks));}
+    // Paying for a premium deck must also grant its word pool, or the deck
+    // reads as unlocked but still hits the limit gate on the next round.
+    setTmpPool(G.pendingUnlockDeck,_psubKey,WORDS_PER_YEAR_PREM,365*24*60*60*1000);
     refreshDeckGrid();
     const deck=DECKS.find(d=>d.id===G.pendingUnlockDeck);
-    showToast(`🎉 ${deck?deck.name:''} — 300 words / year!`);
+    showToast(`🎉 ${deck?deck.name:''} — full category unlocked!`);
     setTimeout(()=>{goTo('screen-setup');selDeck(G.pendingUnlockDeck)},1200);
   });
 }
@@ -3659,11 +4219,12 @@ function unlockAllAccess(){
 }
 
 function completePremiumAdUnlock(){
-  setTmpPool(G.pendingUnlockDeck,_ptmpKey,PREM_AD_BATCH,86400000);
-  if(!G.unlockedDecks.includes(G.pendingUnlockDeck)){G.unlockedDecks.push(G.pendingUnlockDeck);localStorage.setItem('hb_unlocked',JSON.stringify(G.unlockedDecks));}
+  // Ad grants words only — deliberately NOT added to G.unlockedDecks, so the
+  // deck stays in the premium carousel instead of posing as purchased.
+  setTmpPool(G.pendingUnlockDeck,_ptmpKey,AD_WORD_BATCH,AD_GRANT_MS);
   refreshDeckGrid();
   const deck=DECKS.find(d=>d.id===G.pendingUnlockDeck);
-  showToast(`🎉 ${deck?deck.name:''} — ${PREM_AD_BATCH} words for 24hrs!`);
+  showToast(`🎉 ${deck?deck.name:''} — ${AD_WORD_BATCH} more words!`);
   setTimeout(()=>{goTo('screen-setup');selDeck(G.pendingUnlockDeck)},1200);
 }
 
@@ -3686,7 +4247,7 @@ function startAdWatch(adSecs,onComplete){
   if(cancelBtn)cancelBtn.classList.remove('visible');
   if(statusTitle)statusTitle.textContent='📺 Watching Ad…';
   if(statusSub)statusSub.textContent='Please keep this screen open';
-  if(adNote)adNote.textContent=adSecs>=60?'Premium deck unlocks after this ad':'More words unlock for 24 hours after this ad';
+  if(adNote)adNote.textContent=`${AD_WORD_BATCH} more words unlock after this ad`;
 
   let cancelTimer=setTimeout(()=>{if(cancelBtn)cancelBtn.classList.add('visible')},5000);
   clearInterval(adInterval);
@@ -3718,18 +4279,21 @@ function completeUnlock(){} // kept for backwards compatibility
 
 function makeDeckCard(d){
   const el=document.createElement('div');
-  const isUnlocked=!d.premium||G.allAccess||G.unlockedDecks.includes(d.id);
+  const owned=isDeckOwned(d);        // graduates to the main grid
+  const access=hasDeckAccess(d);     // playable right now (may be ad words only)
   let cls='deck-card';
   if(d.id===G.deck)cls+=' on';
   if(d.premium){
     cls+=' premium';
-    if(isUnlocked)cls+=' premium-unlocked';
+    if(owned)cls+=' premium-unlocked';
+    else if(access)cls+=' premium-adunlocked';
     else cls+=' locked';
   }
   el.className=cls;
   el.id='dk-'+d.id;
-  el.innerHTML=`<div class="deck-icon">${d.icon}</div><div class="deck-name">${d.name}</div>${!d.premium?'<div class="deck-free-badge">FREE</div>':''}${d.premium&&!isUnlocked?'<div class="deck-lock-overlay">🔒</div>':''}${d.id===G.deck?'<div class="deck-sel-overlay"><span class="deck-sel-badge">✓ Selected</span></div>':''}`;
-  el.onclick=()=>{SFX.tap();d.premium&&!isUnlocked?showUnlockModal(d.id):selDeck(d.id)};
+  const adWords=(d.premium&&!owned&&access)?`<div class="deck-cnt">${premWordsLeft(d)} words left</div>`:'';
+  el.innerHTML=`<div class="deck-icon" aria-hidden="true">${d.icon}</div><div class="deck-name">${d.name}</div>${adWords}${!d.premium?'<div class="deck-free-badge">FREE</div>':''}${d.premium&&!access?'<div class="deck-lock-overlay">🔒</div>':''}${d.id===G.deck?'<div class="deck-sel-overlay"><span class="deck-sel-badge">✓ Selected</span></div>':''}`;
+  el.onclick=()=>{SFX.tap();d.premium&&!access?showUnlockModal(d.id):selDeck(d.id)};
   return el;
 }
 function refreshDeckGrid(){
@@ -3741,21 +4305,30 @@ function refreshDeckGrid(){
   // main grid: free + unlocked premium; carousel: locked premium
   const locked=[];
   DECKS.forEach(d=>{
-    // Unlocked premium decks graduate to the main 2-column grid
-    const isUnlocked=!d.premium||G.allAccess||G.unlockedDecks.includes(d.id);
-    if(isUnlocked)g.appendChild(makeDeckCard(d));
+    // Only OWNED premium decks graduate to the main 2-column grid.
+    // Ad-unlocked decks stay in the carousel — they are playable, not bought.
+    if(isDeckOwned(d))g.appendChild(makeDeckCard(d));
     else locked.push(d);
   });
+  // Subtitle mix is derived from the live catalog — never hardcode the split
+  const mix=document.getElementById('deck-mix-lbl');
+  if(mix){
+    const prem=DECKS.filter(d=>d.premium).length;
+    mix.textContent=(DECKS.length-prem)+' free · '+prem+' premium';
+  }
   if(!car||!sec){locked.forEach(d=>g.appendChild(makeDeckCard(d)));return}
   if(locked.length===0){sec.style.display='none';return}
   sec.style.display='block';
   const cnt=document.getElementById('prem-cnt');if(cnt)cnt.textContent='('+locked.length+')';
   locked.forEach(d=>car.appendChild(makeDeckCard(d)));
-  const aa=document.createElement('div');
-  aa.className='deck-card aa-card';
-  aa.innerHTML='<div class="deck-icon">⭐</div><div class="deck-name">All Access</div><div class="deck-cnt">Unlock all '+locked.length+'</div>';
-  aa.onclick=()=>{SFX.tap();allAccessUpgrade()};
-  car.appendChild(aa);
+  // All Access is a bundle, not a deck — it sits BELOW the carousel so the
+  // list length matches the count in the header (L-6).
+  const aaBar=document.getElementById('aa-bundle');
+  if(aaBar){
+    aaBar.style.display='flex';
+    const n=document.getElementById('aa-bundle-sub');
+    if(n)n.textContent='Unlocks all '+locked.length+' premium decks · no ads';
+  }
   // Contents changed (deck unlocked / catalog loaded) — re-evaluate the swipe cues
   if(typeof primeCarouselHint==='function')setTimeout(primeCarouselHint,0);
 }
@@ -3780,13 +4353,14 @@ function showToast(msg){
 ═══════════════════════════ */
 VOICE.checkSupport();
 
-// Mobile app: enable RevenueCat surfaces + restore any existing subscription
-if(PLATFORM.isNative){
-  const rr=document.getElementById('unlock-restore');
-  if(rr)rr.style.display='block';
-  // Configure RevenueCat and re-apply active entitlements (device already subscribed)
-  RCAT.syncEntitlements();
-}
+// Restore is offered on every platform (M-1) — only the explanatory note differs,
+// since web purchases are tied to the account rather than to the store.
+(function(){
+  const note=document.getElementById('unlock-restore-note');
+  if(note&&PLATFORM.isNative)note.textContent='Already subscribed? Restore your previous purchase from the store.';
+})();
+// Mobile app: re-apply active entitlements (device may already be subscribed)
+if(PLATFORM.isNative)RCAT.syncEntitlements();
 
 // Track physical device orientation via gamma — works even when screen is orientation-locked.
 // gamma ≈ ±90 = landscape, gamma ≈ 0 = portrait. Used to block tilt triggers during accidental rotation.
@@ -3912,7 +4486,7 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
 <!-- CLEAR HISTORY CONFIRM -->
 <div id="clearlb-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(10,5,0,.92);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:24px 16px">
   <div class="fp-modal-wrap" style="max-width:320px">
-    <div class="fp-hero">🗑️</div>
+    <div class="fp-hero" aria-hidden="true">🗑️</div>
     <div class="fp-title">Clear History?</div>
     <div class="fp-sub">This removes all your local scores. It can't be undone.</div>
     <div style="display:flex;gap:10px">
@@ -3937,7 +4511,7 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
 <div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(18,8,0,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:20px 16px">
   <div class="auth-card">
     <button class="auth-close" onclick="HB_AUTH.hideAuthModal()">✕</button>
-    <div class="auth-logo">Wam Bam</div>
+    <div class="auth-logo">Wham Bam</div>
 
     <!-- signed-out view -->
     <div id="auth-signed-out">
@@ -3947,12 +4521,22 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       </div>
       <div id="auth-error" class="auth-msg auth-msg-err" style="display:none"></div>
       <div id="auth-success" class="auth-msg auth-msg-ok" style="display:none"></div>
-      <input id="auth-email" class="inp" type="email" placeholder="Email" autocomplete="email" style="margin-bottom:10px">
-      <input id="auth-pass"  class="inp" type="password" placeholder="Password" autocomplete="current-password">
+      <input id="auth-email" class="inp" type="email" placeholder="Email" autocomplete="email" aria-describedby="auth-email-err">
+      <div class="field-error" id="auth-email-err" role="alert"></div>
+      <div style="margin-top:10px">
+        <input id="auth-pass"  class="inp" type="password" placeholder="Password" autocomplete="current-password" aria-describedby="auth-pass-err">
+        <div class="field-error" id="auth-pass-err" role="alert"></div>
+      </div>
       <div id="auth-name-wrap" style="display:none;margin-top:10px">
         <input id="auth-name" class="inp" type="text" placeholder="Display name" autocomplete="nickname">
       </div>
+      <div class="auth-legal" id="auth-legal" style="display:none">
+        By creating an account you agree to our
+        <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> and
+        <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+      </div>
       <button id="auth-submit-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submit()">Sign In</button>
+      <button type="button" id="auth-forgot" class="auth-forgot" onclick="HB_AUTH.forgotPassword()">Forgot password?</button>
       <div class="auth-divider"><span>or</span></div>
       <button class="btn auth-google-btn" onclick="HB_AUTH.googleSignIn()">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="vertical-align:middle;margin-right:8px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.705A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.705V4.963H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.295C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
@@ -3967,8 +4551,17 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       <div id="auth-user-email" style="font-size:12px;color:var(--mut);margin-bottom:20px"></div>
       <button class="btn btn-out" onclick="HB_AUTH.signOut()" style="margin-top:0">Sign Out</button>
     </div>
+
+    <!-- set-a-new-password view — shown after following the reset link -->
+    <div id="auth-reset" style="display:none">
+      <div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:6px">Choose a new password</div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:14px">Pick something at least 6 characters long.</div>
+      <input id="auth-new-pass" class="inp" type="password" placeholder="New password" autocomplete="new-password">
+      <button id="auth-reset-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submitNewPassword()">Set new password</button>
+    </div>
   </div>
 </div>
+</main>
 
 </body>
 </html>

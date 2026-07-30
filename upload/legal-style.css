@@ -1,0 +1,55 @@
+/* Shared styling for the Wham Bam legal pages (terms.html, privacy.html) */
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#0A0500;color:#E8DCC8;
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+  line-height:1.7;font-size:15px;
+  padding:0 20px 80px;
+}
+.wrap{max-width:760px;margin:0 auto}
+header{
+  padding:34px 0 26px;margin-bottom:30px;
+  border-bottom:2px solid rgba(255,214,10,.35);
+}
+.brand{
+  font-family:'Arial Black',Arial,sans-serif;
+  font-size:30px;font-weight:900;letter-spacing:.5px;
+  color:#FFD60A;text-decoration:none;display:inline-block;
+}
+.brand-sub{font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:#9A8060;margin-top:5px}
+h1{font-size:27px;font-weight:900;color:#FFF8E0;margin:22px 0 6px;line-height:1.25}
+.updated{font-size:12.5px;color:#9A8060;margin-bottom:8px}
+.notice{
+  background:rgba(255,149,0,.10);border:1px solid rgba(255,149,0,.34);
+  border-radius:10px;padding:13px 16px;margin:22px 0;
+  font-size:13px;color:#FFCB8A;
+}
+h2{
+  font-size:17.5px;font-weight:800;color:#FFD60A;
+  margin:34px 0 10px;padding-top:6px;
+}
+h3{font-size:14.5px;font-weight:700;color:#FFF8E0;margin:20px 0 6px}
+p{margin-bottom:13px}
+ul{margin:0 0 15px 22px}
+li{margin-bottom:7px}
+a{color:#FFD60A}
+a:hover{color:#FFE87A}
+strong{color:#FFF8E0}
+table{width:100%;border-collapse:collapse;margin:14px 0 18px;font-size:13.5px}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.10);vertical-align:top}
+th{color:#FFD60A;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+.contact{
+  background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.13);
+  border-radius:12px;padding:17px 19px;margin-top:30px;
+}
+footer{
+  margin-top:44px;padding-top:20px;
+  border-top:1px solid rgba(255,255,255,.12);
+  font-size:12.5px;color:#7A6648;
+}
+footer a{margin-right:16px}
+@media (max-width:560px){
+  body{font-size:14.5px;padding:0 16px 60px}
+  h1{font-size:23px}
+  .brand{font-size:25px}
+}

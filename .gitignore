@@ -8,6 +8,15 @@ supabase-wiring-steps.txt
 .DS_Store
 Thumbs.db
 
+# Python bytecode from local tooling
+__pycache__/
+*.pyc
+
+# Client media / correspondence — not code, and audio may carry personal detail
+*.ogg
+*.m4a
+*.mp3
+
 # Node
 node_modules/
 
