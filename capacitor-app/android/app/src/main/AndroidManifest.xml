@@ -10,7 +10,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
@@ -37,14 +37,17 @@
     </application>
 
     <!-- Permissions -->
+
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Speech recognition for the voice-guess mode -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <!-- Google Play Billing (RevenueCat in-app purchases) -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
-    <!-- Accelerometer for HeadBand tilt detection -->
+    <!-- Accelerometer drives the tilt engine, but the game is still playable
+         with on-screen buttons, so this must not be a hard filter. -->
     <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
-
 </manifest>

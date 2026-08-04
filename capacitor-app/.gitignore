@@ -1,1 +1,18 @@
 node_modules/
+
+# Copies of www/ written by `cap sync`. Capacitor already ignores the iOS one
+# (see ios/.gitignore), so ignoring the Android one keeps both platforms
+# consistent and stops the same 2 MB of assets being stored three times.
+# Run `npm run sync:android` / `npm run sync:ios` after cloning — CI does this
+# automatically.
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+
+# Local Android SDK path
+android/local.properties
+
+# Signing material — must never be committed
+*.jks
+*.keystore
+keystore.properties

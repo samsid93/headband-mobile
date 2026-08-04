@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Brand background. The adaptive-icon foreground is transparent, so this
+         is what shows behind the logo under every launcher mask shape. -->
+    <color name="ic_launcher_background">#0A0500</color>
 </resources>

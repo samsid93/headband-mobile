@@ -1,0 +1,76 @@
+name: Build iOS (Wham Bam)
+
+# iOS can only be compiled on macOS — xcodebuild does not exist on Linux or
+# Windows. This workflow is the project's only route to a verified iOS build
+# until someone runs it on a Mac.
+#
+# It compiles WITHOUT code signing, which proves the project, plugins and Swift
+# packages all build. Producing an installable .ipa additionally needs an Apple
+# Developer account, a distribution certificate and a provisioning profile —
+# see the "Signed archive" job below, which stays skipped until those secrets
+# are configured.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'capacitor-app/**'
+      - 'headband-game-web.html'
+      - '.github/workflows/build-ios.yml'
+  workflow_dispatch:
+
+jobs:
+  build-unsigned:
+    name: Compile iOS (unsigned)
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: capacitor-app/package-lock.json
+
+      - name: Install npm deps
+        working-directory: capacitor-app
+        run: npm ci
+
+      - name: Sync web assets into the native project
+        working-directory: capacitor-app
+        run: npm run sync:ios
+
+      - name: Fail if the bundled web app is missing
+        working-directory: capacitor-app
+        run: test -s ios/App/App/public/index.html || (echo "public/index.html missing" && exit 1)
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      # Capacitor 8 uses Swift Package Manager, not CocoaPods, so there is no
+      # .xcworkspace and no `pod install` step — the .xcodeproj builds directly.
+      - name: Build (no code signing)
+        working-directory: capacitor-app/ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Upload unsigned .app
+        uses: actions/upload-artifact@v4
+        with:
+          name: whambam-ios-unsigned-app
+          path: capacitor-app/ios/App/build/Build/Products/Release-iphoneos/App.app
+          retention-days: 30

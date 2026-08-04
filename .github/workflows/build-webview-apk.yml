@@ -1,56 +1,109 @@
-name: Build WebView APK (HeadBand)
+name: Build Android (Wham Bam)
 
 on:
   push:
     branches: [main]
     paths:
       - 'capacitor-app/**'
+      - 'headband-game-web.html'
+      - 'terms.html'
+      - 'privacy.html'
+      - 'legal-style.css'
       - '.github/workflows/build-webview-apk.yml'
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build Android WebView APK
+    name: Build APK + AAB
     runs-on: ubuntu-latest
+
+    # Lifted to job level because the `secrets` context is not available in a
+    # step-level `if:` — `env` is.
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      # Capacitor 8 requires JDK 21 — 17 fails at the Gradle toolchain step.
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Node 20
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: capacitor-app/package-lock.json
 
-      - name: Accept Android SDK licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install npm deps
         working-directory: capacitor-app
         run: npm ci
 
-      - name: Sync Capacitor
+      # copy-web.mjs pulls headband-game-web.html and its assets into www/, so the
+      # APK always bundles the same build the website serves.
+      - name: Sync web assets into the native project
         working-directory: capacitor-app
-        run: npx cap sync android
+        run: npm run sync:android
+
+      - name: Fail if www/ is empty
+        working-directory: capacitor-app
+        run: test -s www/index.html || (echo "www/index.html missing or empty" && exit 1)
 
       - name: Make gradlew executable
         run: chmod +x capacitor-app/android/gradlew
 
-      - name: Build Debug APK
+      - name: Build debug APK
         working-directory: capacitor-app/android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Build release AAB
+        working-directory: capacitor-app/android
+        run: ./gradlew bundleRelease --no-daemon --stacktrace
+
+      # Signing only runs when the secrets exist, so forks and first-time runs
+      # still produce a usable debug APK instead of failing outright.
+      # An AAB is a JAR-format archive, so it is signed with jarsigner —
+      # apksigner only understands APKs and will reject it.
+      - name: Sign release AAB
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        env:
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$RUNNER_TEMP/release.jks" \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            capacitor-app/android/app/build/outputs/bundle/release/app-release.aab \
+            "$KEY_ALIAS"
+          jarsigner -verify capacitor-app/android/app/build/outputs/bundle/release/app-release.aab
+          rm -f "$RUNNER_TEMP/release.jks"
+
+      - name: Note when the AAB is unsigned
+        if: ${{ env.KEYSTORE_B64 == '' }}
+        run: echo "::warning::No ANDROID_KEYSTORE_BASE64 secret set — the release AAB is UNSIGNED and cannot be uploaded to Play."
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: headband-webview-debug
+          name: whambam-debug-apk
           path: capacitor-app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: whambam-release-aab
+          path: capacitor-app/android/app/build/outputs/bundle/release/*.aab
           retention-days: 30

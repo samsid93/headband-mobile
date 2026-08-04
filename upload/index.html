@@ -376,7 +376,11 @@ body::after{content:'';position:fixed;inset:0;
 .ptag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.07);border:1px solid var(--bdr);border-radius:22px;padding:5px 11px;font-size:12px}
 .prem{color:var(--skp);cursor:pointer;font-size:14px;line-height:1}
 .parow{display:flex;gap:8px;align-items:stretch}
-.parow .inp{flex:1;padding:10px 14px;font-size:13px}
+/* 16px is a hard floor on every input: iOS Safari auto-zooms the whole page when
+   a field smaller than that receives focus, and does not zoom back out — the
+   player-name row was 13px, so adding a player mid-setup left the layout zoomed.
+   Kept visually compact with padding instead. */
+.parow .inp{flex:1;padding:9px 12px;font-size:16px}
 .pabtn{padding:0 18px;background:rgba(255,255,255,0.06);border:1.5px solid var(--bdr2);border-radius:var(--rS);color:var(--acc);font-size:22px;cursor:pointer;display:flex;align-items:center;flex-shrink:0;font-family:inherit;transition:background .15s}
 .pabtn:active{background:rgba(255,214,10,.12)}
 
@@ -781,16 +785,45 @@ body::after{content:'';position:fixed;inset:0;
 /* Hit zones: glow-only CTA (same treatment as the splash Start Now button) —
    transparent-centre blurred halo, so no hard outline has to trace the panels.
    --rot tilts the halo with the portrait artwork's slanted panels. */
-.gm-hit{position:absolute;background:transparent;border:0;margin:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;transform:rotate(var(--rot,0deg));transition:transform .16s;animation:ctaBreathe 1.6s ease-in-out infinite}
+.gm-hit{position:absolute;background:transparent;border:0;margin:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;transform:rotate(var(--rot,0deg));transition:transform .16s}
+/* Coloured frame — the panels are drawn flat in the artwork, so this is what
+   makes each one read as its own tappable thing rather than part of one poster. */
+.gm-hit::before{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  border:3px solid var(--gm-col);
+  box-shadow:0 0 0 2px rgba(10,5,0,.6),0 0 20px -2px var(--gm-col),inset 0 0 22px -8px var(--gm-col);
+  opacity:.9;transition:opacity .16s}
+/* Glow travels 1 -> 2 -> 3. Previously all three pulsed in unison, which gave
+   the eye no ranking at all and read as decoration rather than affordance. */
 .gm-hit::after{content:'';position:absolute;inset:-7%;pointer-events:none;
-  background:radial-gradient(ellipse at center,transparent 0%,transparent 52%,rgba(255,214,10,.5) 68%,rgba(255,140,0,.24) 80%,transparent 92%);
-  filter:blur(16px);animation:ctaGlow 1.6s ease-in-out infinite}
-.gm-hit:active{animation:none;transform:rotate(var(--rot,0deg)) scale(.98)}
-.gm-hit:active::after{animation:none;opacity:.75}
+  background:radial-gradient(ellipse at center,transparent 0%,transparent 52%,var(--gm-col) 68%,rgba(255,140,0,.2) 80%,transparent 92%);
+  filter:blur(16px);opacity:.22;animation:gmGlowCycle 3.6s ease-in-out infinite}
+.k-headsup  {--gm-col:#8FD41E}
+.k-charades {--gm-col:#E62E6B}
+.k-dontsayit{--gm-col:#19A7F0}
+.k-headsup::after  {animation-delay:0s}
+.k-charades::after {animation-delay:1.2s}
+.k-dontsayit::after{animation-delay:2.4s}
+@keyframes gmGlowCycle{0%,100%{opacity:.22}7%{opacity:.95}26%{opacity:.22}}
+/* Order + name badge. The artwork carries the big lettering; this is the small,
+   always-legible anchor that survives any screen size. */
+.gm-tag{position:absolute;top:-11px;left:14px;display:flex;align-items:center;gap:7px;
+  padding:4px 12px 4px 5px;border-radius:999px;background:var(--gm-col);
+  border:2.5px solid rgba(10,5,0,.8);box-shadow:2px 2px 0 rgba(0,0,0,.35);
+  font-size:11px;font-weight:900;letter-spacing:.9px;color:#0A0500;white-space:nowrap;text-transform:uppercase}
+.gm-tag b{display:flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
+  background:rgba(10,5,0,.85);color:#fff;font-size:11px;font-weight:900}
+.gm-go{position:absolute;right:14px;bottom:-10px;padding:3px 11px;border-radius:999px;
+  background:rgba(10,5,0,.85);border:2px solid var(--gm-col);color:#fff;
+  font-size:9.5px;font-weight:900;letter-spacing:1.1px;white-space:nowrap}
+.gm-hit:active{transform:rotate(var(--rot,0deg)) scale(.97)}
+.gm-hit:active::before{opacity:1}
+.gm-hit:active::after{animation:none;opacity:.85}
 @media (hover:hover) and (pointer:fine){
-  .gm-hit:hover{animation:none;transform:rotate(var(--rot,0deg)) scale(1.02);z-index:4}
-  .gm-hit:hover::after{animation:none;opacity:1;background:radial-gradient(ellipse at center,transparent 0%,transparent 48%,rgba(255,214,10,.72) 66%,rgba(255,140,0,.36) 80%,transparent 92%)}
+  .gm-hit:hover{transform:rotate(var(--rot,0deg)) scale(1.02);z-index:4}
+  .gm-hit:hover::before{opacity:1}
+  .gm-hit:hover::after{animation:none;opacity:.9}
 }
+@media (prefers-reduced-motion:reduce){.gm-hit::after{animation:none;opacity:.5}}
 /* Back button pinned to the SCREEN, not the poster box */
 #screen-mode .back-btn{position:absolute;top:12px;left:12px;z-index:6}
 .gmode-banner{position:relative;width:100%;max-width:380px;border-radius:20px;padding:20px 18px;margin:9px 0;cursor:pointer;overflow:hidden;border:3px solid rgba(10,5,0,.75);box-shadow:0 8px 26px rgba(0,0,0,.5),inset 0 0 0 2px rgba(255,255,255,.28);transition:transform .16s cubic-bezier(.34,1.56,.64,1)}
@@ -822,7 +855,11 @@ body::after{content:'';position:fixed;inset:0;
 .wforbidden{display:none;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:14px;width:100%;max-width:360px}
 .taboo-mode .wforbidden{display:grid}
 /* Target word — bigger and bolder in Don't Say It */
-.taboo-mode .wtext{font-size:clamp(30px,7.5vw,54px)}
+/* Don't Say It shares the card with the forbidden-words grid, so its word runs
+   smaller than the other modes — but 7.5vw clamped to the 30px floor on a normal
+   phone, which was far too small. Needs an ID in the selector to outrank the
+   general #screen-play .wtext rule below. */
+#screen-play.taboo-mode .wtext{font-size:clamp(34px,11vw,60px)}
 .wf-item{display:flex;align-items:center;gap:7px;font-size:17px;font-weight:900;color:#8E1410;background:rgba(255,45,85,.14);border:2px solid rgba(255,45,85,.55);border-radius:10px;padding:8px 10px;text-transform:uppercase;line-height:1.15}
 .wf-x{color:#E01236;font-weight:900;font-size:15px}
 .taboo-mode .whint{display:none}
@@ -837,7 +874,37 @@ body::after{content:'';position:fixed;inset:0;
   #screen-play .sbubble{padding:3px 14px}
   #screen-play .sbval{font-size:24px}
   #screen-play .sidebtn{height:56px;font-size:23px}
-  #screen-play .wdeck-box{margin-bottom:2px}
+
+  /* The category pill sat in the column above the card, costing ~30px plus an
+     8px gap. On a ~390px-tall viewport the card only gets ~154px total, so that
+     was roughly a quarter of the word's usable space. Lift it out of the flow
+     and sit it on the card's top edge as a tab instead — the height goes to the
+     word, and centring it avoids the top corners, which the back button and the
+     streak/counter chips already occupy. */
+  #screen-play .pcentre{position:relative}
+  #screen-play .wdeck-box{position:absolute;top:0;left:50%;transform:translateX(-50%);width:auto;max-width:62%;margin:0;z-index:3;font-size:11px;letter-spacing:.9px;padding:4px 14px;border-radius:0 0 12px 12px}
+  /* Top padding clears the tab; the rest is trimmed to hand back more height. */
+  #screen-play .wcard{padding:22px 14px 10px}
+  #screen-play .wcnt{top:7px;right:12px}
+  #screen-play .wstreak{top:7px;left:12px}
+  #screen-play .whint{margin-top:5px;font-size:11px}
+
+  /* Use the whole landscape width. These max-widths exist to stop the layout
+     sprawling on a desktop monitor, but on a handset held sideways they left
+     ~110px dead on each side while the word card was the thing running out of
+     room. A wider card needs fewer lines for the same title, which is worth
+     more than any font tweak: at 52px it goes from ~19 to ~26 characters a line. */
+  #screen-play .play-land{padding-left:10px;padding-right:10px}
+  #screen-play .pcentre{max-width:none}
+  #screen-play .ptopbar{max-width:none;padding:0 8px}
+  #screen-play .paction{max-width:none}
+  #screen-play .sidebtn{max-width:340px}
+
+  /* Height-driven, because in landscape it is the height that runs out first —
+     a vw-based size is picked from the long edge and overflows the short one.
+     Set high: this is the ideal size, not a safe one. fitWordText() shrinks the
+     rare entry that genuinely does not fit, and nothing else. */
+  #screen-play .wtext{font-size:clamp(40px,21vh,88px)}
 }
 
 /* ── FREE PAYWALL ── */
@@ -853,10 +920,25 @@ body::after{content:'';position:fixed;inset:0;
 .wdeck-box{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1.3px;background:#FFD60A;color:#0A0500;padding:8px 22px;border-radius:14px;margin-bottom:6px;text-align:center;width:calc(100% - 16px);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 4px 18px rgba(255,214,10,0.5),0 2px 0 rgba(0,0,0,0.3)}
 
 /* Word text */
-.wtext{font-size:clamp(30px,6.5vw,66px);font-weight:900;font-family:'Nunito','Georgia',sans-serif;line-height:1.08;color:#0A0800;text-transform:uppercase;letter-spacing:.5px;max-width:100%;overflow-wrap:anywhere;word-break:break-word;overflow-y:auto;max-height:100%}
+/* This is the IDEAL display size — big and prominent — not a safe size. Almost
+   every word fits at it. Long titles are handled by fitWordText(), which shrinks
+   only the individual words that actually overflow, so this must not be reduced
+   to accommodate the worst case: doing that shrinks every short word too. */
+.wtext{font-size:clamp(34px,7vw,72px);font-weight:900;font-family:'Nunito','Georgia',sans-serif;line-height:1.08;color:#0A0800;text-transform:uppercase;letter-spacing:.5px;max-width:100%;overflow-wrap:anywhere;word-break:break-word;overflow-y:auto;max-height:100%}
 .wtext::-webkit-scrollbar{width:0}
 /* Portrait word title — bigger, easier to read on the yellow card */
-@media (orientation:portrait){.wtext{font-size:clamp(38px,11vw,68px);line-height:1.05}}
+/* Both orientations: claim every spare pixel of the card. Without this .wtext is
+   only as tall as its own text and capped by max-height, so fitWordText()
+   measures a box far smaller than what is actually free and shrinks the word to
+   match — which is why the title read small in portrait as well as landscape. */
+#screen-play .wtext{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
+/* An empty hint row still reserved its margin, and most cards have no hint. */
+#screen-play .whint:empty{display:none;margin:0}
+
+/* Portrait (Charades / Don't Say It). Width is the binding constraint here —
+   height is plentiful — so this is vw-driven, and set high. Anything that
+   genuinely does not fit is still brought down by fitWordText(). */
+@media (orientation:portrait){#screen-play .wtext{font-size:clamp(42px,17vw,88px);line-height:1.05}}
 
 /* LET'S GO state */
 .cdnum-go{font-size:clamp(36px,9vw,70px)!important;background:none!important;-webkit-text-fill-color:#0A0800!important;filter:none!important;line-height:1.15}
@@ -872,7 +954,7 @@ body::after{content:'';position:fixed;inset:0;
 #home-user-pill:active{background:rgba(255,255,255,0.12)}
 .upill-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pur),var(--blu));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;overflow:hidden}
 .upill-avatar img{width:100%;height:100%;object-fit:cover}
-.auth-card{background:var(--s1);border:1.5px solid var(--bdr2);border-radius:var(--rL);padding:28px 22px 24px;width:100%;max-width:360px;position:relative;box-shadow:0 24px 80px rgba(0,0,0,0.7)}
+.auth-card{background:var(--s1);border:1.5px solid var(--bdr2);border-radius:var(--rL);padding:28px 22px 24px;width:100%;max-width:360px;position:relative;margin:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)}
 .auth-close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer;padding:4px;line-height:1;transition:color .2s}
 .auth-close:active{color:var(--txt)}
 .auth-logo{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--acc);text-align:center;margin-bottom:18px;letter-spacing:.5px}
@@ -1036,18 +1118,33 @@ body::after{content:'';position:fixed;inset:0;
   <div class="gm-variant gv-mobile">
     <div class="gm-poster">
       <img src="mode-poster.svg" class="gm-poster-img" alt="Pick your game — Up Top, Charades, Don&#39;t Say It" draggable="false">
-      <button class="gm-hit" style="left:3%;right:3%;top:28%;height:24%;--rot:-2.5deg" onclick="selGameStyle('headsup')" aria-label="Up Top"></button>
-      <button class="gm-hit" style="left:3%;right:3%;top:55.5%;height:19%;--rot:-1.8deg" onclick="selGameStyle('charades')" aria-label="Charades"></button>
-      <button class="gm-hit" style="left:3%;right:3%;top:76.5%;height:19.5%;--rot:-1.8deg" onclick="selGameStyle('dontsayit')" aria-label="Don't Say It"></button>
+      <!-- Tops/heights measured off the artwork: each frame must sit ABOVE its
+           panel's title, not through it. Charades is the tight one — its title
+           starts at ~54%, so the frame has to begin by 51.5%. -->
+      <button class="gm-hit k-headsup" style="left:3%;right:3%;top:26.5%;height:24%;--rot:-2.5deg" onclick="selGameStyle('headsup')" aria-label="Up Top — phone on forehead, others give verbal clues">
+        <span class="gm-tag" aria-hidden="true"><b>1</b>Up Top</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      </button>
+      <button class="gm-hit k-charades" style="left:3%;right:3%;top:51.5%;height:21%;--rot:-1.8deg" onclick="selGameStyle('charades')" aria-label="Charades — only you read the word, act it out without speaking">
+        <span class="gm-tag" aria-hidden="true"><b>2</b>Charades</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      </button>
+      <button class="gm-hit k-dontsayit" style="left:3%;right:3%;top:74.5%;height:21%;--rot:-1.8deg" onclick="selGameStyle('dontsayit')" aria-label="Don't Say It — describe the word without saying the forbidden words">
+        <span class="gm-tag" aria-hidden="true"><b>3</b>Don't Say It</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      </button>
     </div>
   </div>
   <!-- Landscape art: three side-by-side columns -->
   <div class="gm-variant gv-desktop">
     <div class="gm-poster">
       <img src="mode-poster-desktop.png" class="gm-poster-img" alt="Pick your game — Up Top, Charades, Don&#39;t Say It" draggable="false">
-      <button class="gm-hit" style="left:4.5%;width:29%;top:26.5%;height:67%" onclick="selGameStyle('headsup')" aria-label="Up Top"></button>
-      <button class="gm-hit" style="left:35.2%;width:29.6%;top:26.5%;height:67%" onclick="selGameStyle('charades')" aria-label="Charades"></button>
-      <button class="gm-hit" style="left:66.3%;width:29.5%;top:26.5%;height:67%" onclick="selGameStyle('dontsayit')" aria-label="Don't Say It"></button>
+      <button class="gm-hit k-headsup" style="left:4.5%;width:29%;top:26.5%;height:67%" onclick="selGameStyle('headsup')" aria-label="Up Top — phone on forehead, others give verbal clues">
+        <span class="gm-tag" aria-hidden="true"><b>1</b>Up Top</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      </button>
+      <button class="gm-hit k-charades" style="left:35.2%;width:29.6%;top:26.5%;height:67%" onclick="selGameStyle('charades')" aria-label="Charades — only you read the word, act it out without speaking">
+        <span class="gm-tag" aria-hidden="true"><b>2</b>Charades</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      </button>
+      <button class="gm-hit k-dontsayit" style="left:66.3%;width:29.5%;top:26.5%;height:67%" onclick="selGameStyle('dontsayit')" aria-label="Don't Say It — describe the word without saying the forbidden words">
+        <span class="gm-tag" aria-hidden="true"><b>3</b>Don't Say It</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      </button>
     </div>
   </div>
 </div>
@@ -1346,10 +1443,6 @@ body::after{content:'';position:fixed;inset:0;
 <div class="screen" id="screen-play">
   <button id="play-back-btn" onclick="endRoundEarly()">Go back</button>
   <div id="team-bar" class="team-bar" style="display:none"></div>
-  <!-- Portrait notification — only for HeadsUp mode, hidden in landscape / charades -->
-  <div id="portrait-notify" style="display:none;align-items:center;justify-content:center;gap:8px;width:100%;padding:7px 16px;background:rgba(247,201,72,.13);border-bottom:1px solid rgba(247,201,72,.28);font-size:12px;font-weight:700;color:var(--acc);text-align:center;flex-shrink:0">
-    📱 Rotate to landscape — tilt disabled in portrait
-  </div>
   <div class="play-land">
     <!-- TOP BAR: skip score · timer · correct score -->
     <div class="ptopbar">
@@ -2135,8 +2228,17 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   updateTimerDisplay();
   if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
-    document.getElementById('voice-unsupported').style.display='block';
-    document.getElementById('home-browser-warn').style.display='block';
+    // Neither Android WebView nor iOS WKWebView exposes SpeechRecognition, so
+    // the native builds always land here. "Try Chrome" is nonsense inside the
+    // app — tell those players what actually works instead.
+    const vu=document.getElementById('voice-unsupported');
+    const hw=document.getElementById('home-browser-warn');
+    if(_nativeShell()){
+      if(vu)vu.textContent='⚠ Voice guessing isn’t available in the app yet — use tilt or the on-screen buttons.';
+      if(hw)hw.textContent='⚠ Voice guessing isn’t available in the app yet';
+    }
+    if(vu)vu.style.display='block';
+    if(hw)hw.style.display='block';
   }
 
   // Voice toggle landscape hint
@@ -2359,6 +2461,15 @@ async function requestTiltPerm(){
   try{
     const r=await DeviceMotionEvent.requestPermission();
     if(r==='granted'){
+      // deviceorientation is a SEPARATE iOS 13+ permission from devicemotion.
+      // Without it no 'deviceorientation' event ever fires, _devGamma stays
+      // pinned at its initial 90, and the portrait guard in onMotion() can
+      // never engage — which is what let tilt keep firing while the phone was
+      // held upright. Best-effort: tilt still works if this is refused.
+      if(typeof DeviceOrientationEvent!=='undefined'
+         && typeof DeviceOrientationEvent.requestPermission==='function'){
+        try{await DeviceOrientationEvent.requestPermission()}catch(e){console.warn('[TILT] orientation permission:',e&&e.message)}
+      }
       tiltPermGranted=true;addMotionListener();
       if(st){st.textContent='✓ Tilt enabled!';st.className='perm-status ok'}
       setTimeout(()=>{document.getElementById('tilt-perm-block').style.display='none';checkAllPermsGranted()},800);
@@ -2415,7 +2526,10 @@ function unlockOrient(){
   if(screen.orientation&&screen.orientation.unlock){
     try{screen.orientation.unlock();console.log('[ORIENT] Unlocked')}catch(e){}
   }
-  // Native Android: return to free-sensor mode so non-game screens can go portrait
+  // Native (iOS + Android): hand rotation back to the sensor so the score and
+  // menu screens can return to portrait.
+  const so=window.Capacitor&&window.Capacitor.Plugins?window.Capacitor.Plugins.ScreenOrientation:null;
+  if(so&&so.unlock){try{so.unlock().catch(()=>{})}catch(e){}}
   if(window.AndroidBridge)window.AndroidBridge.resetOrientation();
 }
 
@@ -2441,6 +2555,18 @@ let _waitLandscapeCb=null,_waitLandscapeCleanup=null;
 // Android Chrome: screen.orientation.lock() in fullscreen overrides the rotation lock.
 // iOS Safari: no API exists — returns false, user rotates manually.
 function tryForceLandscape(){
+  // Native (iOS + Android): the Capacitor ScreenOrientation plugin talks to the
+  // OS directly. This is the ONLY route that works on iOS — WKWebView exposes
+  // neither AndroidBridge nor screen.orientation.lock.
+  const so=window.Capacitor&&window.Capacitor.Plugins?window.Capacitor.Plugins.ScreenOrientation:null;
+  if(so&&so.lock){
+    try{
+      so.lock({orientation:'landscape-primary'})
+        .catch(()=>so.lock({orientation:'landscape'}))
+        .catch(e=>console.warn('[ORIENT] Native lock failed:',e&&e.message));
+      return true;
+    }catch(e){}
+  }
   if(window.AndroidBridge&&window.AndroidBridge.lockLandscape){
     try{window.AndroidBridge.lockLandscape();return true}catch(e){}
   }
@@ -2504,7 +2630,14 @@ function skipRotate(){
   if(_waitLandscapeCleanup){_waitLandscapeCleanup();}
   if(cb)cb();
 }
-const _isWebView=/; wv\)/.test(navigator.userAgent)||!!window.AndroidBridge;
+// Android WebView reports "; wv)"; iOS WKWebView reports nothing distinctive,
+// so the Capacitor bridge is the only reliable native signal there.
+function _nativeShell(){
+  return /; wv\)/.test(navigator.userAgent)
+      || !!window.AndroidBridge
+      || !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : window.Capacitor.isNative));
+}
+const _isWebView=_nativeShell();
 function updateRotateStatus(){
   const el=document.getElementById('rotate-status');if(!el)return;
   const hint=document.getElementById('orient-lock-hint');
@@ -2565,21 +2698,80 @@ function pulseOrientSteps(){
 ═══════════════════════════ */
 const TILT={
   THRESHOLD: 4.5,
-  COOLDOWN: 1500,
+  // Must fall back inside ±RELEASE (~15°) before another trigger can fire.
+  // Lower than THRESHOLD on purpose: the gap is hysteresis, so sensor jitter
+  // around the trigger angle cannot re-arm the gesture on the next frame.
+  RELEASE: 2.5,
+  // Short debounce only. This used to be 1500ms because it was the sole thing
+  // stopping a sustained hold from re-firing — but it gated on time, not on the
+  // gesture ending, so it never actually stopped the loop and instead capped
+  // answers at roughly one per 1.75s. The `armed` latch below enforces one
+  // trigger per gesture properly, leaving this to absorb sensor bounce.
+  COOLDOWN: 300,
   SUSTAIN: 250,
+  // Degrees the phone may roll out of the landscape forehead position and still
+  // count as a gesture. Beyond this it is being turned to portrait, not tilted.
+  // A tilt and a portrait turn are the SAME rotation about the screen normal —
+  // gravity moves out of device-x into device-y — so |gy| alone cannot tell them
+  // apart (27deg gives gy=4.45, i.e. the trigger threshold; 90deg gives 9.8).
+  // Measuring the angle instead makes portrait unambiguous and needs no gyroscope.
+  MAX_ROLL: 70,
+  // Watchdog against a permanent lockout. Re-arming normally needs the phone back
+  // inside +/-RELEASE, but if a player's natural resting hold sits outside that
+  // band the latch never clears and tilt is dead for the rest of the round.
+  // After this long disarmed, re-arm anyway — but ONLY once the reading is below
+  // THRESHOLD, so a phone still held past the trigger point can never re-arm into
+  // a repeat. A real gesture completes in well under 2s; this long means stuck.
+  REARM_TIMEOUT: 2000,
+  disarmedAt: 0,
+  // Smoothing for the resting-gy baseline. ~1s time constant at 60Hz: fast
+  // enough to settle after the player adjusts their grip, far too slow for a
+  // deliberate tilt to drag it.
+  REST_ALPHA: 0.02,
+  restGy: null,
   cooldownUntil: 0,
+  // False from the moment a gesture fires until the phone returns to level.
+  // Without this a phone merely *held* past the threshold — e.g. turned upright
+  // into portrait, where gravity sits on the y axis at ~9.8 — re-triggers every
+  // COOLDOWN+SUSTAIN ms, which reads as a runaway auto-skip loop.
+  armed: true,
   lastDir: null,
   sustainStart: 0,
   sustainDir: null,
-  reset(){this.cooldownUntil=0;this.lastDir=null;this.sustainStart=0;this.sustainDir=null}
+  clearSustain(){this.sustainDir=null;this.sustainStart=0},
+  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.disarmedAt=0;this.restGy=null;this.clearSustain()}
 };
 
+/* Live sensor readout, enabled with ?tiltdebug=1 on the URL.
+   The accelerometer axis convention differs between browsers and changes again
+   when the screen is orientation-locked, so the only reliable way to tune the
+   guards is to read the actual numbers off the actual device. */
+const TILT_DEBUG=/[?&]tiltdebug=1/.test(location.search);
+let _tdEl=null,_tdLast=0;
+function tiltDebug(g,gy,roll){
+  if(!TILT_DEBUG)return;
+  const now=Date.now();
+  if(now-_tdLast<100)return;          // 10Hz — readable, and cheap
+  _tdLast=now;
+  if(!_tdEl){
+    _tdEl=document.createElement('div');
+    _tdEl.style.cssText='position:fixed;top:3px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(0,0,0,.85);color:#0F0;font:11px/1.35 ui-monospace,monospace;padding:5px 9px;border-radius:8px;white-space:pre;pointer-events:none;text-align:left';
+    document.body.appendChild(_tdEl);
+  }
+  const p=(v,n)=>Number(v||0).toFixed(n);
+  _tdEl.textContent=
+    'x'+p(g.x,1).padStart(6)+' y'+p(g.y,1).padStart(6)+' z'+p(g.z,1).padStart(6)+'\n'+
+    'gy'+p(gy,1).padStart(6)+' rest'+p(TILT.restGy,1).padStart(5)+' dev'+p(gy-(TILT.restGy||0),1).padStart(6)+'\n'+
+    'roll'+p(roll,0).padStart(4)+' gam'+p(_devGamma,0).padStart(4)+'\n'+
+    'land '+(isLandscape()?'Y':'N')+'  armed '+(TILT.armed?'Y':'N')+'  '+((screen.orientation&&screen.orientation.type)||'?');
+}
+
 // Cached refs — onMotion fires at ~60Hz; no per-event getElementById
-let _moPlay=null,_moNotify=null;
+let _moPlay=null;
 function onMotion(e){
   const g=e.accelerationIncludingGravity;
   if(!g) return;
-  if(!_moPlay){_moPlay=document.getElementById('screen-play');_moNotify=document.getElementById('portrait-notify');}
+  if(!_moPlay){_moPlay=document.getElementById('screen-play');}
 
   // Dynamic axis — read CURRENT orientation every frame.
   // landscape-secondary means phone flipped vs primary; gy direction inverts.
@@ -2590,47 +2782,110 @@ function onMotion(e){
   const rawY=g.y||0;
   const gy=rawY*axisSign;
 
+  // Physical attitude from the accelerometer.
+  //   roll 0deg  = phone on the forehead, gravity across the x axis — in play
+  //   roll 90deg = phone turned upright/portrait, gravity along y — not a gesture
+  // Measured against x alone, matching the pose the game is actually played in
+  // (gamma reads >=35 there, i.e. the phone is held upright, not flat).
+  const roll=Math.atan2(Math.abs(rawY),Math.abs(g.x||0))*57.29577951308232;
+  tiltDebug(g,gy,roll);
+
   const playActive=_moPlay.classList.contains('active');
 
-  // Update portrait-notify banner + layout for HeadsUp mode
-  // Banner follows PHYSICAL orientation (_devGamma) — same signal that gates tilt.
-  // Viewport can be force-locked landscape while the phone is still held portrait.
+  // The "rotate to landscape" banner used to be driven from here. It was removed:
+  // it fired on the same signal that gates tilt, so it flashed during deep but
+  // legitimate gestures, reading as the game fighting the player. It never
+  // blocked anything itself — the gate below does that — but it was pure noise.
   if(playActive && G.gameStyle==='headsup'){
-    const physLandscape=_devGamma>=35;
-    if(_moNotify)_moNotify.style.display=physLandscape?'none':'flex';
     _moPlay.classList.toggle('charades-mode',!isLandscape());
   }
 
-  // Hard guards — must be: play screen active, tilt enabled, round not over, phone in landscape
-  if(!playActive) return;
-  if(!G.tiltEnabled) return;
-  if(G.roundOver) return;
-  if(!isLandscape()) return; // screen not landscape (works when orientation lock is not active)
-  if(_devGamma < 35) return; // phone physically rotated toward portrait — gamma < 35° even if screen is locked to landscape
+  // Hard guards — must be: play screen active, tilt enabled, round not over, phone in landscape.
+  // Each clears the part-completed gesture. Returning without clearing leaves a
+  // stale sustainStart, so coming back past the threshold seconds later would
+  // satisfy now-sustainStart>=SUSTAIN immediately and fire with no real gesture.
+  if(!playActive){TILT.clearSustain();return;}
+  if(!G.tiltEnabled){TILT.clearSustain();return;}
+  if(G.roundOver){TILT.clearSustain();return;}
+  if(!isLandscape()){TILT.clearSustain();return;} // screen not landscape (works when orientation lock is not active)
+  // No gyroscope gate here — deliberately. 'deviceorientation' is a separate,
+  // slower event stream from 'devicemotion' and it commonly throttles or stalls
+  // across an orientation change. When it stalled, _devGamma stayed frozen at the
+  // portrait value it last saw and this gate blocked every tilt until some later
+  // event happened to arrive — which is what "tilt dies after rotating to portrait
+  // and back, or responds very slowly" was.
+  // The roll check below covers the same case from accelerationIncludingGravity,
+  // the same 60Hz stream that drives the triggers, so it cannot go stale while
+  // triggers are still being evaluated.
+
+  // Physical-attitude guard, measured from the accelerometer we already have.
+  // _devGamma above comes from 'deviceorientation', which needs its own iOS
+  // permission and does not fire at all in some WebViews — when it is missing it
+  // stays at its initial 90 and silently passes everything through. This check
+  // cannot fail that way: it uses the same vector that drives the triggers, so
+  // if it is absent nothing fires anyway.
+  //   roll 0deg  = long axis horizontal, phone on the forehead — in play
+  //   roll 90deg = long axis vertical, phone turned to portrait — not a gesture
+  if(roll>TILT.MAX_ROLL){TILT.clearSustain();return;}
 
   const now=Date.now();
+
+  /* Self-calibrating neutral.
+     Nobody holds the phone perfectly level at their forehead, so gy at rest is
+     biased — measured on device it sits negative. Comparing raw gy against a
+     symmetric +/-THRESHOLD then makes the two directions wildly unequal: from a
+     rest of -3, skip needs only 1.5 more to reach -4.5, while correct has to
+     travel all the way to +4.5, which is nearly a full turn to portrait. That is
+     exactly the "skip fine, correct only works in portrait" fault.
+     Everything below therefore works on deviation from rest, not absolute gy. */
+  if(TILT.restGy===null) TILT.restGy=gy;
+  const dev=gy-TILT.restGy;
+  const mag=Math.abs(dev);
+  // Adapt the baseline between gestures. The band is THRESHOLD rather than
+  // RELEASE so a baseline seeded from an unlucky first frame can still correct
+  // itself; a real gesture sits at or beyond THRESHOLD and cannot drag it.
+  if(mag<TILT.THRESHOLD) TILT.restGy+=dev*TILT.REST_ALPHA;
+
+  // One trigger per deliberate gesture. Until the phone comes back to roughly
+  // level the engine stays disarmed, so a sustained hold past the threshold
+  // cannot keep firing once the cooldown lapses.
+  if(!TILT.armed){
+    if(mag<=TILT.RELEASE) TILT.armed=true;
+    else if(now-TILT.disarmedAt>=TILT.REARM_TIMEOUT){
+      if(mag<TILT.THRESHOLD) TILT.armed=true;
+      // Stuck this far outside the band for this long means the baseline is
+      // wrong, not that the player is holding a tilt. Pull it toward the current
+      // reading so the engine recovers instead of staying dead for the round.
+      else TILT.restGy+=dev*TILT.REST_ALPHA;
+    }
+    TILT.clearSustain();
+    return;
+  }
+
   if(now<TILT.cooldownUntil) return;
 
-  if(gy >= TILT.THRESHOLD){
+  if(dev >= TILT.THRESHOLD){
     if(TILT.sustainDir!=='correct'){TILT.sustainDir='correct';TILT.sustainStart=now;}
     else if(now-TILT.sustainStart>=TILT.SUSTAIN){
       TILT.cooldownUntil=now+TILT.COOLDOWN;
-      TILT.sustainDir=null;TILT.sustainStart=0;
+      TILT.armed=false;TILT.disarmedAt=now;
+      TILT.clearSustain();
       TILT.lastDir='correct';
       doCorrect();
     }
   }
-  else if(gy <= -TILT.THRESHOLD){
+  else if(dev <= -TILT.THRESHOLD){
     if(TILT.sustainDir!=='skip'){TILT.sustainDir='skip';TILT.sustainStart=now;}
     else if(now-TILT.sustainStart>=TILT.SUSTAIN){
       TILT.cooldownUntil=now+TILT.COOLDOWN;
-      TILT.sustainDir=null;TILT.sustainStart=0;
+      TILT.armed=false;TILT.disarmedAt=now;
+      TILT.clearSustain();
       TILT.lastDir='skip';
       doSkip();
     }
   }
   else{
-    TILT.sustainDir=null;TILT.sustainStart=0;
+    TILT.clearSustain();
   }
 }
 
@@ -2956,6 +3211,48 @@ function runCountdown(n,done){
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
+/* Shrink the word until it actually fits the card.
+   Deck entries vary hugely in length — "JAWS" against a full film title — and no
+   single CSS font-size can serve both. The card is overflow:hidden and .wtext
+   hides its scrollbar, so anything too big is silently cut off mid-word rather
+   than visibly scrolling. Binary-search the largest size that fits, starting
+   from whatever the stylesheet chose so mode-specific rules still apply. */
+function fitWordText(){
+  const wt=document.getElementById('w-text');
+  if(!wt)return;
+  wt.style.fontSize='';                    // back to the CSS-driven size
+  if(!wt.textContent.trim())return;
+  const fits=()=>wt.scrollHeight<=wt.clientHeight+1 && wt.scrollWidth<=wt.clientWidth+1;
+  if(fits())return;                        // common case — no work, no reflow cost
+  const max=parseFloat(getComputedStyle(wt).fontSize)||48;
+  let lo=13,hi=max;                        // 13px floor: never shrink to unreadable
+  for(let i=0;i<12&&hi-lo>0.5;i++){
+    const mid=(lo+hi)/2;
+    wt.style.fontSize=mid+'px';
+    if(fits())lo=mid; else hi=mid;
+  }
+  wt.style.fontSize=lo+'px';
+}
+// The fit depends on the card's box, so it has to be redone whenever that changes.
+window.addEventListener('resize',fitWordText,{passive:true});
+window.addEventListener('orientationchange',()=>setTimeout(fitWordText,120),{passive:true});
+// Nunito arrives from Google Fonts after first paint and is wider than the
+// fallback, so anything measured before it lands is measured against the wrong
+// metrics and can overflow once it swaps in.
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).catch(()=>{});
+
+/* Keyboard-safe focus.
+   On iOS the layout viewport does NOT shrink when the on-screen keyboard opens,
+   so a focused field can sit behind it with nothing in the page indicating it.
+   Android shrinks the viewport but still centres the modal against the old
+   height. Pulling the focused field to the middle of its scroll container fixes
+   both; the delay lets the keyboard finish animating before we measure. */
+document.addEventListener('focusin',e=>{
+  const el=e.target;
+  if(!el||typeof el.matches!=='function'||!el.matches('#auth-modal input'))return;
+  setTimeout(()=>{try{el.scrollIntoView({block:'center',behavior:'smooth'})}catch(_){}},260);
+});
+
 function showWord(){
   if(G.idx>=G.words.length){endRound();return}
   const e=G.words[G.idx],deck=G.gameStyle==='dontsayit'?tabooDeck():DECKS.find(d=>d.id===G.deck);
@@ -2969,6 +3266,7 @@ function showWord(){
   document.getElementById('word-card').classList.toggle('golden',isGolden);
   document.getElementById('w-hint').textContent=isGolden?'⭐ GOLDEN WORD — worth 2x!':(e.h||'');
   document.getElementById('w-cnt').textContent='';
+  fitWordText();   // after the text and any forbidden list are in the DOM
   beepNewWord();
 }
 function beepNewWord(){SFX.newWord()}
@@ -3078,7 +3376,6 @@ function endRound(){
   TILT.reset();
   unlockOrient();
   releaseWakeLock();
-  const pn=document.getElementById('portrait-notify');if(pn)pn.style.display='none';
   // Record words consumed from the active pool
   recordWordUsed(G.deck, G.idx);
   SFX.timeup();
@@ -3385,8 +3682,21 @@ const PLATFORM = {
   },
   get purchases(){
     return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.Purchases : null;
+  },
+  get orientation(){
+    return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.ScreenOrientation : null;
   }
 };
+
+/* Where Supabase should send the user back to after a confirmation / recovery /
+   OAuth round-trip. In the browser that is wherever we are already running. In
+   the bundled native app window.location.origin is "https://localhost", which
+   Supabase will reject and which would bake a dead link into every email — so
+   native always hands back to the live site. */
+const AUTH_ORIGIN = 'https://whambam.games';
+function authRedirectTo(){
+  return (PLATFORM.isNative ? AUTH_ORIGIN : window.location.origin) + '/';
+}
 
 /* ═══════════════════════════════════════════════════
    LOCAL SUBSCRIPTION GRANT
@@ -3942,7 +4252,7 @@ const HB_AUTH = (() => {
     const link = document.getElementById('auth-forgot');
     if (link) { link.style.pointerEvents = 'none'; link.style.opacity = '.55'; }
     try {
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: authRedirectTo() });
       if (error) throw error;
       // Deliberately not confirming whether the address exists — that would let
       // anyone enumerate registered users.
@@ -3997,7 +4307,7 @@ const HB_AUTH = (() => {
     try {
       // Redirect to the site root so it matches the Supabase Site URL /
       // allow-list exactly (avoids /index.html style mismatches).
-      const redirectTo = window.location.origin + '/';
+      const redirectTo = authRedirectTo();
       const { error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo }
@@ -4459,8 +4769,8 @@ function enterFS(){
 }
 function updateFSBtn(){
   const btn=document.getElementById('fs-btn');if(!btn)return;
-  // Always hidden in Capacitor WebView — app is already fullscreen natively
-  if(/; wv\)/.test(navigator.userAgent)||window.AndroidBridge){btn.style.display='none';return;}
+  // Always hidden in the native shell (Android + iOS) — already fullscreen there
+  if(_nativeShell()){btn.style.display='none';return;}
   const inFS=!!(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement);
   const inPlay=document.getElementById('screen-play').classList.contains('active');
   const inCd=document.getElementById('screen-countdown').classList.contains('active');
@@ -4508,7 +4818,12 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
 </div>
 
 <!-- AUTH MODAL -->
-<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(18,8,0,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:20px 16px">
+<!-- overflow-y:auto matters here: this is the only overlay with text inputs, so
+     it is the only one the on-screen keyboard can cover. Without it the card is
+     centred in the full viewport and the password field ends up behind the
+     keyboard with no way to reach it. .auth-card uses margin:auto rather than
+     align-items:center so a tall card scrolls instead of being clipped at the top. -->
+<div id="auth-modal" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(18,8,0,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:20px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div class="auth-card">
     <button class="auth-close" onclick="HB_AUTH.hideAuthModal()">✕</button>
     <div class="auth-logo">Wham Bam</div>

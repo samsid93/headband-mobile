@@ -1,16 +1,32 @@
 {
   "appId": "games.whambam.app",
-  "appName": "Wam Bam",
+  "appName": "Wham Bam",
   "webDir": "www",
+  "backgroundColor": "#0A0500",
   "server": {
-    "url": "https://whambam.games",
+    "androidScheme": "https",
+    "iosScheme": "https",
     "cleartext": false,
-    "androidScheme": "https"
+    "allowNavigation": [
+      "izxzlxtowubbjiatouci.supabase.co",
+      "*.supabase.co",
+      "secure.xsolla.com",
+      "sandbox-secure.xsolla.com",
+      "*.xsolla.com",
+      "accounts.google.com",
+      "whambam.games"
+    ]
   },
   "android": {
     "allowMixedContent": false,
     "captureInput": true,
     "webContentsDebuggingEnabled": false
+  },
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "limitsNavigationsToAppBoundDomains": false,
+    "backgroundColor": "#0A0500"
   },
   "plugins": {
     "StatusBar": {
