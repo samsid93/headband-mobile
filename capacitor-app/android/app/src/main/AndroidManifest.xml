@@ -23,6 +23,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Google sign-in redirect target. Google refuses OAuth from an embedded
+                 WebView, so the flow runs in the system browser (Custom Tabs) instead;
+                 this intent-filter is what lets Google's redirect hand control back to
+                 the app instead of dead-ending in the browser. singleTask above means it
+                 returns to this same running instance rather than a fresh one. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="games.whambam.app" />
+            </intent-filter>
+
         </activity>
 
         <provider

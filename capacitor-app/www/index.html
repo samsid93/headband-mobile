@@ -3228,25 +3228,11 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).c
   });
 })();
 
-/* Google sign-in cannot work inside the native shell, so it is hidden there
-   rather than left as a dead end.
-   Two independent blockers, either alone fatal:
-     1. Google refuses OAuth from embedded WebViews (403 disallowed_useragent).
-     2. Even if it completed, the redirect lands on https://whambam.games — the
-        WEBSITE, loaded inside the app. The session would be created against
-        that origin, not the app's own, so the app would still be signed out
-        while showing a page it cannot navigate back from.
-   Making it work needs App Links / Universal Links plus a system-browser flow.
-   Email + password is unaffected: it is a direct API call with no redirect. */
-function hideGoogleOnNative(){
-  if(!_nativeShell()) return;
-  const btn = document.querySelector('.auth-google-btn');
-  const div = document.getElementById('auth-or');
-  if(btn) btn.style.display='none';
-  if(div) div.style.display='none';
-}
-document.addEventListener('DOMContentLoaded',hideGoogleOnNative);
-hideGoogleOnNative();
+/* Google sign-in on native: see NATIVE_OAUTH_REDIRECT above and googleSignIn()
+   / the appUrlOpen listener inside HB_AUTH below. It works by opening the OAuth
+   flow in the SYSTEM browser (not the embedded WebView, which Google refuses)
+   and catching the redirect via a custom URL scheme registered on both
+   platforms, instead of letting it land on the live website inside the app. */
 
 /* Android hardware / gesture back.
    Nothing handled this before, and it became load-bearing once the app went
@@ -3737,8 +3723,21 @@ const PLATFORM = {
   },
   get orientation(){
     return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.ScreenOrientation : null;
+  },
+  get browser(){
+    return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.Browser : null;
+  },
+  get app(){
+    return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null;
   }
 };
+
+// Where Google's redirect hands control back to the app after sign-in. Must be
+// registered as a URL scheme on both platforms (AndroidManifest intent-filter,
+// iOS CFBundleURLTypes) — see capacitor-app. Also must be added to Supabase's
+// Redirect URLs allow-list (Auth -> URL Configuration) or the OAuth callback
+// 400s before it ever reaches the app.
+const NATIVE_OAUTH_REDIRECT = 'games.whambam.app://auth-callback';
 
 /* Where Supabase should send the user back to after a confirmation / recovery /
    OAuth round-trip. In the browser that is wherever we are already running. In
@@ -4165,6 +4164,12 @@ const HB_AUTH = (() => {
   }
 
   async function init() {
+    // Native Google sign-in return path. Registered once; harmless if the app
+    // is opened via the scheme for any other reason since the callback checks
+    // the URL prefix before doing anything.
+    if (PLATFORM.isNative && PLATFORM.app) {
+      PLATFORM.app.addListener('appUrlOpen', ({ url }) => _handleNativeOAuthCallback(url));
+    }
     const sb = _client();
     if (!sb) { _updatePill(); return; }
     // Did we just come back from a Google (OAuth) redirect? URL carries ?code=
@@ -4357,6 +4362,24 @@ const HB_AUTH = (() => {
     const googleBtn = document.querySelector('.auth-google-btn');
     if (googleBtn) { googleBtn.disabled = true; googleBtn.style.opacity = '.6'; }
     try {
+      if (PLATFORM.isNative) {
+        // Google refuses OAuth from an embedded WebView (403 disallowed_useragent),
+        // so the flow has to run in the system browser instead. skipBrowserRedirect
+        // stops supabase-js navigating the CURRENT page (which would be the app's
+        // own bundled index.html) to the Google URL — we open it externally and
+        // handle the return ourselves via the appUrlOpen listener below.
+        if (!PLATFORM.browser) throw new Error('Browser plugin unavailable.');
+        const { data, error } = await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: NATIVE_OAUTH_REDIRECT, skipBrowserRedirect: true }
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error('No sign-in URL returned.');
+        await PLATFORM.browser.open({ url: data.url });
+        // Button stays disabled/dim while the system browser is up top; the
+        // appUrlOpen handler re-enables it once the redirect comes back.
+        return;
+      }
       // Redirect to the site root so it matches the Supabase Site URL /
       // allow-list exactly (avoids /index.html style mismatches).
       const redirectTo = authRedirectTo();
@@ -4367,8 +4390,38 @@ const HB_AUTH = (() => {
       if (error) throw error;
     } catch(e) {
       _showErr(_authErrMsg(e));
-    } finally {
       if (googleBtn) { googleBtn.disabled = false; googleBtn.style.opacity = ''; }
+    }
+  }
+
+  /* Handles the deep link Google's redirect lands on: games.whambam.app://auth-callback
+     Registered as a URL scheme on both platforms (see capacitor-app/android
+     AndroidManifest.xml and ios/App/App/Info.plist). This runs in the SAME
+     WebView context googleSignIn() started in, which is required — the PKCE
+     code_verifier signInWithOAuth generated lives in this page's localStorage,
+     and exchangeCodeForSession() needs it back to complete the handshake. */
+  async function _handleNativeOAuthCallback(url) {
+    const googleBtn = document.querySelector('.auth-google-btn');
+    const reenable = () => { if (googleBtn) { googleBtn.disabled = false; googleBtn.style.opacity = ''; } };
+    if (!url || url.indexOf(NATIVE_OAUTH_REDIRECT) !== 0) return;
+    if (PLATFORM.browser) { try { await PLATFORM.browser.close(); } catch(e){} }
+    let params;
+    try { params = new URL(url).searchParams; } catch(e) { reenable(); return; }
+    const err = params.get('error_description') || params.get('error');
+    if (err) { _showErr(err); reenable(); return; }
+    const code = params.get('code');
+    if (!code) { reenable(); return; }
+    const sb = _client();
+    if (!sb) { _showErr('Auth service unavailable. Check your connection.'); reenable(); return; }
+    try {
+      const { error } = await sb.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+      // onAuthStateChange's SIGNED_IN branch (in init(), below) takes it from
+      // here — closes the modal, applies the subscription, syncs entitlements.
+    } catch(e) {
+      _showErr(_authErrMsg(e));
+    } finally {
+      reenable();
     }
   }
 
@@ -4904,7 +4957,6 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       </div>
       <button id="auth-submit-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submit()">Sign In</button>
       <button type="button" id="auth-forgot" class="auth-forgot" onclick="HB_AUTH.forgotPassword()">Forgot password?</button>
-      <!-- Hidden in the native app — see hideGoogleOnNative() below. -->
       <div class="auth-divider" id="auth-or"><span>or</span></div>
       <button class="btn auth-google-btn" onclick="HB_AUTH.googleSignIn()">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="vertical-align:middle;margin-right:8px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.705A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.705V4.963H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.295C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>

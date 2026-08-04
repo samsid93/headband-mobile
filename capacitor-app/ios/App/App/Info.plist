@@ -82,5 +82,17 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<!-- Google sign-in redirect target. Google refuses OAuth from an embedded
+	     WKWebView, so the flow runs in SFSafariViewController instead; this is
+	     what lets the OAuth redirect hand control back to the app. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>games.whambam.app</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
