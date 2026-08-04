@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- viewport-fit=cover lets the page draw INTO the notch/safe-area region. Without
+     it the browser reserves that band and leaves it blank, so the app still shows
+     an empty strip at the top even with the status bar hidden. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wham Bam — Party Word Game</title>
 <meta name="description" content="Wham Bam — the TOP 3 party games in 1 app. Up Top, Charades and Don't Say It!! Hold it. Guess it. WIN it. 24 decks, tilt controls, voice commands, team play.">
 <meta property="og:title" content="Wham Bam — Party Word Game">
@@ -1041,6 +1044,10 @@ body::after{content:'';position:fixed;inset:0;
 
 <!-- HOME -->
 <div class="screen" id="screen-home">
+  <!-- Hidden diagnostics toggle: 6 taps in the top-right corner of Home turns the
+       live tilt readout on/off. Invisible and non-focusable, so players never meet
+       it, but it makes the sensor numbers obtainable from a shipped APK. -->
+  <button id="dbg-tap" aria-hidden="true" tabindex="-1" style="position:absolute;top:0;right:0;width:58px;height:58px;opacity:0;background:transparent;border:0;padding:0;z-index:60"></button>
   <!-- Graffiti background — Final Logo.svg palette -->
   <div class="home-graffiti">
     <div class="gburst"></div>
@@ -2729,6 +2736,19 @@ const TILT={
   // deliberate tilt to drag it.
   REST_ALPHA: 0.02,
   restGy: null,
+  // The baseline may only learn a reading that has SETTLED: stayed inside
+  // SETTLE_BAND for DWELL ms. Anything still moving is a gesture in progress.
+  //
+  // Neither simpler rule works. Per-frame speed fails because a 2.4s tilt moves
+  // ~0.04 per frame, indistinguishable from noise. Gating on distance-from-rest
+  // fails because an EMA of rate a trails a ramp of slope s by s/a — at 0.04 per
+  // frame that is a lag of 2.0, so the deviation saturated below RELEASE and the
+  // phone never appeared to leave rest at all. That is why a quick flick fired
+  // but a gentle tilt did not, and why correct needed a full turn to portrait.
+  SETTLE_BAND: 0.8,
+  DWELL: 1200,
+  winRef: null,
+  winSince: 0,
   cooldownUntil: 0,
   // False from the moment a gesture fires until the phone returns to level.
   // Without this a phone merely *held* past the threshold — e.g. turned upright
@@ -2739,14 +2759,19 @@ const TILT={
   sustainStart: 0,
   sustainDir: null,
   clearSustain(){this.sustainDir=null;this.sustainStart=0},
-  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.disarmedAt=0;this.restGy=null;this.clearSustain()}
+  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.disarmedAt=0;this.restGy=null;this.winRef=null;this.winSince=0;this.clearSustain()}
 };
 
 /* Live sensor readout, enabled with ?tiltdebug=1 on the URL.
    The accelerometer axis convention differs between browsers and changes again
    when the screen is orientation-locked, so the only reliable way to tune the
    guards is to read the actual numbers off the actual device. */
-const TILT_DEBUG=/[?&]tiltdebug=1/.test(location.search);
+/* Query param works in a browser, but the app loads the bundled file with no
+   query string — so the readout was unreachable exactly where the tilt bugs
+   actually happen. Persisted flag + a hidden tap target on Home (see #dbg-tap)
+   makes it reachable in the APK. `let`, not `const`, so toggling is instant. */
+let TILT_DEBUG=/[?&]tiltdebug=1/.test(location.search)
+            || (()=>{try{return localStorage.getItem('hb_tiltdebug')==='1'}catch(e){return false}})();
 let _tdEl=null,_tdLast=0;
 function tiltDebug(g,gy,roll){
   if(!TILT_DEBUG)return;
@@ -2841,10 +2866,17 @@ function onMotion(e){
   if(TILT.restGy===null) TILT.restGy=gy;
   const dev=gy-TILT.restGy;
   const mag=Math.abs(dev);
-  // Adapt the baseline between gestures. The band is THRESHOLD rather than
-  // RELEASE so a baseline seeded from an unlucky first frame can still correct
-  // itself; a real gesture sits at or beyond THRESHOLD and cannot drag it.
-  if(mag<TILT.THRESHOLD) TILT.restGy+=dev*TILT.REST_ALPHA;
+  // Baseline tracking, in three zones:
+  //   at rest        -> follow it
+  //   part-way out   -> follow ONLY after it settles there for DWELL, so a
+  //                     gesture passing through cannot drag the reference, but
+  //                     a genuinely changed grip is still learned
+  //   past threshold -> never; that is a gesture
+  if(TILT.winRef===null||Math.abs(gy-TILT.winRef)>TILT.SETTLE_BAND){
+    TILT.winRef=gy;TILT.winSince=now;      // still moving — restart the window
+  }
+  const settled=(now-TILT.winSince)>=TILT.DWELL;
+  if(settled&&mag<TILT.THRESHOLD) TILT.restGy+=dev*TILT.REST_ALPHA;
 
   // One trigger per deliberate gesture. Until the phone comes back to roughly
   // level the engine stays disarmed, so a sustained hold past the threshold
@@ -3240,6 +3272,23 @@ window.addEventListener('orientationchange',()=>setTimeout(fitWordText,120),{pas
 // fallback, so anything measured before it lands is measured against the wrong
 // metrics and can overflow once it swaps in.
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).catch(()=>{});
+
+/* Wire the hidden diagnostics toggle (6 taps, top-right of Home). */
+(function wireDebugToggle(){
+  const el=document.getElementById('dbg-tap'); if(!el) return;
+  let n=0,last=0;
+  el.addEventListener('click',()=>{
+    const now=Date.now();
+    if(now-last>3000) n=0;         // taps must be consecutive, not accidental
+    last=now; n++;
+    if(n<6) return;
+    n=0;
+    TILT_DEBUG=!TILT_DEBUG;
+    try{localStorage.setItem('hb_tiltdebug',TILT_DEBUG?'1':'0')}catch(e){}
+    if(!TILT_DEBUG&&_tdEl){_tdEl.remove();_tdEl=null;}
+    if(typeof showToast==='function') showToast('Tilt readout '+(TILT_DEBUG?'ON':'OFF'));
+  });
+})();
 
 /* Google sign-in cannot work inside the native shell, so it is hidden there
    rather than left as a dead end.

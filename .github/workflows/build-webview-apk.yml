@@ -11,6 +11,11 @@ on:
       - 'legal-style.css'
       - '.github/workflows/build-webview-apk.yml'
   workflow_dispatch:
+    inputs:
+      build_release:
+        description: 'Also build the release AAB (off during bug-fixing)'
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -64,7 +69,12 @@ jobs:
         working-directory: capacitor-app/android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
+      # Release AAB is off while bugs are still being worked through — it cannot
+      # be uploaded anyway until a signing keystore exists, and building it adds
+      # ~1.5 min to every debug turnaround. Re-enable by setting build_release to
+      # true when running the workflow manually, or delete the `if:` below.
       - name: Build release AAB
+        if: ${{ github.event.inputs.build_release == 'true' }}
         working-directory: capacitor-app/android
         run: ./gradlew bundleRelease --no-daemon --stacktrace
 
@@ -73,7 +83,7 @@ jobs:
       # An AAB is a JAR-format archive, so it is signed with jarsigner —
       # apksigner only understands APKs and will reject it.
       - name: Sign release AAB
-        if: ${{ env.KEYSTORE_B64 != '' }}
+        if: ${{ github.event.inputs.build_release == 'true' && env.KEYSTORE_B64 != '' }}
         env:
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -91,7 +101,7 @@ jobs:
           rm -f "$RUNNER_TEMP/release.jks"
 
       - name: Note when the AAB is unsigned
-        if: ${{ env.KEYSTORE_B64 == '' }}
+        if: ${{ github.event.inputs.build_release == 'true' && env.KEYSTORE_B64 == '' }}
         run: echo "::warning::No ANDROID_KEYSTORE_BASE64 secret set — the release AAB is UNSIGNED and cannot be uploaded to Play."
 
       - name: Upload debug APK
@@ -102,6 +112,7 @@ jobs:
           retention-days: 30
 
       - name: Upload release AAB
+        if: ${{ github.event.inputs.build_release == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: whambam-release-aab
