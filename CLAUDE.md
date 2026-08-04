@@ -91,14 +91,23 @@ driven off the gyroscope threshold, so it flashed during deep-but-valid gestures
 as the game fighting the player. It never blocked anything itself.
 
 **Triggers compare ABSOLUTE `gy` against a symmetric `±THRESHOLD`.** This is the logic
-confirmed working on a real device. Do not replace it from first principles — three
+confirmed working on a real device. Do not replace it from first principles — four
 attempts did, each shipped a worse regression, each was reverted:
 
 | attempt | what broke |
 |---|---|
-| self-calibrating rest baseline | baseline chased slow gestures; correct only fired at full portrait |
+| self-calibrating rest baseline (continuous) | baseline chased slow gestures; correct only fired at full portrait |
 | removing the gyroscope gate | did not help, and dropped a real guard |
 | re-arm watchdog (`REARM_TIMEOUT`) | made the harder direction unreliable |
+| calibrated-neutral, captured once per opportunity (commit `a7d3016`) | on-device: tilt stopped working entirely |
+
+**Before touching this engine again**, diff it against the last commit the user
+explicitly confirmed working in THIS conversation (grep the chat for "working fine" /
+"perfectly working" and note which commit was current then) — not against an earlier
+commit picked because it looks plausible. Restoring from the wrong reference is exactly
+how the `a7d3016` regression happened: it was compared against `a459f34`, the *original*
+Capacitor migration commit that already contained the broken baseline, instead of
+`1d86851`, the actual confirmed-working state.
 
 Known and accepted consequences, asserted in the tests so they are not "fixed" again:
 an off-centre resting hold makes one direction nearer its threshold than the other,
