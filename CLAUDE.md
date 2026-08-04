@@ -55,117 +55,89 @@ home → setup → teams → ready → countdown → playing → score
 
 **Screen navigation:** `showScreen(id)` swaps visibility between `#screen-*` divs.
 
-## Tilt Engine (Web)
+## Tilt Engine (Web) — 🔒 LOCKED, DO NOT MODIFY
 
-Located in `onMotion()` in `headband-game-web.html`.
+**The user has explicitly confirmed this engine working on a real device and asked
+that it never be touched again by unrelated work.** Every prior round of "fixing" it
+made it worse — four separate rewrites shipped, each was a regression, each had to be
+reverted. `onMotion()` and the `TILT` object in `headband-game-web.html` are frozen as
+of commit `d66df9f`. Every other surface synced from it (`upload/`, `capacitor-app/www`,
+the Android/iOS bundles) must carry the byte-identical function — the mobile app runs
+the same JS as the web page, so there is only ever one engine to keep correct.
 
-Key constants:
+**If a task touches `headband-game-web.html` for an unrelated reason (fonts, layout,
+auth, decks, anything), do not let an edit tool, a find/replace, or a "while I'm in
+here" cleanup touch `const TILT={...}` or `function onMotion(e){...}`.** If the user
+reports a tilt bug, that is the one case this rule lifts — and even then, diff against
+the commit the user explicitly confirmed in THIS conversation, never against an earlier
+commit picked because it looks plausible. That exact mistake (diffing against `a459f34`,
+the original Capacitor migration commit that already had a broken baseline, instead of
+`1d86851`, the actual confirmed state) is what produced the `a7d3016` regression.
+
+Ground truth — both gates are load-bearing and both must stay:
 ```javascript
-TILT.THRESHOLD = 4.5   // ~27° required to trigger
-TILT.RELEASE   = 2.5   // ~15° — must return inside this to re-arm (hysteresis)
-TILT.SUSTAIN   = 250   // ms hold before firing
-TILT.COOLDOWN  = 300   // ms debounce after trigger
+const TILT={
+  THRESHOLD: 4.5,   RELEASE: 2.5,   COOLDOWN: 300,   SUSTAIN: 250,
+  MAX_ROLL: 70,      // accelerometer: roll angle past which it's portrait, not a tilt
+  GAMMA_MIN: 15,     // gyroscope: minimum |gamma| that still counts as landscape
+  cooldownUntil: 0, armed: true, lastDir: null, sustainStart: 0, sustainDir: null,
+  clearSustain(){this.sustainDir=null;this.sustainStart=0},
+  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.clearSustain()}
+}
 ```
-
-**The phone is held UPRIGHT at the forehead**, gravity across the `x` axis, `gy ≈ 0` at
-rest. A tilt swings gravity from `x` into `y`. (The header comment in the source says
-"flat/horizontal" — it is misleading. The gyroscope gate below passes during real play,
-and it requires `|gamma| >= 15`, which only happens when the phone is upright.)
-
-Portrait is rejected by the accelerometer alone:
 ```javascript
-const roll = Math.atan2(Math.abs(rawY), Math.abs(g.x||0)) * 57.29578;
-if (roll > TILT.MAX_ROLL) return;                          // 70deg+ = portrait
+function onMotion(e){
+  const g=e.accelerationIncludingGravity; if(!g) return;
+  const ot=(screen.orientation&&screen.orientation.type)||'';
+  const axisSign=ot==='landscape-secondary'?-1:1;
+  const rawY=g.y||0, gy=rawY*axisSign;
+  const roll=Math.atan2(Math.abs(rawY),Math.abs(g.x||0))*57.29577951308232;
+  // ... playActive / charades-mode toggle ...
+  if(!playActive){TILT.clearSustain();return;}
+  if(!G.tiltEnabled){TILT.clearSustain();return;}
+  if(G.roundOver){TILT.clearSustain();return;}
+  if(!isLandscape()){TILT.clearSustain();return;}
+  if(_devGamma < TILT.GAMMA_MIN){TILT.clearSustain();return;}   // gyroscope gate — KEEP
+  if(roll>TILT.MAX_ROLL){TILT.clearSustain();return;}            // accelerometer gate — KEEP
+  const now=Date.now(), mag=Math.abs(gy);
+  if(!TILT.armed){ if(mag<=TILT.RELEASE) TILT.armed=true; TILT.clearSustain(); return; }
+  if(now<TILT.cooldownUntil) return;
+  if(gy >= TILT.THRESHOLD){ /* sustain -> doCorrect() */ }
+  else if(gy <= -TILT.THRESHOLD){ /* sustain -> doSkip() */ }
+  else{ TILT.clearSustain(); }
+}
 ```
+Triggers compare **absolute `gy`** against a symmetric `±THRESHOLD` — no baseline, no
+calibration, no deviation-from-rest. That is the confirmed design; it is not a
+simplification waiting to be improved.
 
-**Never gate tilt on `deviceorientation` (`_devGamma`).** It is a *separate, slower*
-event stream from `devicemotion` and it throttles or stalls across orientation changes —
-`_devGamma` then stays frozen at the last portrait value and blocks every tilt until some
-later event lands. That is what "tilt dies after rotating to portrait and back, or goes
-very slow" was. Successive thresholds of 35, 15 and 8 all failed for the same underlying
-reason. `_devGamma` is now debug-only. `MAX_ROLL` covers portrait from the same 60 Hz
-stream that drives the triggers, so it cannot go stale while triggers are being evaluated.
+The phone is held upright at the forehead; a tilt swings gravity from the `x` axis into
+`y`. `axisSign` flips for `landscape-secondary` (handles a flipped phone, and covers iOS
+where `orientation.lock()` silently fails). `DeviceOrientationEvent.requestPermission()`
+must stay requested on iOS 13+ (separate from `DeviceMotionEvent`'s permission) or
+`_devGamma` never leaves its initial `90` and the gyroscope gate is silently inert —
+harmless (it just never blocks), but the debug readout would be misleading without it.
 
-The old "Rotate to landscape — tilt disabled in portrait" banner was **removed**. It was
-driven off the gyroscope threshold, so it flashed during deep-but-valid gestures and read
-as the game fighting the player. It never blocked anything itself.
+Every bail-out `return` in `onMotion()` calls `TILT.clearSustain()` first. Skipping that
+leaves a stale `sustainStart`, so re-entering the tilted state later satisfies
+`now - sustainStart >= SUSTAIN` immediately and fires with no real gesture.
 
-**Triggers compare ABSOLUTE `gy` against a symmetric `±THRESHOLD`.** This is the logic
-confirmed working on a real device. Do not replace it from first principles — four
-attempts did, each shipped a worse regression, each was reverted:
+Four reverted attempts, kept as a record of what NOT to retry:
 
 | attempt | what broke |
 |---|---|
-| self-calibrating rest baseline (continuous) | baseline chased slow gestures; correct only fired at full portrait |
+| self-calibrating rest baseline (continuous tracking) | chased slow gestures; correct only fired at full portrait |
 | removing the gyroscope gate | did not help, and dropped a real guard |
 | re-arm watchdog (`REARM_TIMEOUT`) | made the harder direction unreliable |
-| calibrated-neutral, captured once per opportunity (commit `a7d3016`) | on-device: tilt stopped working entirely |
+| calibrated-neutral, captured once per opportunity (`a7d3016`) | on-device: tilt stopped working entirely |
 
-**Before touching this engine again**, diff it against the last commit the user
-explicitly confirmed working in THIS conversation (grep the chat for "working fine" /
-"perfectly working" and note which commit was current then) — not against an earlier
-commit picked because it looks plausible. Restoring from the wrong reference is exactly
-how the `a7d3016` regression happened: it was compared against `a459f34`, the *original*
-Capacitor migration commit that already contained the broken baseline, instead of
-`1d86851`, the actual confirmed-working state.
-
-Known and accepted consequences, asserted in the tests so they are not "fixed" again:
-an off-centre resting hold makes one direction nearer its threshold than the other,
-and a rest outside `±RELEASE` can leave the latch un-armed. Change any of this **only
-with sensor readings from a device** — `?tiltdebug=1` in a browser, or six taps in the
-top-right of Home in the app.
-
-<details><summary>superseded: deviation-from-baseline (do not reintroduce)</summary>
-Nobody holds the phone level at their forehead, so resting `gy` is biased — on a real
-device it sat around `-3`. Against a symmetric `±4.5` that makes the directions wildly
-unequal: skip needed 1.5 more, correct needed 7.5, i.e. almost a full turn to portrait.
-That was the long-running "skip fine, correct only works in portrait" fault.
-
-```javascript
-const dev = gy - TILT.restGy;                       // compare THIS, not gy
-if (mag < TILT.THRESHOLD) TILT.restGy += dev * TILT.REST_ALPHA;
-```
-The baseline adapts only below `THRESHOLD` (a real gesture is at or beyond it, so it
-cannot drag the baseline) and slowly (`REST_ALPHA` ~1 s). The band is `THRESHOLD` rather
-than `RELEASE` so a baseline seeded from an unlucky first frame can still correct itself.
-
-`REARM_TIMEOUT` (2 s) is a lockout watchdog. Re-arming normally needs the phone back
-inside `±RELEASE`; if it is stuck outside for this long the baseline is assumed wrong and
-is pulled toward the current reading, so a changed grip cannot kill tilt for the round.
-It re-arms outright only when below `THRESHOLD`, so it can never re-arm into a repeat
-mid-tilt.
-
-**Tests must start from a settled hold** — jumping straight to a tilt seeds the baseline
-*on* the tilt and measures zero deviation. `makeEngine()` settles for 900 ms by default.
-
-</details>
-
-**Do not "fix" this engine by reasoning about axes — measure.** `?tiltdebug=1` prints
-live `x/y/z`, `roll`, `gamma`, `armed` and keeps updating while a guard is blocking.
-Several regressions came from inferring the pose instead of reading it.
-
-**Known limitation:** re-arming takes a single frame, so swinging the phone rapidly
-across the threshold can retrigger. A `REARM_HOLD` of 250 ms fixed that but made the
-harder-to-reach tilt direction unreliable, so it was reverted. Do not re-add it without
-testing both directions on a real device.
-
-**One trigger per gesture is enforced by `TILT.armed`, not by `COOLDOWN`.** After a
-trigger the engine disarms until `|gy|` falls back inside `RELEASE`. Do not rely on
-`COOLDOWN` to prevent repeat fires — it gates on elapsed time, not on the gesture
-ending, so a phone *held* past the threshold (e.g. stood upright in portrait, where
-gravity sits on the y axis at ~9.8) will re-fire forever once it lapses. That was a
-real shipped bug: a runaway auto-skip loop. Raising `COOLDOWN` is not a fix for it.
-
-All bail-out guards in `onMotion()` must call `TILT.clearSustain()` before returning.
-Returning without clearing leaves a stale `sustainStart`, so re-entering the tilted
-state seconds later satisfies `now - sustainStart >= SUSTAIN` immediately and fires
-with no gesture at all.
-
-`deviceorientation` needs its **own** iOS permission — `DeviceOrientationEvent.requestPermission()`
-is separate from `DeviceMotionEvent.requestPermission()`. Without it `_devGamma` never
-updates from its initial `90` and the portrait guard above is silently inert.
-
-Dynamic axis: reads `screen.orientation.type` per frame; applies `axisSign = -1` for `landscape-secondary` to invert tilt direction. This handles flipped phones and covers iOS where `orientation.lock()` silently fails.
+Known, accepted, and asserted in the tests rather than "fixed" again: an off-centre
+resting hold makes one direction nearer its threshold than the other, and a rest outside
+`±RELEASE` can leave the latch un-armed. If the user reports a NEW tilt symptom, get
+sensor readings before writing any code — `?tiltdebug=1` in a browser, or six taps in
+the top-right corner of Home in the app — both print live `x/y/z`, `roll`, `gamma`,
+`armed`, and keep updating while a guard is blocking. Every regression above came from
+reasoning about axes instead of reading them.
 
 ## iOS Safari Limitations
 
