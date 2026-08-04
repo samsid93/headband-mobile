@@ -2723,32 +2723,11 @@ const TILT={
   // apart (27deg gives gy=4.45, i.e. the trigger threshold; 90deg gives 9.8).
   // Measuring the angle instead makes portrait unambiguous and needs no gyroscope.
   MAX_ROLL: 70,
-  // Watchdog against a permanent lockout. Re-arming normally needs the phone back
-  // inside +/-RELEASE, but if a player's natural resting hold sits outside that
-  // band the latch never clears and tilt is dead for the rest of the round.
-  // After this long disarmed, re-arm anyway — but ONLY once the reading is below
-  // THRESHOLD, so a phone still held past the trigger point can never re-arm into
-  // a repeat. A real gesture completes in well under 2s; this long means stuck.
-  REARM_TIMEOUT: 2000,
-  disarmedAt: 0,
-  // Smoothing for the resting-gy baseline. ~1s time constant at 60Hz: fast
-  // enough to settle after the player adjusts their grip, far too slow for a
-  // deliberate tilt to drag it.
-  REST_ALPHA: 0.02,
-  restGy: null,
-  // The baseline may only learn a reading that has SETTLED: stayed inside
-  // SETTLE_BAND for DWELL ms. Anything still moving is a gesture in progress.
-  //
-  // Neither simpler rule works. Per-frame speed fails because a 2.4s tilt moves
-  // ~0.04 per frame, indistinguishable from noise. Gating on distance-from-rest
-  // fails because an EMA of rate a trails a ramp of slope s by s/a — at 0.04 per
-  // frame that is a lag of 2.0, so the deviation saturated below RELEASE and the
-  // phone never appeared to leave rest at all. That is why a quick flick fired
-  // but a gentle tilt did not, and why correct needed a full turn to portrait.
-  SETTLE_BAND: 0.8,
-  DWELL: 1200,
-  winRef: null,
-  winSince: 0,
+  // Minimum |gamma| that still counts as "phone held landscape". 35 was too
+  // tight — a deep tilt pulls gamma down from ~90 and tripped the gate mid
+  // gesture. Portrait is ~0, so 15 separates the two without clipping the
+  // usable range.
+  GAMMA_MIN: 15,
   cooldownUntil: 0,
   // False from the moment a gesture fires until the phone returns to level.
   // Without this a phone merely *held* past the threshold — e.g. turned upright
@@ -2759,7 +2738,7 @@ const TILT={
   sustainStart: 0,
   sustainDir: null,
   clearSustain(){this.sustainDir=null;this.sustainStart=0},
-  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.disarmedAt=0;this.restGy=null;this.winRef=null;this.winSince=0;this.clearSustain()}
+  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.clearSustain()}
 };
 
 /* Live sensor readout, enabled with ?tiltdebug=1 on the URL.
@@ -2786,8 +2765,8 @@ function tiltDebug(g,gy,roll){
   const p=(v,n)=>Number(v||0).toFixed(n);
   _tdEl.textContent=
     'x'+p(g.x,1).padStart(6)+' y'+p(g.y,1).padStart(6)+' z'+p(g.z,1).padStart(6)+'\n'+
-    'gy'+p(gy,1).padStart(6)+' rest'+p(TILT.restGy,1).padStart(5)+' dev'+p(gy-(TILT.restGy||0),1).padStart(6)+'\n'+
-    'roll'+p(roll,0).padStart(4)+' gam'+p(_devGamma,0).padStart(4)+'\n'+
+    'gy'+p(gy,1).padStart(6)+'  thr +/-'+TILT.THRESHOLD+'\n'+
+    'roll'+p(roll,0).padStart(4)+' gam'+p(_devGamma,0).padStart(4)+' (min '+TILT.GAMMA_MIN+')\n'+
     'land '+(isLandscape()?'Y':'N')+'  armed '+(TILT.armed?'Y':'N')+'  '+((screen.orientation&&screen.orientation.type)||'?');
 }
 
@@ -2833,84 +2812,43 @@ function onMotion(e){
   if(!G.tiltEnabled){TILT.clearSustain();return;}
   if(G.roundOver){TILT.clearSustain();return;}
   if(!isLandscape()){TILT.clearSustain();return;} // screen not landscape (works when orientation lock is not active)
-  // No gyroscope gate here — deliberately. 'deviceorientation' is a separate,
-  // slower event stream from 'devicemotion' and it commonly throttles or stalls
-  // across an orientation change. When it stalled, _devGamma stayed frozen at the
-  // portrait value it last saw and this gate blocked every tilt until some later
-  // event happened to arrive — which is what "tilt dies after rotating to portrait
-  // and back, or responds very slowly" was.
-  // The roll check below covers the same case from accelerationIncludingGravity,
-  // the same 60Hz stream that drives the triggers, so it cannot go stale while
-  // triggers are still being evaluated.
+  if(_devGamma < TILT.GAMMA_MIN){TILT.clearSustain();return;} // phone physically rotated toward portrait
 
-  // Physical-attitude guard, measured from the accelerometer we already have.
-  // _devGamma above comes from 'deviceorientation', which needs its own iOS
-  // permission and does not fire at all in some WebViews — when it is missing it
-  // stays at its initial 90 and silently passes everything through. This check
-  // cannot fail that way: it uses the same vector that drives the triggers, so
-  // if it is absent nothing fires anyway.
+  // Physical-attitude guard from the accelerometer.
   //   roll 0deg  = long axis horizontal, phone on the forehead — in play
   //   roll 90deg = long axis vertical, phone turned to portrait — not a gesture
   if(roll>TILT.MAX_ROLL){TILT.clearSustain();return;}
 
   const now=Date.now();
 
-  /* Self-calibrating neutral.
-     Nobody holds the phone perfectly level at their forehead, so gy at rest is
-     biased — measured on device it sits negative. Comparing raw gy against a
-     symmetric +/-THRESHOLD then makes the two directions wildly unequal: from a
-     rest of -3, skip needs only 1.5 more to reach -4.5, while correct has to
-     travel all the way to +4.5, which is nearly a full turn to portrait. That is
-     exactly the "skip fine, correct only works in portrait" fault.
-     Everything below therefore works on deviation from rest, not absolute gy. */
-  if(TILT.restGy===null) TILT.restGy=gy;
-  const dev=gy-TILT.restGy;
-  const mag=Math.abs(dev);
-  // Baseline tracking, in three zones:
-  //   at rest        -> follow it
-  //   part-way out   -> follow ONLY after it settles there for DWELL, so a
-  //                     gesture passing through cannot drag the reference, but
-  //                     a genuinely changed grip is still learned
-  //   past threshold -> never; that is a gesture
-  if(TILT.winRef===null||Math.abs(gy-TILT.winRef)>TILT.SETTLE_BAND){
-    TILT.winRef=gy;TILT.winSince=now;      // still moving — restart the window
-  }
-  const settled=(now-TILT.winSince)>=TILT.DWELL;
-  if(settled&&mag<TILT.THRESHOLD) TILT.restGy+=dev*TILT.REST_ALPHA;
+  const mag=Math.abs(gy);
 
   // One trigger per deliberate gesture. Until the phone comes back to roughly
   // level the engine stays disarmed, so a sustained hold past the threshold
   // cannot keep firing once the cooldown lapses.
   if(!TILT.armed){
     if(mag<=TILT.RELEASE) TILT.armed=true;
-    else if(now-TILT.disarmedAt>=TILT.REARM_TIMEOUT){
-      if(mag<TILT.THRESHOLD) TILT.armed=true;
-      // Stuck this far outside the band for this long means the baseline is
-      // wrong, not that the player is holding a tilt. Pull it toward the current
-      // reading so the engine recovers instead of staying dead for the round.
-      else TILT.restGy+=dev*TILT.REST_ALPHA;
-    }
     TILT.clearSustain();
     return;
   }
 
   if(now<TILT.cooldownUntil) return;
 
-  if(dev >= TILT.THRESHOLD){
+  if(gy >= TILT.THRESHOLD){
     if(TILT.sustainDir!=='correct'){TILT.sustainDir='correct';TILT.sustainStart=now;}
     else if(now-TILT.sustainStart>=TILT.SUSTAIN){
       TILT.cooldownUntil=now+TILT.COOLDOWN;
-      TILT.armed=false;TILT.disarmedAt=now;
+      TILT.armed=false;
       TILT.clearSustain();
       TILT.lastDir='correct';
       doCorrect();
     }
   }
-  else if(dev <= -TILT.THRESHOLD){
+  else if(gy <= -TILT.THRESHOLD){
     if(TILT.sustainDir!=='skip'){TILT.sustainDir='skip';TILT.sustainStart=now;}
     else if(now-TILT.sustainStart>=TILT.SUSTAIN){
       TILT.cooldownUntil=now+TILT.COOLDOWN;
-      TILT.armed=false;TILT.disarmedAt=now;
+      TILT.armed=false;
       TILT.clearSustain();
       TILT.lastDir='skip';
       doSkip();

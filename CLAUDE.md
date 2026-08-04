@@ -90,7 +90,23 @@ The old "Rotate to landscape — tilt disabled in portrait" banner was **removed
 driven off the gyroscope threshold, so it flashed during deep-but-valid gestures and read
 as the game fighting the player. It never blocked anything itself.
 
-**Triggers measure deviation from a self-calibrating rest baseline, never absolute `gy`.**
+**Triggers compare ABSOLUTE `gy` against a symmetric `±THRESHOLD`.** This is the logic
+confirmed working on a real device. Do not replace it from first principles — three
+attempts did, each shipped a worse regression, each was reverted:
+
+| attempt | what broke |
+|---|---|
+| self-calibrating rest baseline | baseline chased slow gestures; correct only fired at full portrait |
+| removing the gyroscope gate | did not help, and dropped a real guard |
+| re-arm watchdog (`REARM_TIMEOUT`) | made the harder direction unreliable |
+
+Known and accepted consequences, asserted in the tests so they are not "fixed" again:
+an off-centre resting hold makes one direction nearer its threshold than the other,
+and a rest outside `±RELEASE` can leave the latch un-armed. Change any of this **only
+with sensor readings from a device** — `?tiltdebug=1` in a browser, or six taps in the
+top-right of Home in the app.
+
+<details><summary>superseded: deviation-from-baseline (do not reintroduce)</summary>
 Nobody holds the phone level at their forehead, so resting `gy` is biased — on a real
 device it sat around `-3`. Against a symmetric `±4.5` that makes the directions wildly
 unequal: skip needed 1.5 more, correct needed 7.5, i.e. almost a full turn to portrait.
@@ -112,6 +128,8 @@ mid-tilt.
 
 **Tests must start from a settled hold** — jumping straight to a tilt seeds the baseline
 *on* the tilt and measures zero deviation. `makeEngine()` settles for 900 ms by default.
+
+</details>
 
 **Do not "fix" this engine by reasoning about axes — measure.** `?tiltdebug=1` prints
 live `x/y/z`, `roll`, `gamma`, `armed` and keeps updating while a guard is blocking.
