@@ -2728,6 +2728,32 @@ const TILT={
   // gesture. Portrait is ~0, so 15 separates the two without clipping the
   // usable range.
   GAMMA_MIN: 15,
+
+  /* ── Neutral calibration ──────────────────────────────────────────────────
+     Thresholds are measured from `neutral`, not from zero, because nobody
+     re-seats the phone at exactly the same angle. If the resting gy sits at
+     -3, skip needs only 1.5 more to reach -4.5 while correct needs 7.5 — a
+     rotation so large it feels like turning to portrait. That is the
+     "correct hangs after going to portrait and back" fault.
+
+     Captured ONCE per opportunity, never tracked continuously. A continuously
+     updated baseline was tried and had to be reverted: it followed a slow tilt
+     and the deviation never reached the threshold, so gentle gestures stopped
+     working altogether. A one-shot capture cannot chase a gesture because it
+     does not move while one is happening.
+
+     Recalibrates only when the phone is definitionally NOT mid-gesture:
+     at round start, and on returning from a pose the guards rejected. The
+     sample is discarded unless the reading held still throughout, so a capture
+     taken while the phone is still being moved is simply retried.           */
+  CAL_MS: 500,          // sample window
+  CAL_STABLE: 1.2,      // max spread across the window to accept it
+  neutral: 0,
+  calUntil: 0,          // >0 while sampling
+  calMin: 0, calMax: 0,
+  needsCal: true,
+  startCal(now){this.calUntil=now+this.CAL_MS;this.calMin=Infinity;this.calMax=-Infinity;this.needsCal=false;},
+
   cooldownUntil: 0,
   // False from the moment a gesture fires until the phone returns to level.
   // Without this a phone merely *held* past the threshold — e.g. turned upright
@@ -2738,7 +2764,7 @@ const TILT={
   sustainStart: 0,
   sustainDir: null,
   clearSustain(){this.sustainDir=null;this.sustainStart=0},
-  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.clearSustain()}
+  reset(){this.cooldownUntil=0;this.lastDir=null;this.armed=true;this.neutral=0;this.calUntil=0;this.needsCal=true;this.clearSustain()}
 };
 
 /* Live sensor readout, enabled with ?tiltdebug=1 on the URL.
@@ -2765,7 +2791,7 @@ function tiltDebug(g,gy,roll){
   const p=(v,n)=>Number(v||0).toFixed(n);
   _tdEl.textContent=
     'x'+p(g.x,1).padStart(6)+' y'+p(g.y,1).padStart(6)+' z'+p(g.z,1).padStart(6)+'\n'+
-    'gy'+p(gy,1).padStart(6)+'  thr +/-'+TILT.THRESHOLD+'\n'+
+    'gy'+p(gy,1).padStart(6)+' neu'+p(TILT.neutral,1).padStart(5)+' dev'+p(gy-TILT.neutral,1).padStart(6)+'\n'+
     'roll'+p(roll,0).padStart(4)+' gam'+p(_devGamma,0).padStart(4)+' (min '+TILT.GAMMA_MIN+')\n'+
     'land '+(isLandscape()?'Y':'N')+'  armed '+(TILT.armed?'Y':'N')+'  '+((screen.orientation&&screen.orientation.type)||'?');
 }
@@ -2808,20 +2834,45 @@ function onMotion(e){
   // Each clears the part-completed gesture. Returning without clearing leaves a
   // stale sustainStart, so coming back past the threshold seconds later would
   // satisfy now-sustainStart>=SUSTAIN immediately and fire with no real gesture.
-  if(!playActive){TILT.clearSustain();return;}
-  if(!G.tiltEnabled){TILT.clearSustain();return;}
-  if(G.roundOver){TILT.clearSustain();return;}
-  if(!isLandscape()){TILT.clearSustain();return;} // screen not landscape (works when orientation lock is not active)
-  if(_devGamma < TILT.GAMMA_MIN){TILT.clearSustain();return;} // phone physically rotated toward portrait
+  // Each blocked pose also flags the neutral for recapture: coming back from
+  // portrait means the phone has been re-seated, and its resting angle is what
+  // moved. That is why "correct" worked at first and hung afterwards.
+  if(!playActive){TILT.clearSustain();TILT.needsCal=true;return;}
+  if(!G.tiltEnabled){TILT.clearSustain();TILT.needsCal=true;return;}
+  if(G.roundOver){TILT.clearSustain();TILT.needsCal=true;return;}
+  if(!isLandscape()){TILT.clearSustain();TILT.needsCal=true;return;} // screen not landscape (works when orientation lock is not active)
+  if(_devGamma < TILT.GAMMA_MIN){TILT.clearSustain();TILT.needsCal=true;return;} // phone physically rotated toward portrait
 
   // Physical-attitude guard from the accelerometer.
   //   roll 0deg  = long axis horizontal, phone on the forehead — in play
   //   roll 90deg = long axis vertical, phone turned to portrait — not a gesture
-  if(roll>TILT.MAX_ROLL){TILT.clearSustain();return;}
+  if(roll>TILT.MAX_ROLL){TILT.clearSustain();TILT.needsCal=true;return;}
 
   const now=Date.now();
 
-  const mag=Math.abs(gy);
+  // Capture the resting angle, once, before any trigger can fire. Sampling only
+  // runs immediately after a blocked pose or a round start, so it can never
+  // overlap a gesture in progress.
+  if(TILT.needsCal) TILT.startCal(now);
+  if(TILT.calUntil){
+    if(gy<TILT.calMin)TILT.calMin=gy;
+    if(gy>TILT.calMax)TILT.calMax=gy;
+    if(now<TILT.calUntil){TILT.clearSustain();return;}
+    // Accept only a steady sample; if the phone was still moving, sample again.
+    if(TILT.calMax-TILT.calMin<=TILT.CAL_STABLE){
+      TILT.neutral=(TILT.calMin+TILT.calMax)/2;
+      TILT.calUntil=0;
+    } else {
+      TILT.startCal(now);
+    }
+    TILT.clearSustain();
+    return;
+  }
+
+  // Everything below is relative to the captured neutral, so both directions
+  // need the same size of movement regardless of how the phone is held.
+  const dev=gy-TILT.neutral;
+  const mag=Math.abs(dev);
 
   // One trigger per deliberate gesture. Until the phone comes back to roughly
   // level the engine stays disarmed, so a sustained hold past the threshold
@@ -2834,7 +2885,7 @@ function onMotion(e){
 
   if(now<TILT.cooldownUntil) return;
 
-  if(gy >= TILT.THRESHOLD){
+  if(dev >= TILT.THRESHOLD){
     if(TILT.sustainDir!=='correct'){TILT.sustainDir='correct';TILT.sustainStart=now;}
     else if(now-TILT.sustainStart>=TILT.SUSTAIN){
       TILT.cooldownUntil=now+TILT.COOLDOWN;
@@ -2844,7 +2895,7 @@ function onMotion(e){
       doCorrect();
     }
   }
-  else if(gy <= -TILT.THRESHOLD){
+  else if(dev <= -TILT.THRESHOLD){
     if(TILT.sustainDir!=='skip'){TILT.sustainDir='skip';TILT.sustainStart=now;}
     else if(now-TILT.sustainStart>=TILT.SUSTAIN){
       TILT.cooldownUntil=now+TILT.COOLDOWN;
