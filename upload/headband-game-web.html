@@ -3241,6 +3241,71 @@ window.addEventListener('orientationchange',()=>setTimeout(fitWordText,120),{pas
 // metrics and can overflow once it swaps in.
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).catch(()=>{});
 
+/* Google sign-in cannot work inside the native shell, so it is hidden there
+   rather than left as a dead end.
+   Two independent blockers, either alone fatal:
+     1. Google refuses OAuth from embedded WebViews (403 disallowed_useragent).
+     2. Even if it completed, the redirect lands on https://whambam.games — the
+        WEBSITE, loaded inside the app. The session would be created against
+        that origin, not the app's own, so the app would still be signed out
+        while showing a page it cannot navigate back from.
+   Making it work needs App Links / Universal Links plus a system-browser flow.
+   Email + password is unaffected: it is a direct API call with no redirect. */
+function hideGoogleOnNative(){
+  if(!_nativeShell()) return;
+  const btn = document.querySelector('.auth-google-btn');
+  const div = document.getElementById('auth-or');
+  if(btn) btn.style.display='none';
+  if(div) div.style.display='none';
+}
+document.addEventListener('DOMContentLoaded',hideGoogleOnNative);
+hideGoogleOnNative();
+
+/* Android hardware / gesture back.
+   Nothing handled this before, and it became load-bearing once the app went
+   fullscreen: hiding the navigation bar removes the on-screen back button
+   entirely on 3-button devices, so without this there is no way out of a
+   sub-screen. Order matters — close what is on top first, then walk back up
+   the screen hierarchy, and only leave the app from Home. */
+(function wireHardwareBack(){
+  const App = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null;
+  if(!App || !App.addListener) return;              // browser: the browser's own back handles this
+
+  // Topmost first. Each entry: [element id, how to dismiss it]
+  const OVERLAYS = [
+    ['auth-modal',        () => window.HB_AUTH && HB_AUTH.hideAuthModal()],
+    ['howto-modal',       () => typeof dismissHowTo === 'function' && dismissHowTo()],
+    ['resume-modal',      () => typeof declineResume === 'function' && declineResume()],
+    ['free-paywall-modal',() => { const e=document.getElementById('free-paywall-modal'); if(e)e.style.display='none'; }],
+    ['fp-deck-info',      () => { const e=document.getElementById('fp-deck-info');       if(e)e.style.display='none'; }],
+    ['clearlb-modal',     () => { const e=document.getElementById('clearlb-modal');      if(e)e.style.display='none'; }],
+  ];
+  // Where "back" goes from each screen.
+  const PARENT = {
+    'screen-mode':'screen-home', 'screen-setup':'screen-mode', 'screen-teams':'screen-setup',
+    'screen-ready':'screen-setup', 'screen-rotate':'screen-setup',
+    'screen-leaderboard':'screen-home', 'screen-unlock':'screen-home',
+    'screen-score':'screen-home', 'screen-ad':'screen-home',
+  };
+
+  const visible = el => el && getComputedStyle(el).display !== 'none';
+
+  App.addListener('backButton', () => {
+    for(const [id, close] of OVERLAYS){
+      if(visible(document.getElementById(id))){ try{close()}catch(e){} return; }
+    }
+    const cur = document.querySelector('.screen.active');
+    const id  = cur && cur.id;
+
+    // Mid-round: back ends the round rather than stranding the player.
+    if(id === 'screen-play'){ if(typeof endRoundEarly === 'function') endRoundEarly(); return; }
+    if(id === 'screen-countdown'){ if(typeof abortCountdown === 'function') abortCountdown(); return; }
+
+    if(PARENT[id]){ goTo(PARENT[id]); if(window.SFX) SFX.tap(); return; }
+    App.exitApp();                                   // only from Home
+  });
+})();
+
 /* Keyboard-safe focus.
    On iOS the layout viewport does NOT shrink when the on-screen keyboard opens,
    so a focused field can sit behind it with nothing in the page indicating it.
@@ -4852,7 +4917,8 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       </div>
       <button id="auth-submit-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submit()">Sign In</button>
       <button type="button" id="auth-forgot" class="auth-forgot" onclick="HB_AUTH.forgotPassword()">Forgot password?</button>
-      <div class="auth-divider"><span>or</span></div>
+      <!-- Hidden in the native app — see hideGoogleOnNative() below. -->
+      <div class="auth-divider" id="auth-or"><span>or</span></div>
       <button class="btn auth-google-btn" onclick="HB_AUTH.googleSignIn()">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="vertical-align:middle;margin-right:8px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.705A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.705V4.963H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.295C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
         Continue with Google

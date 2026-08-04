@@ -6,6 +6,31 @@ body{
   line-height:1.7;font-size:15px;
   padding:0 20px 80px;
 }
+
+/* Persistent way back.
+   These pages used to offer only a link in the footer, which meant scrolling a
+   whole legal document to escape. That was survivable in a browser, where the
+   browser's own back button exists — but the native app runs fullscreen with the
+   navigation bar hidden, so on a 3-button device there was no back control at
+   all and the page was a dead end. Sticky, so it is reachable from any scroll
+   position, and it sits above the safe-area inset on notched phones. */
+.legal-back{
+  position:sticky;top:0;z-index:20;
+  margin:0 -20px 0;padding:calc(10px + env(safe-area-inset-top)) 20px 10px;
+  background:rgba(10,5,0,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,214,10,.22);
+}
+.legal-back a{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,214,10,.12);border:1.5px solid rgba(255,214,10,.5);
+  color:#FFD60A;text-decoration:none;
+  font-size:14px;font-weight:800;letter-spacing:.3px;
+  padding:9px 18px;border-radius:20px;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .15s,transform .12s;
+}
+.legal-back a:active{background:rgba(255,214,10,.26);transform:scale(.96)}
+@media (hover:hover){.legal-back a:hover{background:rgba(255,214,10,.2)}}
 .wrap{max-width:760px;margin:0 auto}
 header{
   padding:34px 0 26px;margin-bottom:30px;
