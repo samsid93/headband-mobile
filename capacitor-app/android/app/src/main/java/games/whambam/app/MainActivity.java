@@ -38,12 +38,16 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // Full-screen immersive — hide status bar + nav bar. On API 35+ the system
-        // is edge-to-edge by default; this keeps the bars hidden until swiped.
+    /**
+     * Full-screen immersive: hide the status and navigation bars, letting a swipe
+     * reveal them transiently.
+     *
+     * Applying this once in onCreate() is not enough — Android restores the bars
+     * on every focus change (after the launch splash, after the keyboard closes,
+     * on return from the recents switcher), so it has to be re-applied whenever
+     * the window regains focus.
+     */
+    private void applyImmersive() {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         WindowInsetsControllerCompat controller =
             WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
@@ -51,6 +55,19 @@ public class MainActivity extends BridgeActivity {
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         );
         controller.hide(WindowInsetsCompat.Type.systemBars());
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) applyImmersive();
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        applyImmersive();
 
         WebView webView = getBridge().getWebView();
 

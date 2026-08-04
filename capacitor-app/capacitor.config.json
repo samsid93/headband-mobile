@@ -29,11 +29,6 @@
     "backgroundColor": "#0A0500"
   },
   "plugins": {
-    "StatusBar": {
-      "style": "Dark",
-      "backgroundColor": "#0A0500",
-      "overlaysWebView": false
-    },
     "ScreenOrientation": {
       "default": "portrait"
     }
