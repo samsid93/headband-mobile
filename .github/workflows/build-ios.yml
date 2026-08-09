@@ -29,10 +29,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  # The `secrets` context cannot be referenced in a job-level `if:` at all —
+  # unlike step-level `if:` / `env:`, GitHub rejects the whole workflow file
+  # as invalid if it's tried (this is what happened on the first attempt:
+  # zero jobs ever scheduled). A job's OUTPUT is fair game in a downstream
+  # job's `if:` though, so a tiny detection job is the standard workaround.
+  detect:
+    name: Check for Apple signing secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_apple_secrets: ${{ steps.check.outputs.result }}
+    steps:
+      - id: check
+        run: |
+          if [ -n "${{ secrets.APP_STORE_CONNECT_KEY_P8 }}" ]; then
+            echo "result=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-signed:
     name: Build & upload to TestFlight
+    needs: detect
+    if: needs.detect.outputs.has_apple_secrets == 'true'
     runs-on: macos-15
-    if: ${{ secrets.APP_STORE_CONNECT_KEY_P8 != '' }}
     env:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
@@ -83,8 +103,9 @@ jobs:
 
   build-unsigned:
     name: Compile iOS (unsigned)
+    needs: detect
+    if: needs.detect.outputs.has_apple_secrets == 'false'
     runs-on: macos-15
-    if: ${{ secrets.APP_STORE_CONNECT_KEY_P8 == '' }}
 
     steps:
       - name: Checkout
