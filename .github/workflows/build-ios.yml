@@ -42,8 +42,14 @@ jobs:
       APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
 
     steps:
+      # submodules: false — mobile/flutter is recorded as a gitlink but the repo
+      # has no .gitmodules, so checkout emits "fatal: No url found for submodule
+      # path 'mobile/flutter'" and git exits 128. Harmless (the Flutter app is
+      # unrelated to the iOS build) but it is noise on every run.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       # Fails the run immediately, naming exactly which secrets are unreadable,
       # rather than letting the job proceed and die deep inside Fastlane with a

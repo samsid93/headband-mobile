@@ -16,17 +16,18 @@ platform :ios do
     # monotonic per workflow, which is exactly what a build number needs.
     build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
 
-    # Two overrides passed at archive time rather than edited into the project:
-    #   CURRENT_PROJECT_VERSION — unique build number, see above.
-    #   CODE_SIGN_IDENTITY      — the Capacitor template hardcodes
-    #                             "iPhone Developer" at PROJECT level for BOTH
-    #                             Debug and Release. An app-store export needs a
-    #                             distribution certificate, so leaving that in
-    #                             place risks the archive failing to find a
-    #                             signing identity.
-    # -allowProvisioningUpdates lets Xcode create/renew the distribution
-    # certificate and provisioning profile itself using the API key above —
-    # no fastlane match, no separate encrypted-certs repo.
+    # Do NOT pin CODE_SIGN_IDENTITY here. An earlier version set it to
+    # "Apple Distribution" to pre-empt the template's hardcoded
+    # "iPhone Developer", and the build failed with:
+    #   "App is automatically signed for development, but a conflicting code
+    #    signing identity Apple Distribution has been manually specified."
+    # Under automatic signing Xcode resolves the identity itself, and pinning
+    # one is a contradiction it refuses. It also broke the RevenueCat SPM
+    # target, because xcargs apply to every target in the build, not just App.
+    #
+    # -allowProvisioningUpdates lets Xcode create/renew the certificate and
+    # provisioning profile via the API key above; gym then re-signs for
+    # distribution during the app-store export. No fastlane match needed.
     build_app(
       project: "App.xcodeproj",
       scheme: "App",
@@ -36,9 +37,7 @@ platform :ios do
       xcargs: [
         "-allowProvisioningUpdates",
         "DEVELOPMENT_TEAM=#{ENV.fetch('APPLE_TEAM_ID')}",
-        "CURRENT_PROJECT_VERSION=#{build_number}",
-        "CODE_SIGN_IDENTITY=Apple\\ Distribution",
-        "CODE_SIGN_STYLE=Automatic"
+        "CURRENT_PROJECT_VERSION=#{build_number}"
       ].join(" ")
     )
 
