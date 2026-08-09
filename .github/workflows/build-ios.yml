@@ -36,7 +36,10 @@ on:
 jobs:
   build:
     name: Build & upload to TestFlight
-    runs-on: macos-15
+    # macos-latest tracks the newest stable image, which is where Xcode 26 lands.
+    # Pinned to macos-15 previously, whose default Xcode (16.4 / iOS 18.5 SDK) is
+    # now below Apple's minimum for App Store Connect uploads.
+    runs-on: macos-latest
     # macOS runners bill at 10x the Linux rate. Signing is the step most likely
     # to hang (it can sit waiting on a provisioning decision that never comes),
     # so cap it rather than let a stuck run drain the minutes budget.
@@ -109,8 +112,31 @@ jobs:
         working-directory: capacitor-app
         run: test -s ios/App/App/public/index.html || (echo "public/index.html missing" && exit 1)
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      # Apple rejects uploads built with an SDK older than iOS 26:
+      #   "Validation failed (409) SDK version issue. This app was built with
+      #    the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the
+      #    iOS 26 SDK or later, included in Xcode 26 or later."
+      # The runner's DEFAULT Xcode was 16.4, so the newest installed one has to
+      # be selected explicitly. Fails here with a clear message if the image
+      # does not carry Xcode 26 — better than discovering it after a full
+      # archive and upload.
+      - name: Select newest Xcode and verify SDK
+        run: |
+          echo "Xcode versions available on this runner:"
+          ls -1d /Applications/Xcode*.app 2>/dev/null || true
+
+          NEWEST=$(ls -1d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$NEWEST" ]; then echo "::error::No Xcode found"; exit 1; fi
+          echo "Selecting: $NEWEST"
+          sudo xcode-select -s "$NEWEST/Contents/Developer"
+
+          xcodebuild -version
+          SDK=$(xcodebuild -showsdks | grep -oE 'iphoneos[0-9]+' | grep -oE '[0-9]+' | sort -n | tail -1)
+          echo "Highest iOS SDK: $SDK"
+          if [ -z "$SDK" ] || [ "$SDK" -lt 26 ]; then
+            echo "::error::iOS SDK $SDK is below the 26 Apple requires for App Store Connect uploads. The runner image needs Xcode 26+."
+            exit 1
+          fi
 
       - name: Install Fastlane
         run: gem install fastlane -N
