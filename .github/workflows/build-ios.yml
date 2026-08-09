@@ -4,16 +4,15 @@ name: Build iOS (Wham Bam)
 # Windows, so this workflow is the project's only route to a verified iOS
 # build.
 #
-# Two mutually exclusive jobs:
-#   - build-signed: runs once the 4 Apple secrets below exist. Archives,
-#     signs (Xcode creates the distribution cert + provisioning profile
-#     itself via the App Store Connect API key — no fastlane match, no
-#     separate certs repo) and uploads straight to TestFlight.
-#   - build-unsigned: fallback compile-only check for when those secrets are
-#     absent. A successful signed build is a strict superset of this, so
-#     there is no value running both once signing works.
+# There is deliberately NO conditional skip here. An earlier version gated the
+# signed build behind a secrets-detection job, which meant a missing secret and
+# a bug in the detection logic produced the identical, uninformative outcome:
+# "skipped". Four rounds were lost to that ambiguity. The build now always
+# runs and fails loudly with a named cause instead.
 #
-# Required secrets (repo Settings -> Secrets and variables -> Actions):
+# Required secrets (repo Settings -> Secrets and variables -> ACTIONS tab,
+# "New repository secret" — not Variables, not Codespaces, not Dependabot,
+# not environment-scoped):
 #   APPLE_TEAM_ID                 10-char Team ID, developer.apple.com/account
 #   APP_STORE_CONNECT_KEY_ID      from an App Store Connect API key
 #   APP_STORE_CONNECT_ISSUER_ID   from an App Store Connect API key
@@ -29,70 +28,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # The `secrets` context cannot be referenced in a job-level `if:` at all —
-  # unlike step-level `if:` / `env:`, GitHub rejects the whole workflow file
-  # as invalid if it's tried (this is what happened on the first attempt:
-  # zero jobs ever scheduled). A job's OUTPUT is fair game in a downstream
-  # job's `if:` though, so a tiny detection job is the standard workaround.
-  detect:
-    name: Check for Apple signing secrets
-    runs-on: ubuntu-latest
-    outputs:
-      has_apple_secrets: ${{ steps.check.outputs.result }}
-    steps:
-      # Secrets are passed via env:, NOT interpolated into the script body.
-      # APP_STORE_CONNECT_KEY_P8 is multi-line (a PEM block); splicing that
-      # straight into `if [ -n "${{ ... }}" ]` pastes raw newlines into the
-      # expression, which is exactly the sort of thing that silently misreads.
-      # env: hands the value over intact regardless of newlines.
-      - id: check
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
-          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
-          V_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-          V_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
-          V_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
-          V_KEY_P8: ${{ vars.APP_STORE_CONNECT_KEY_P8 }}
-        run: |
-          # Report presence and length only — never the values. GitHub masks
-          # secret values in logs anyway, but lengths are enough to tell a
-          # missing secret from a truncated or mis-pasted one.
-          echo "repository: $GITHUB_REPOSITORY"
-          echo "--- as SECRETS (what this workflow uses) ---"
-          echo "APPLE_TEAM_ID                len=${#TEAM_ID}"
-          echo "APP_STORE_CONNECT_KEY_ID     len=${#KEY_ID}"
-          echo "APP_STORE_CONNECT_ISSUER_ID  len=${#ISSUER_ID}"
-          echo "APP_STORE_CONNECT_KEY_P8     len=${#KEY_P8}"
-          # If all four secrets are empty, the usual cause is that they were
-          # saved on the "Variables" tab rather than "Secrets" — the two sit
-          # side by side and look nearly identical. Checking vars.* tells the
-          # two cases apart in one run instead of another round of guessing.
-          echo "--- as VARIABLES (wrong tab, if these are non-zero) ---"
-          echo "APPLE_TEAM_ID                len=${#V_TEAM_ID}"
-          echo "APP_STORE_CONNECT_KEY_ID     len=${#V_KEY_ID}"
-          echo "APP_STORE_CONNECT_ISSUER_ID  len=${#V_ISSUER_ID}"
-          echo "APP_STORE_CONNECT_KEY_P8     len=${#V_KEY_P8}"
-
-          MISSING=""
-          [ -z "$TEAM_ID" ]   && MISSING="$MISSING APPLE_TEAM_ID"
-          [ -z "$KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
-          [ -z "$ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
-          [ -z "$KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
-
-          if [ -n "$MISSING" ]; then
-            echo "::warning::Signed build skipped. Missing or empty secrets:$MISSING"
-            echo "result=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "All four Apple secrets present."
-            echo "result=true" >> "$GITHUB_OUTPUT"
-          fi
-
-  build-signed:
+  build:
     name: Build & upload to TestFlight
-    needs: detect
-    if: needs.detect.outputs.has_apple_secrets == 'true'
     runs-on: macos-15
     env:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -103,6 +40,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Fails the run immediately, naming exactly which secrets are unreadable,
+      # rather than letting the job proceed and die deep inside Fastlane with a
+      # less obvious message.
+      - name: Verify Apple signing secrets are readable
+        run: |
+          echo "repository: $GITHUB_REPOSITORY"
+          echo "event:      $GITHUB_EVENT_NAME"
+          echo "ref:        $GITHUB_REF"
+          echo "APPLE_TEAM_ID                len=${#APPLE_TEAM_ID}"
+          echo "APP_STORE_CONNECT_KEY_ID     len=${#APP_STORE_CONNECT_KEY_ID}"
+          echo "APP_STORE_CONNECT_ISSUER_ID  len=${#APP_STORE_CONNECT_ISSUER_ID}"
+          echo "APP_STORE_CONNECT_KEY_P8     len=${#APP_STORE_CONNECT_KEY_P8}"
+
+          MISSING=""
+          [ -z "$APPLE_TEAM_ID" ]               && MISSING="$MISSING APPLE_TEAM_ID"
+          [ -z "$APP_STORE_CONNECT_KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
+          [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
+          [ -z "$APP_STORE_CONNECT_KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
+
+          if [ -n "$MISSING" ]; then
+            echo ""
+            echo "::error::Unreadable secrets:$MISSING"
+            echo "Repository shown above is where this workflow ran. Secrets must"
+            echo "exist on THAT repo, under Settings -> Secrets and variables ->"
+            echo "Actions -> 'New repository secret'."
+            exit 1
+          fi
+          echo "All four Apple secrets readable."
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
@@ -115,6 +81,10 @@ jobs:
         working-directory: capacitor-app
         run: npm ci
 
+      # Regenerates ios/App/CapApp-SPM/Package.swift natively. The committed
+      # copy carries Windows-style backslash paths (generated by `cap sync` on
+      # Windows) which Swift Package Manager cannot resolve on macOS — this
+      # step is what makes that self-healing, so it must run before any build.
       - name: Sync web assets into the native project
         working-directory: capacitor-app
         run: npm run sync:ios
@@ -138,63 +108,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: whambam-ios-fastlane-logs
-          path: ~/Library/Logs/gym/**
+          path: |
+            ~/Library/Logs/gym/**
+            capacitor-app/ios/App/build/**/*.log
           retention-days: 14
           if-no-files-found: ignore
-
-  build-unsigned:
-    name: Compile iOS (unsigned)
-    needs: detect
-    if: needs.detect.outputs.has_apple_secrets == 'false'
-    runs-on: macos-15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: capacitor-app/package-lock.json
-
-      - name: Install npm deps
-        working-directory: capacitor-app
-        run: npm ci
-
-      - name: Sync web assets into the native project
-        working-directory: capacitor-app
-        run: npm run sync:ios
-
-      - name: Fail if the bundled web app is missing
-        working-directory: capacitor-app
-        run: test -s ios/App/App/public/index.html || (echo "public/index.html missing" && exit 1)
-
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      # Capacitor 8 uses Swift Package Manager, not CocoaPods, so there is no
-      # .xcworkspace and no `pod install` step — the .xcodeproj builds directly.
-      - name: Build (no code signing)
-        working-directory: capacitor-app/ios/App
-        run: |
-          set -euo pipefail
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build
-
-      - name: Upload unsigned .app
-        uses: actions/upload-artifact@v4
-        with:
-          name: whambam-ios-unsigned-app
-          path: capacitor-app/ios/App/build/Build/Products/Release-iphoneos/App.app
-          retention-days: 30
