@@ -31,6 +31,10 @@ jobs:
   build:
     name: Build & upload to TestFlight
     runs-on: macos-15
+    # macOS runners bill at 10x the Linux rate. Signing is the step most likely
+    # to hang (it can sit waiting on a provisioning decision that never comes),
+    # so cap it rather than let a stuck run drain the minutes budget.
+    timeout-minutes: 45
     env:
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
