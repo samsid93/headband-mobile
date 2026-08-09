@@ -51,14 +51,29 @@ jobs:
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+          V_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          V_KEY_ID: ${{ vars.APP_STORE_CONNECT_KEY_ID }}
+          V_ISSUER_ID: ${{ vars.APP_STORE_CONNECT_ISSUER_ID }}
+          V_KEY_P8: ${{ vars.APP_STORE_CONNECT_KEY_P8 }}
         run: |
           # Report presence and length only — never the values. GitHub masks
           # secret values in logs anyway, but lengths are enough to tell a
           # missing secret from a truncated or mis-pasted one.
+          echo "repository: $GITHUB_REPOSITORY"
+          echo "--- as SECRETS (what this workflow uses) ---"
           echo "APPLE_TEAM_ID                len=${#TEAM_ID}"
           echo "APP_STORE_CONNECT_KEY_ID     len=${#KEY_ID}"
           echo "APP_STORE_CONNECT_ISSUER_ID  len=${#ISSUER_ID}"
           echo "APP_STORE_CONNECT_KEY_P8     len=${#KEY_P8}"
+          # If all four secrets are empty, the usual cause is that they were
+          # saved on the "Variables" tab rather than "Secrets" — the two sit
+          # side by side and look nearly identical. Checking vars.* tells the
+          # two cases apart in one run instead of another round of guessing.
+          echo "--- as VARIABLES (wrong tab, if these are non-zero) ---"
+          echo "APPLE_TEAM_ID                len=${#V_TEAM_ID}"
+          echo "APP_STORE_CONNECT_KEY_ID     len=${#V_KEY_ID}"
+          echo "APP_STORE_CONNECT_ISSUER_ID  len=${#V_ISSUER_ID}"
+          echo "APP_STORE_CONNECT_KEY_P8     len=${#V_KEY_P8}"
 
           MISSING=""
           [ -z "$TEAM_ID" ]   && MISSING="$MISSING APPLE_TEAM_ID"
