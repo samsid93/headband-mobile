@@ -1,14 +1,23 @@
 name: Build iOS (Wham Bam)
 
 # iOS can only be compiled on macOS — xcodebuild does not exist on Linux or
-# Windows. This workflow is the project's only route to a verified iOS build
-# until someone runs it on a Mac.
+# Windows, so this workflow is the project's only route to a verified iOS
+# build.
 #
-# It compiles WITHOUT code signing, which proves the project, plugins and Swift
-# packages all build. Producing an installable .ipa additionally needs an Apple
-# Developer account, a distribution certificate and a provisioning profile —
-# see the "Signed archive" job below, which stays skipped until those secrets
-# are configured.
+# Two mutually exclusive jobs:
+#   - build-signed: runs once the 4 Apple secrets below exist. Archives,
+#     signs (Xcode creates the distribution cert + provisioning profile
+#     itself via the App Store Connect API key — no fastlane match, no
+#     separate certs repo) and uploads straight to TestFlight.
+#   - build-unsigned: fallback compile-only check for when those secrets are
+#     absent. A successful signed build is a strict superset of this, so
+#     there is no value running both once signing works.
+#
+# Required secrets (repo Settings -> Secrets and variables -> Actions):
+#   APPLE_TEAM_ID                 10-char Team ID, developer.apple.com/account
+#   APP_STORE_CONNECT_KEY_ID      from an App Store Connect API key
+#   APP_STORE_CONNECT_ISSUER_ID   from an App Store Connect API key
+#   APP_STORE_CONNECT_KEY_P8      full contents of that key's .p8 file
 
 on:
   push:
@@ -20,9 +29,62 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-signed:
+    name: Build & upload to TestFlight
+    runs-on: macos-15
+    if: ${{ secrets.APP_STORE_CONNECT_KEY_P8 != '' }}
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: capacitor-app/package-lock.json
+
+      - name: Install npm deps
+        working-directory: capacitor-app
+        run: npm ci
+
+      - name: Sync web assets into the native project
+        working-directory: capacitor-app
+        run: npm run sync:ios
+
+      - name: Fail if the bundled web app is missing
+        working-directory: capacitor-app
+        run: test -s ios/App/App/public/index.html || (echo "public/index.html missing" && exit 1)
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install Fastlane
+        run: gem install fastlane -N
+
+      - name: Build and upload to TestFlight
+        working-directory: capacitor-app/ios/App
+        run: fastlane beta
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: whambam-ios-fastlane-logs
+          path: ~/Library/Logs/gym/**
+          retention-days: 14
+          if-no-files-found: ignore
+
   build-unsigned:
     name: Compile iOS (unsigned)
     runs-on: macos-15
+    if: ${{ secrets.APP_STORE_CONNECT_KEY_P8 == '' }}
 
     steps:
       - name: Checkout
