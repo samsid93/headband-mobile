@@ -40,12 +40,38 @@ jobs:
     outputs:
       has_apple_secrets: ${{ steps.check.outputs.result }}
     steps:
+      # Secrets are passed via env:, NOT interpolated into the script body.
+      # APP_STORE_CONNECT_KEY_P8 is multi-line (a PEM block); splicing that
+      # straight into `if [ -n "${{ ... }}" ]` pastes raw newlines into the
+      # expression, which is exactly the sort of thing that silently misreads.
+      # env: hands the value over intact regardless of newlines.
       - id: check
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
         run: |
-          if [ -n "${{ secrets.APP_STORE_CONNECT_KEY_P8 }}" ]; then
-            echo "result=true" >> "$GITHUB_OUTPUT"
-          else
+          # Report presence and length only — never the values. GitHub masks
+          # secret values in logs anyway, but lengths are enough to tell a
+          # missing secret from a truncated or mis-pasted one.
+          echo "APPLE_TEAM_ID                len=${#TEAM_ID}"
+          echo "APP_STORE_CONNECT_KEY_ID     len=${#KEY_ID}"
+          echo "APP_STORE_CONNECT_ISSUER_ID  len=${#ISSUER_ID}"
+          echo "APP_STORE_CONNECT_KEY_P8     len=${#KEY_P8}"
+
+          MISSING=""
+          [ -z "$TEAM_ID" ]   && MISSING="$MISSING APPLE_TEAM_ID"
+          [ -z "$KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
+          [ -z "$ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
+          [ -z "$KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
+
+          if [ -n "$MISSING" ]; then
+            echo "::warning::Signed build skipped. Missing or empty secrets:$MISSING"
             echo "result=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "All four Apple secrets present."
+            echo "result=true" >> "$GITHUB_OUTPUT"
           fi
 
   build-signed:
