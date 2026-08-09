@@ -3,8 +3,14 @@ name: Build Android (Wham Bam)
 on:
   push:
     branches: [main]
+    # Scoped to android/ + shared inputs. 'capacitor-app/**' also matched
+    # capacitor-app/ios/**, so an iOS-only change rebuilt Android for nothing.
     paths:
-      - 'capacitor-app/**'
+      - 'capacitor-app/android/**'
+      - 'capacitor-app/scripts/**'
+      - 'capacitor-app/package.json'
+      - 'capacitor-app/package-lock.json'
+      - 'capacitor-app/capacitor.config.json'
       - 'headband-game-web.html'
       - 'terms.html'
       - 'privacy.html'

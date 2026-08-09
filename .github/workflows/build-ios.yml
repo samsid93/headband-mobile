@@ -21,8 +21,14 @@ name: Build iOS (Wham Bam)
 on:
   push:
     branches: [main]
+    # Scoped to ios/ + shared inputs, so an Android-only change does not burn a
+    # macOS runner (billed at 10x the Linux rate).
     paths:
-      - 'capacitor-app/**'
+      - 'capacitor-app/ios/**'
+      - 'capacitor-app/scripts/**'
+      - 'capacitor-app/package.json'
+      - 'capacitor-app/package-lock.json'
+      - 'capacitor-app/capacitor.config.json'
       - 'headband-game-web.html'
       - '.github/workflows/build-ios.yml'
   workflow_dispatch:
