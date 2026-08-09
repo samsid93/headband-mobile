@@ -10,21 +10,41 @@ platform :ios do
       is_key_content_base64: false
     )
 
-    # CODE_SIGN_STYLE is already Automatic in App.xcodeproj. -allowProvisioningUpdates
-    # is what lets xcodebuild create/renew the distribution certificate and
-    # provisioning profile itself, using the API key above — no manual profile
-    # download, no separate encrypted-certs repo (no fastlane match).
+    # TestFlight refuses an upload whose (version, build) pair already exists.
+    # The project has CURRENT_PROJECT_VERSION = 1 hardcoded, so every upload
+    # after the first would be rejected as a duplicate. GITHUB_RUN_NUMBER is
+    # monotonic per workflow, which is exactly what a build number needs.
+    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
+
+    # Two overrides passed at archive time rather than edited into the project:
+    #   CURRENT_PROJECT_VERSION — unique build number, see above.
+    #   CODE_SIGN_IDENTITY      — the Capacitor template hardcodes
+    #                             "iPhone Developer" at PROJECT level for BOTH
+    #                             Debug and Release. An app-store export needs a
+    #                             distribution certificate, so leaving that in
+    #                             place risks the archive failing to find a
+    #                             signing identity.
+    # -allowProvisioningUpdates lets Xcode create/renew the distribution
+    # certificate and provisioning profile itself using the API key above —
+    # no fastlane match, no separate encrypted-certs repo.
     build_app(
       project: "App.xcodeproj",
       scheme: "App",
+      configuration: "Release",
       export_method: "app-store",
       output_directory: "build",
-      xcargs: "-allowProvisioningUpdates DEVELOPMENT_TEAM=#{ENV.fetch('APPLE_TEAM_ID')}"
+      xcargs: [
+        "-allowProvisioningUpdates",
+        "DEVELOPMENT_TEAM=#{ENV.fetch('APPLE_TEAM_ID')}",
+        "CURRENT_PROJECT_VERSION=#{build_number}",
+        "CODE_SIGN_IDENTITY=Apple\\ Distribution",
+        "CODE_SIGN_STYLE=Automatic"
+      ].join(" ")
     )
 
-    # Fire-and-forget: uploads the bits and returns immediately rather than
-    # blocking CI on Apple's processing (typically 15-30 min). skip_submission
-    # leaves adding testers as the manual step in App Store Connect -> TestFlight.
+    # Fire-and-forget: uploads the bits and returns rather than blocking CI on
+    # Apple's processing (typically 15-30 min). skip_submission leaves adding
+    # testers to a group as the manual step in App Store Connect -> TestFlight.
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true,
