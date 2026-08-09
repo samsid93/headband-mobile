@@ -1,76 +1,109 @@
+require "securerandom"
+
 default_platform(:ios)
 
 APP_ID = "games.whambam.app"
+KEYCHAIN_NAME = "whambam_ci"
 
 platform :ios do
   desc "Build a signed archive and upload it to TestFlight"
   lane :beta do
-    # Creates a temporary keychain and unlocks it. Without this, `cert` has
-    # nowhere to install the distribution certificate on a fresh CI runner.
-    setup_ci
+    keychain_password = SecureRandom.hex(16)
 
-    api_key = app_store_connect_api_key(
-      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
-      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
-      key_content: ENV.fetch("APP_STORE_CONNECT_KEY_P8"),
-      is_key_content_base64: false
-    )
+    begin
+      # An explicit keychain, created here and passed to `cert` by path.
+      # setup_ci alone was not enough: it creates a keychain but `cert` did not
+      # resolve it, and the run failed with "Could not find the newly generated
+      # certificate installed" after successfully creating the cert at Apple.
+      create_keychain(
+        name: KEYCHAIN_NAME,
+        password: keychain_password,
+        default_keychain: true,
+        unlock: true,
+        timeout: 3600,
+        lock_when_sleeps: false
+      )
 
-    # TestFlight refuses an upload whose (version, build) pair already exists.
-    # The project hardcodes CURRENT_PROJECT_VERSION = 1, so every upload after
-    # the first would be rejected. GITHUB_RUN_NUMBER is monotonic per workflow.
-    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
+      api_key = app_store_connect_api_key(
+        key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
+        issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
+        key_content: ENV.fetch("APP_STORE_CONNECT_KEY_P8"),
+        is_key_content_base64: false
+      )
 
-    # ── Why manual signing, not automatic ────────────────────────────────────
-    # Automatic signing was tried twice and cannot work for this account.
-    # `xcodebuild archive` under automatic signing provisions for DEVELOPMENT,
-    # so it demands an "iOS App Development" profile — and those require at
-    # least one registered device. This account has none, so even
-    # -allowProvisioningUpdates could not create one, and the archive failed
-    # with "No profiles for 'games.whambam.app' were found".
-    #
-    # Distribution profiles carry no device requirement, so the fix is to
-    # create the certificate and an App Store profile explicitly and archive
-    # with them.
-    cert(api_key: api_key)
-    sigh(api_key: api_key, app_identifier: APP_ID, platform: "ios")
-    profile_name = lane_context[SharedValues::SIGH_NAME]
-    UI.message("Using provisioning profile: #{profile_name}")
+      # TestFlight refuses an upload whose (version, build) pair already exists.
+      # The project hardcodes CURRENT_PROJECT_VERSION = 1, so every upload after
+      # the first would be rejected. GITHUB_RUN_NUMBER is monotonic per workflow.
+      build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
 
-    # Scoped to the App target and the Release configuration ONLY. Passing
-    # signing settings through xcargs instead would apply them to every target
-    # in the build, which is what previously broke the RevenueCat SPM
-    # dependency with "conflicting provisioning settings".
-    update_code_signing_settings(
-      use_automatic_signing: false,
-      path: "App.xcodeproj",
-      team_id: ENV.fetch("APPLE_TEAM_ID"),
-      code_sign_identity: "Apple Distribution",
-      profile_name: profile_name,
-      targets: ["App"],
-      build_configurations: ["Release"]
-    )
+      # ── Why manual signing, not automatic ──────────────────────────────────
+      # Automatic signing cannot work for this account. `xcodebuild archive`
+      # under automatic signing provisions for DEVELOPMENT, so it demands an
+      # "iOS App Development" profile — and those require at least one
+      # registered device. This account has none, so even
+      # -allowProvisioningUpdates could not create one and the archive failed
+      # with "No profiles for 'games.whambam.app' were found".
+      #
+      # Distribution profiles carry no device requirement, so the certificate
+      # and App Store profile are created explicitly instead.
+      #
+      # CERTIFICATE LIMITS: a fresh runner has no local private key, so `cert`
+      # creates a NEW distribution certificate each run rather than reusing one.
+      # Apple caps Apple Distribution certificates at 3 per account. If that
+      # limit is hit, revoke unused ones at developer.apple.com -> Certificates.
+      # The durable fix is `match`, which stores the cert and key in a private
+      # repo and reuses them indefinitely — worth setting up once this is green.
+      cert(
+        api_key: api_key,
+        keychain_path: File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db"),
+        keychain_password: keychain_password
+      )
 
-    build_app(
-      project: "App.xcodeproj",
-      scheme: "App",
-      configuration: "Release",
-      export_method: "app-store",
-      output_directory: "build",
-      xcargs: "CURRENT_PROJECT_VERSION=#{build_number}",
-      export_options: {
-        signingStyle: "manual",
-        provisioningProfiles: { APP_ID => profile_name }
-      }
-    )
+      sigh(api_key: api_key, app_identifier: APP_ID, platform: "ios")
+      profile_name = lane_context[SharedValues::SIGH_NAME]
+      UI.message("Using provisioning profile: #{profile_name}")
 
-    # Fire-and-forget: uploads the bits and returns rather than blocking CI on
-    # Apple's processing (typically 15-30 min). skip_submission leaves adding
-    # testers to a group as the manual step in App Store Connect -> TestFlight.
-    upload_to_testflight(
-      api_key: api_key,
-      skip_waiting_for_build_processing: true,
-      skip_submission: true
-    )
+      # Scoped to the App target and the Release configuration ONLY. Passing
+      # signing settings through xcargs instead would apply them to every target
+      # in the build, which is what previously broke the RevenueCat SPM
+      # dependency with "conflicting provisioning settings".
+      update_code_signing_settings(
+        use_automatic_signing: false,
+        path: "App.xcodeproj",
+        team_id: ENV.fetch("APPLE_TEAM_ID"),
+        code_sign_identity: "Apple Distribution",
+        profile_name: profile_name,
+        targets: ["App"],
+        build_configurations: ["Release"]
+      )
+
+      build_app(
+        project: "App.xcodeproj",
+        scheme: "App",
+        configuration: "Release",
+        export_method: "app-store",
+        output_directory: "build",
+        xcargs: "CURRENT_PROJECT_VERSION=#{build_number}",
+        export_options: {
+          signingStyle: "manual",
+          provisioningProfiles: { APP_ID => profile_name }
+        }
+      )
+
+      # Fire-and-forget: uploads the bits and returns rather than blocking CI on
+      # Apple's processing (typically 15-30 min). skip_submission leaves adding
+      # testers to a group as the manual step in App Store Connect -> TestFlight.
+      upload_to_testflight(
+        api_key: api_key,
+        skip_waiting_for_build_processing: true,
+        skip_submission: true
+      )
+    ensure
+      # Runs even if the build failed part-way, so a failed run cannot leave
+      # signing material sitting on the runner.
+      if File.exist?(File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db"))
+        delete_keychain(name: KEYCHAIN_NAME)
+      end
+    end
   end
 end
