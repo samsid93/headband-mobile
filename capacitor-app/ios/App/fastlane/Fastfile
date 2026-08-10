@@ -1,4 +1,5 @@
 require "securerandom"
+require "base64"
 
 default_platform(:ios)
 
@@ -11,10 +12,10 @@ platform :ios do
     keychain_password = SecureRandom.hex(16)
 
     begin
-      # An explicit keychain, created here and passed to `cert` by path.
-      # setup_ci alone was not enough: it creates a keychain but `cert` did not
-      # resolve it, and the run failed with "Could not find the newly generated
-      # certificate installed" after successfully creating the cert at Apple.
+      # Explicit keychain, created here and handed to match by name/password.
+      # setup_ci alone was not enough previously: it creates a keychain but the
+      # signing action did not resolve it, and the run failed with
+      # "Could not find the newly generated certificate installed".
       create_keychain(
         name: KEYCHAIN_NAME,
         password: keychain_password,
@@ -36,41 +37,41 @@ platform :ios do
       # the first would be rejected. GITHUB_RUN_NUMBER is monotonic per workflow.
       build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
 
-      # ── Why manual signing, not automatic ──────────────────────────────────
-      # Automatic signing cannot work for this account. `xcodebuild archive`
-      # under automatic signing provisions for DEVELOPMENT, so it demands an
-      # "iOS App Development" profile — and those require at least one
-      # registered device. This account has none, so even
-      # -allowProvisioningUpdates could not create one and the archive failed
-      # with "No profiles for 'games.whambam.app' were found".
+      # ── Signing via match ────────────────────────────────────────────────────
+      # Replaces the previous cert + sigh pair, which minted a NEW distribution
+      # certificate on every run (a fresh runner has no private key to reuse) and
+      # hit Apple's cap of 3 after three builds.
       #
-      # Distribution profiles carry no device requirement, so the certificate
-      # and App Store profile are created explicitly instead.
+      # match stores the certificate AND its private key, encrypted, in a private
+      # git repo. The first run creates and stores them; every run after decrypts
+      # and reuses the same pair, so the cap is never approached again.
       #
-      # CERTIFICATE LIMITS: a fresh runner has no local private key, so `cert`
-      # creates a NEW distribution certificate each run rather than reusing one.
-      # Apple caps Apple Distribution certificates at 3 per account. If that
-      # limit is hit, revoke unused ones at developer.apple.com -> Certificates.
-      # The durable fix is `match`, which stores the cert and key in a private
-      # repo and reuses them indefinitely — worth setting up once this is green.
-      cert(
+      # Automatic signing is not an option here: `xcodebuild archive` under
+      # automatic signing provisions for DEVELOPMENT and demands an
+      # "iOS App Development" profile, which requires at least one registered
+      # device — this account has none.
+      match(
+        type: "appstore",
+        app_identifier: APP_ID,
         api_key: api_key,
-        keychain_path: File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db"),
-        keychain_password: keychain_password
+        git_url: ENV.fetch("MATCH_GIT_URL"),
+        git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('MATCH_GIT_TOKEN')}"),
+        keychain_name: KEYCHAIN_NAME,
+        keychain_password: keychain_password,
+        # false so the first run may create and store the identity. Once the repo
+        # is populated, flipping this to true makes CI fail loudly instead of
+        # silently minting new material if the repo is ever unreachable.
+        readonly: false
       )
 
-      # force: true regenerates the profile every run rather than reusing a
-      # cached one. Necessary because the certificate changes on each run (see
-      # above) — a reused profile would still reference the previous, now
-      # revoked certificate and fail to sign.
-      sigh(api_key: api_key, app_identifier: APP_ID, platform: "ios", force: true)
-      profile_name = lane_context[SharedValues::SIGH_NAME]
+      # match exports the profile name it provisioned, keyed by bundle id.
+      profile_name = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING][APP_ID]
       UI.message("Using provisioning profile: #{profile_name}")
 
-      # Scoped to the App target and the Release configuration ONLY. Passing
-      # signing settings through xcargs instead would apply them to every target
-      # in the build, which is what previously broke the RevenueCat SPM
-      # dependency with "conflicting provisioning settings".
+      # Scoped to the App target and Release configuration ONLY. Passing signing
+      # settings through xcargs instead applies them to every target in the
+      # build, which previously broke the RevenueCat SPM dependency with
+      # "conflicting provisioning settings".
       update_code_signing_settings(
         use_automatic_signing: false,
         path: "App.xcodeproj",

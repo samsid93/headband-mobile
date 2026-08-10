@@ -1,0 +1,5 @@
+# Defaults for `match`. Everything environment-specific (git_url, credentials)
+# is passed from the Fastfile via secrets rather than committed here.
+storage_mode("git")
+type("appstore")
+app_identifier(["games.whambam.app"])

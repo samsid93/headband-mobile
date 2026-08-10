@@ -49,6 +49,11 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+      # match: certificate + private key stored encrypted in a private repo, so
+      # they are reused instead of a new certificate being minted every run.
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_GIT_TOKEN: ${{ secrets.MATCH_GIT_TOKEN }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
     steps:
       # submodules: false — mobile/flutter is recorded as a gitlink but the repo
@@ -73,11 +78,18 @@ jobs:
           echo "APP_STORE_CONNECT_ISSUER_ID  len=${#APP_STORE_CONNECT_ISSUER_ID}"
           echo "APP_STORE_CONNECT_KEY_P8     len=${#APP_STORE_CONNECT_KEY_P8}"
 
+          echo "MATCH_GIT_URL                len=${#MATCH_GIT_URL}"
+          echo "MATCH_GIT_TOKEN              len=${#MATCH_GIT_TOKEN}"
+          echo "MATCH_PASSWORD               len=${#MATCH_PASSWORD}"
+
           MISSING=""
           [ -z "$APPLE_TEAM_ID" ]               && MISSING="$MISSING APPLE_TEAM_ID"
           [ -z "$APP_STORE_CONNECT_KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
           [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
           [ -z "$APP_STORE_CONNECT_KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
+          [ -z "$MATCH_GIT_URL" ]               && MISSING="$MISSING MATCH_GIT_URL"
+          [ -z "$MATCH_GIT_TOKEN" ]             && MISSING="$MISSING MATCH_GIT_TOKEN"
+          [ -z "$MATCH_PASSWORD" ]              && MISSING="$MISSING MATCH_PASSWORD"
 
           if [ -n "$MISSING" ]; then
             echo ""
