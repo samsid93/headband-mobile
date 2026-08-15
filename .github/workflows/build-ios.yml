@@ -49,9 +49,6 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
-      # Provisioning profile from Apple Developer portal, base64-encoded.
-      # The distribution certificate is fetched automatically via the API key.
-      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
 
     steps:
       # submodules: false — mobile/flutter is recorded as a gitlink but the repo
@@ -75,14 +72,12 @@ jobs:
           echo "APP_STORE_CONNECT_KEY_ID     len=${#APP_STORE_CONNECT_KEY_ID}"
           echo "APP_STORE_CONNECT_ISSUER_ID  len=${#APP_STORE_CONNECT_ISSUER_ID}"
           echo "APP_STORE_CONNECT_KEY_P8     len=${#APP_STORE_CONNECT_KEY_P8}"
-          echo "IOS_PROVISIONING_PROFILE     len=${#IOS_PROVISIONING_PROFILE}"
 
           MISSING=""
           [ -z "$APPLE_TEAM_ID" ]               && MISSING="$MISSING APPLE_TEAM_ID"
           [ -z "$APP_STORE_CONNECT_KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
           [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
           [ -z "$APP_STORE_CONNECT_KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
-          [ -z "$IOS_PROVISIONING_PROFILE" ]    && MISSING="$MISSING IOS_PROVISIONING_PROFILE"
 
           if [ -n "$MISSING" ]; then
             echo ""
