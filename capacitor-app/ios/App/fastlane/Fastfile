@@ -1,5 +1,4 @@
 require "securerandom"
-require "base64"
 
 default_platform(:ios)
 
@@ -12,10 +11,6 @@ platform :ios do
     keychain_password = SecureRandom.hex(16)
 
     begin
-      # Explicit keychain, created here and handed to match by name/password.
-      # setup_ci alone was not enough previously: it creates a keychain but the
-      # signing action did not resolve it, and the run failed with
-      # "Could not find the newly generated certificate installed".
       create_keychain(
         name: KEYCHAIN_NAME,
         password: keychain_password,
@@ -32,46 +27,38 @@ platform :ios do
         is_key_content_base64: false
       )
 
-      # TestFlight refuses an upload whose (version, build) pair already exists.
-      # The project hardcodes CURRENT_PROJECT_VERSION = 1, so every upload after
-      # the first would be rejected. GITHUB_RUN_NUMBER is monotonic per workflow.
       build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
 
-      # ── Signing via match ────────────────────────────────────────────────────
-      # Replaces the previous cert + sigh pair, which minted a NEW distribution
-      # certificate on every run (a fresh runner has no private key to reuse) and
-      # hit Apple's cap of 3 after three builds.
-      #
-      # match stores the certificate AND its private key, encrypted, in a private
-      # git repo. The first run creates and stores them; every run after decrypts
-      # and reuses the same pair, so the cap is never approached again.
-      #
-      # Automatic signing is not an option here: `xcodebuild archive` under
-      # automatic signing provisions for DEVELOPMENT and demands an
-      # "iOS App Development" profile, which requires at least one registered
-      # device — this account has none.
-      match(
-        type: "appstore",
-        app_identifier: APP_ID,
-        api_key: api_key,
-        git_url: ENV.fetch("MATCH_GIT_URL"),
-        git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('MATCH_GIT_TOKEN')}"),
+      # ── Direct certificate + profile from Apple Developer ──────────────────
+      # The .p12 certificate and .mobileprovision are exported from
+      # Apple Developer portal, base64-encoded, and stored as GitHub secrets.
+      # No match, no private git repo needed.
+
+      cert_path = File.join(Dir.tmpdir, "distribution.p12")
+      profile_path = File.join(Dir.tmpdir, "distribution.mobileprovision")
+
+      # Decode certificate
+      File.write(cert_path, Base64.decode64(ENV.fetch("IOS_DISTRIBUTION_CERT_P12")))
+
+      # Decode provisioning profile
+      File.write(profile_path, Base64.decode64(ENV.fetch("IOS_PROVISIONING_PROFILE")))
+
+      # Install certificate into keychain
+      import_certificate(
+        certificate_path: cert_path,
+        certificate_password: ENV.fetch("IOS_CERT_PASSWORD"),
         keychain_name: KEYCHAIN_NAME,
-        keychain_password: keychain_password,
-        # false so the first run may create and store the identity. Once the repo
-        # is populated, flipping this to true makes CI fail loudly instead of
-        # silently minting new material if the repo is ever unreachable.
-        readonly: false
+        keychain_password: keychain_password
       )
 
-      # match exports the profile name it provisioned, keyed by bundle id.
-      profile_name = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING][APP_ID]
+      # Install provisioning profile
+      install_provisioning_profile(path: profile_path)
+
+      # Extract profile name for signing settings
+      profile_info = `security cms -D -i "#{profile_path}" 2>/dev/null`
+      profile_name = profile_info[/<key>Name<\/key>\s*<string>([^<]+)<\/string>/, 1]
       UI.message("Using provisioning profile: #{profile_name}")
 
-      # Scoped to the App target and Release configuration ONLY. Passing signing
-      # settings through xcargs instead applies them to every target in the
-      # build, which previously broke the RevenueCat SPM dependency with
-      # "conflicting provisioning settings".
       update_code_signing_settings(
         use_automatic_signing: false,
         path: "App.xcodeproj",
@@ -95,20 +82,18 @@ platform :ios do
         }
       )
 
-      # Fire-and-forget: uploads the bits and returns rather than blocking CI on
-      # Apple's processing (typically 15-30 min). skip_submission leaves adding
-      # testers to a group as the manual step in App Store Connect -> TestFlight.
       upload_to_testflight(
         api_key: api_key,
         skip_waiting_for_build_processing: true,
         skip_submission: true
       )
     ensure
-      # Runs even if the build failed part-way, so a failed run cannot leave
-      # signing material sitting on the runner.
       if File.exist?(File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db"))
         delete_keychain(name: KEYCHAIN_NAME)
       end
+      # Clean up sensitive files
+      FileUtils.rm_f(cert_path) if defined?(cert_path)
+      FileUtils.rm_f(profile_path) if defined?(profile_path)
     end
   end
 end

@@ -49,11 +49,11 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
-      # match: certificate + private key stored encrypted in a private repo, so
-      # they are reused instead of a new certificate being minted every run.
-      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-      MATCH_GIT_TOKEN: ${{ secrets.MATCH_GIT_TOKEN }}
-      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      # Certificate + profile exported directly from Apple Developer portal,
+      # base64-encoded and stored as GitHub secrets. No match/private repo needed.
+      IOS_DISTRIBUTION_CERT_P12: ${{ secrets.IOS_DISTRIBUTION_CERT_P12 }}
+      IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+      IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
 
     steps:
       # submodules: false — mobile/flutter is recorded as a gitlink but the repo
@@ -77,19 +77,18 @@ jobs:
           echo "APP_STORE_CONNECT_KEY_ID     len=${#APP_STORE_CONNECT_KEY_ID}"
           echo "APP_STORE_CONNECT_ISSUER_ID  len=${#APP_STORE_CONNECT_ISSUER_ID}"
           echo "APP_STORE_CONNECT_KEY_P8     len=${#APP_STORE_CONNECT_KEY_P8}"
-
-          echo "MATCH_GIT_URL                len=${#MATCH_GIT_URL}"
-          echo "MATCH_GIT_TOKEN              len=${#MATCH_GIT_TOKEN}"
-          echo "MATCH_PASSWORD               len=${#MATCH_PASSWORD}"
+          echo "IOS_DISTRIBUTION_CERT_P12    len=${#IOS_DISTRIBUTION_CERT_P12}"
+          echo "IOS_CERT_PASSWORD            len=${#IOS_CERT_PASSWORD}"
+          echo "IOS_PROVISIONING_PROFILE     len=${#IOS_PROVISIONING_PROFILE}"
 
           MISSING=""
           [ -z "$APPLE_TEAM_ID" ]               && MISSING="$MISSING APPLE_TEAM_ID"
           [ -z "$APP_STORE_CONNECT_KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
           [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
           [ -z "$APP_STORE_CONNECT_KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
-          [ -z "$MATCH_GIT_URL" ]               && MISSING="$MISSING MATCH_GIT_URL"
-          [ -z "$MATCH_GIT_TOKEN" ]             && MISSING="$MISSING MATCH_GIT_TOKEN"
-          [ -z "$MATCH_PASSWORD" ]              && MISSING="$MISSING MATCH_PASSWORD"
+          [ -z "$IOS_DISTRIBUTION_CERT_P12" ]   && MISSING="$MISSING IOS_DISTRIBUTION_CERT_P12"
+          [ -z "$IOS_CERT_PASSWORD" ]           && MISSING="$MISSING IOS_CERT_PASSWORD"
+          [ -z "$IOS_PROVISIONING_PROFILE" ]    && MISSING="$MISSING IOS_PROVISIONING_PROFILE"
 
           if [ -n "$MISSING" ]; then
             echo ""
@@ -99,7 +98,7 @@ jobs:
             echo "Actions -> 'New repository secret'."
             exit 1
           fi
-          echo "All four Apple secrets readable."
+          echo "All signing secrets readable."
 
       - name: Setup Node 22
         uses: actions/setup-node@v4
