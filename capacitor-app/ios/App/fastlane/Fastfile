@@ -29,35 +29,32 @@ platform :ios do
 
       build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
 
-      # ── Direct certificate + profile from Apple Developer ──────────────────
-      # The .p12 certificate and .mobileprovision are exported from
-      # Apple Developer portal, base64-encoded, and stored as GitHub secrets.
-      # No match, no private git repo needed.
+      # ── Provisioning profile from Apple Developer ──────────────────────────
+      # Downloaded directly from developer.apple.com and base64-encoded into
+      # a GitHub secret. The API key handles signing identity resolution —
+      # Xcode cloud signing fetches the certificate automatically when given
+      # a valid API key + provisioning profile.
 
-      cert_path = File.join(Dir.tmpdir, "distribution.p12")
       profile_path = File.join(Dir.tmpdir, "distribution.mobileprovision")
-
-      # Decode certificate
-      File.write(cert_path, Base64.decode64(ENV.fetch("IOS_DISTRIBUTION_CERT_P12")))
-
-      # Decode provisioning profile
       File.write(profile_path, Base64.decode64(ENV.fetch("IOS_PROVISIONING_PROFILE")))
 
-      # Install certificate into keychain
-      import_certificate(
-        certificate_path: cert_path,
-        certificate_password: ENV.fetch("IOS_CERT_PASSWORD"),
-        keychain_name: KEYCHAIN_NAME,
-        keychain_password: keychain_password
-      )
-
-      # Install provisioning profile
       install_provisioning_profile(path: profile_path)
 
-      # Extract profile name for signing settings
+      # Extract profile name
       profile_info = `security cms -D -i "#{profile_path}" 2>/dev/null`
       profile_name = profile_info[/<key>Name<\/key>\s*<string>([^<]+)<\/string>/, 1]
       UI.message("Using provisioning profile: #{profile_name}")
+
+      # Use get_certificates to fetch/create distribution cert via API key.
+      # This downloads the cert from Apple and installs it in the keychain
+      # without needing a local .p12 file.
+      get_certificates(
+        api_key: api_key,
+        keychain_name: KEYCHAIN_NAME,
+        keychain_password: keychain_password,
+        platform: "ios",
+        type: "distribution"
+      )
 
       update_code_signing_settings(
         use_automatic_signing: false,
@@ -91,8 +88,6 @@ platform :ios do
       if File.exist?(File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db"))
         delete_keychain(name: KEYCHAIN_NAME)
       end
-      # Clean up sensitive files
-      FileUtils.rm_f(cert_path) if defined?(cert_path)
       FileUtils.rm_f(profile_path) if defined?(profile_path)
     end
   end

@@ -49,10 +49,8 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
-      # Certificate + profile exported directly from Apple Developer portal,
-      # base64-encoded and stored as GitHub secrets. No match/private repo needed.
-      IOS_DISTRIBUTION_CERT_P12: ${{ secrets.IOS_DISTRIBUTION_CERT_P12 }}
-      IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+      # Provisioning profile from Apple Developer portal, base64-encoded.
+      # The distribution certificate is fetched automatically via the API key.
       IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
 
     steps:
@@ -77,8 +75,6 @@ jobs:
           echo "APP_STORE_CONNECT_KEY_ID     len=${#APP_STORE_CONNECT_KEY_ID}"
           echo "APP_STORE_CONNECT_ISSUER_ID  len=${#APP_STORE_CONNECT_ISSUER_ID}"
           echo "APP_STORE_CONNECT_KEY_P8     len=${#APP_STORE_CONNECT_KEY_P8}"
-          echo "IOS_DISTRIBUTION_CERT_P12    len=${#IOS_DISTRIBUTION_CERT_P12}"
-          echo "IOS_CERT_PASSWORD            len=${#IOS_CERT_PASSWORD}"
           echo "IOS_PROVISIONING_PROFILE     len=${#IOS_PROVISIONING_PROFILE}"
 
           MISSING=""
@@ -86,8 +82,6 @@ jobs:
           [ -z "$APP_STORE_CONNECT_KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
           [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
           [ -z "$APP_STORE_CONNECT_KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
-          [ -z "$IOS_DISTRIBUTION_CERT_P12" ]   && MISSING="$MISSING IOS_DISTRIBUTION_CERT_P12"
-          [ -z "$IOS_CERT_PASSWORD" ]           && MISSING="$MISSING IOS_CERT_PASSWORD"
           [ -z "$IOS_PROVISIONING_PROFILE" ]    && MISSING="$MISSING IOS_PROVISIONING_PROFILE"
 
           if [ -n "$MISSING" ]; then
