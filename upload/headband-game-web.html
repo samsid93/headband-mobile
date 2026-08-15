@@ -1049,7 +1049,7 @@ body::after{content:'';position:fixed;inset:0;
        it, but it makes the sensor numbers obtainable from a shipped APK. -->
   <button id="dbg-tap" aria-hidden="true" tabindex="-1" style="position:absolute;top:0;right:0;width:58px;height:58px;opacity:0;background:transparent;border:0;padding:0;z-index:60"></button>
   <!-- Graffiti background — Final Logo.svg palette -->
-  <div class="home-graffiti">
+  <div class="home-graffiti" aria-hidden="true">
     <div class="gburst"></div>
     <div class="gsplats"></div>
     <div class="gdots d1"></div>
@@ -1067,7 +1067,7 @@ body::after{content:'';position:fixed;inset:0;
   <div class="home-glow2"></div>
 
   <!-- Fun characters -->
-  <div class="home-chars">
+  <div class="home-chars" aria-hidden="true">
     <span class="hchar bob" style="top:15%;left:5%">🤪</span>
     <span class="hchar wig" style="top:13%;right:6%;animation-delay:.7s">👾</span>
     <span class="hchar tlt" style="top:37%;left:3%;animation-delay:.3s">🥳</span>
@@ -4262,6 +4262,7 @@ const HB_AUTH = (() => {
       if (el) el.value = '';
     });
     document.getElementById('auth-reset').style.display = 'none';
+    document.getElementById('auth-forgot').style.display = isUp ? 'none' : '';
     _clearMsg();
   }
 
@@ -4278,7 +4279,7 @@ const HB_AUTH = (() => {
     if (!email) { _fieldErr('email', 'Enter your email address.'); bad = true; }
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { _fieldErr('email', 'That does not look like a valid email.'); bad = true; }
     if (!pass) { _fieldErr('pass', 'Enter your password.'); bad = true; }
-    else if (isUp && pass.length < 6) { _fieldErr('pass', 'Use at least 6 characters.'); bad = true; }
+    else if (isUp && pass.length < 8) { _fieldErr('pass', 'Use at least 8 characters.'); bad = true; }
     if (bad) return;
     const btn = document.getElementById('auth-submit-btn');
     btn.disabled = true; btn.textContent = '…';
@@ -4338,7 +4339,7 @@ const HB_AUTH = (() => {
     const sb = _client();
     if (!sb) { _showErr('Auth service unavailable.'); return; }
     const pass = document.getElementById('auth-new-pass').value;
-    if (!pass || pass.length < 6) { _showErr('Use at least 6 characters.'); return; }
+    if (!pass || pass.length < 8) { _showErr('Use at least 8 characters.'); return; }
     const btn = document.getElementById('auth-reset-btn');
     btn.disabled = true; btn.textContent = '…';
     try {

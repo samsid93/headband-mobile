@@ -941,7 +941,12 @@ body::after{content:'';position:fixed;inset:0;
 /* Portrait (Charades / Don't Say It). Width is the binding constraint here —
    height is plentiful — so this is vw-driven, and set high. Anything that
    genuinely does not fit is still brought down by fitWordText(). */
-@media (orientation:portrait){#screen-play .wtext{font-size:clamp(42px,17vw,88px);line-height:1.05}}
+/* Matched to Don't Say It (.taboo-mode, clamp(34px,11vw,60px)), which the user
+   confirmed reads well in portrait. Was clamp(42px,17vw,88px) — that ceiling is
+   what pushed long Charades titles into breaking mid-word. fitWordText() still
+   shrinks anything that overflows even at this size; this just means it rarely
+   has to. Revert this one line to go back to the larger portrait type. */
+@media (orientation:portrait){#screen-play .wtext{font-size:clamp(34px,11vw,60px);line-height:1.05}}
 
 /* LET'S GO state */
 .cdnum-go{font-size:clamp(36px,9vw,70px)!important;background:none!important;-webkit-text-fill-color:#0A0800!important;filter:none!important;line-height:1.15}
@@ -1049,7 +1054,7 @@ body::after{content:'';position:fixed;inset:0;
        it, but it makes the sensor numbers obtainable from a shipped APK. -->
   <button id="dbg-tap" aria-hidden="true" tabindex="-1" style="position:absolute;top:0;right:0;width:58px;height:58px;opacity:0;background:transparent;border:0;padding:0;z-index:60"></button>
   <!-- Graffiti background — Final Logo.svg palette -->
-  <div class="home-graffiti">
+  <div class="home-graffiti" aria-hidden="true">
     <div class="gburst"></div>
     <div class="gsplats"></div>
     <div class="gdots d1"></div>
@@ -1067,7 +1072,7 @@ body::after{content:'';position:fixed;inset:0;
   <div class="home-glow2"></div>
 
   <!-- Fun characters -->
-  <div class="home-chars">
+  <div class="home-chars" aria-hidden="true">
     <span class="hchar bob" style="top:15%;left:5%">🤪</span>
     <span class="hchar wig" style="top:13%;right:6%;animation-delay:.7s">👾</span>
     <span class="hchar tlt" style="top:37%;left:3%;animation-delay:.3s">🥳</span>
@@ -3191,8 +3196,37 @@ function fitWordText(){
   const wt=document.getElementById('w-text');
   if(!wt)return;
   wt.style.fontSize='';                    // back to the CSS-driven size
+  wt.style.wordBreak='';wt.style.overflowWrap='';   // and to CSS-driven wrapping
   if(!wt.textContent.trim())return;
-  const fits=()=>wt.scrollHeight<=wt.clientHeight+1 && wt.scrollWidth<=wt.clientWidth+1;
+
+  /* NEVER break inside a word.
+     .wtext ships word-break:break-word + overflow-wrap:anywhere, which lets the
+     browser split a word down the middle to make it fit. That is what produced
+     "GODFAT / HER" on the card. Turning both off means an over-wide word
+     OVERFLOWS instead of splitting, which the search below can then detect and
+     shrink. Wrapping BETWEEN words is untouched — that reads fine. */
+  wt.style.wordBreak='normal';wt.style.overflowWrap='normal';
+
+  /* Width is measured off the text itself, not wt.scrollWidth.
+     The card centres its text (justify-content:center), and a centred element
+     that overflows spills equally left and right — but scrollWidth only ever
+     counts the right-hand spill. Measured on a real browser: a word whose true
+     width was 789px reported scrollWidth 590 against a 504px box. Searching
+     against that number stops far too early and leaves the word still too wide.
+     Range rects report the real laid-out geometry, so they do not lie. */
+  const rng=document.createRange();
+  const widestLine=()=>{
+    rng.selectNodeContents(wt);
+    const byTop={};
+    for(const r of rng.getClientRects()){
+      if(!r.width)continue;
+      const k=Math.round(r.top);           // group fragments by the line they sit on
+      byTop[k]=(byTop[k]||0)+r.width;
+    }
+    let w=0;for(const k in byTop)if(byTop[k]>w)w=byTop[k];
+    return w;
+  };
+  const fits=()=>widestLine()<=wt.clientWidth+1 && wt.scrollHeight<=wt.clientHeight+1;
   if(fits())return;                        // common case — no work, no reflow cost
   const max=parseFloat(getComputedStyle(wt).fontSize)||48;
   let lo=13,hi=max;                        // 13px floor: never shrink to unreadable
@@ -3202,6 +3236,9 @@ function fitWordText(){
     if(fits())lo=mid; else hi=mid;
   }
   wt.style.fontSize=lo+'px';
+  /* Escape hatch: a word so long it will not fit even at the 13px floor. Allow
+     breaking again — a split word beats one clipped off the edge of the card. */
+  if(!fits()){wt.style.wordBreak='';wt.style.overflowWrap='';}
 }
 // The fit depends on the card's box, so it has to be redone whenever that changes.
 window.addEventListener('resize',fitWordText,{passive:true});
@@ -4262,6 +4299,7 @@ const HB_AUTH = (() => {
       if (el) el.value = '';
     });
     document.getElementById('auth-reset').style.display = 'none';
+    document.getElementById('auth-forgot').style.display = isUp ? 'none' : '';
     _clearMsg();
   }
 
@@ -4278,7 +4316,7 @@ const HB_AUTH = (() => {
     if (!email) { _fieldErr('email', 'Enter your email address.'); bad = true; }
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { _fieldErr('email', 'That does not look like a valid email.'); bad = true; }
     if (!pass) { _fieldErr('pass', 'Enter your password.'); bad = true; }
-    else if (isUp && pass.length < 6) { _fieldErr('pass', 'Use at least 6 characters.'); bad = true; }
+    else if (isUp && pass.length < 8) { _fieldErr('pass', 'Use at least 8 characters.'); bad = true; }
     if (bad) return;
     const btn = document.getElementById('auth-submit-btn');
     btn.disabled = true; btn.textContent = '…';
@@ -4338,7 +4376,7 @@ const HB_AUTH = (() => {
     const sb = _client();
     if (!sb) { _showErr('Auth service unavailable.'); return; }
     const pass = document.getElementById('auth-new-pass').value;
-    if (!pass || pass.length < 6) { _showErr('Use at least 6 characters.'); return; }
+    if (!pass || pass.length < 8) { _showErr('Use at least 8 characters.'); return; }
     const btn = document.getElementById('auth-reset-btn');
     btn.disabled = true; btn.textContent = '…';
     try {
