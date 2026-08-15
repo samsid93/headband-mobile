@@ -1,8 +1,8 @@
 name: Build iOS (Wham Bam)
 
 # iOS can only be compiled on macOS — xcodebuild does not exist on Linux or
-# Windows, so this workflow is the project's only route to a verified iOS
-# build.
+# Windows, so this workflow is the project's only route to a verified iOS build.
+# Signing uses a .p12 certificate + provisioning profile from Apple Developer.
 #
 # There is deliberately NO conditional skip here. An earlier version gated the
 # signed build behind a secrets-detection job, which meant a missing secret and
