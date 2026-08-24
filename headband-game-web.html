@@ -1561,6 +1561,14 @@ body::after{content:'';position:fixed;inset:0;
     <button class="btn btn-out" onclick="goTo('screen-setup');SFX.tap()">← Back</button>
     <button type="button" id="unlock-restore" class="unlock-restore" onclick="PAYMENTS.restore()">Restore purchases</button>
     <div id="unlock-restore-note" class="unlock-restore-note">Already subscribed? Your purchases follow your account — sign in to restore them.</div>
+    <div id="voucher-section" style="display:none;margin-top:14px">
+      <button type="button" class="unlock-restore" id="voucher-toggle-btn" onclick="document.getElementById('voucher-input-wrap').style.display='flex';this.style.display='none'">Have a code?</button>
+      <div id="voucher-input-wrap" style="display:none;gap:8px;align-items:center;margin-top:8px">
+        <input type="text" id="voucher-input" placeholder="Enter code" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);border-radius:22px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;text-transform:uppercase">
+        <button type="button" onclick="redeemVoucher()" style="padding:10px 18px;background:linear-gradient(135deg,rgba(255,214,10,.35),rgba(255,107,0,.22));border:1.5px solid rgba(255,214,10,.75);border-radius:22px;color:#FFD60A;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Redeem</button>
+      </div>
+      <div id="voucher-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -1580,6 +1588,14 @@ body::after{content:'';position:fixed;inset:0;
       <div style="font-size:11px;color:var(--mut);margin-top:3px">All decks · no ads · all future decks</div>
     </div>
     <button class="btn btn-out" onclick="closeFreePaywall()">End Round</button>
+    <div id="fp-voucher-section" style="display:none;margin-top:14px">
+      <button type="button" class="unlock-restore" id="fp-voucher-toggle-btn" onclick="document.getElementById('fp-voucher-input-wrap').style.display='flex';this.style.display='none'">Have a code?</button>
+      <div id="fp-voucher-input-wrap" style="display:none;gap:8px;align-items:center;margin-top:8px">
+        <input type="text" id="fp-voucher-input" placeholder="Enter code" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);border-radius:22px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;text-transform:uppercase">
+        <button type="button" onclick="redeemVoucher('fp')" style="padding:10px 18px;background:linear-gradient(135deg,rgba(255,214,10,.35),rgba(255,107,0,.22));border:1.5px solid rgba(255,214,10,.75);border-radius:22px;color:#FFD60A;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Redeem</button>
+      </div>
+      <div id="fp-voucher-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -3805,9 +3821,44 @@ function grantSubLocally(productId){
 }
 
 /* ═══════════════════════════════════════════════════
-   REVENUECAT PAYMENT MODULE  (mobile app only)
-   Uses the @revenuecat/purchases-capacitor plugin via Capacitor.Plugins.Purchases.
-   Web browsers never hit this path — they use XSOLLA.
+   VOUCHER CODE REDEMPTION (native app only — for QA testing)
+   Shows "Have a code?" on unlock/paywall screens when running inside Capacitor.
+════════════════════════════════════════════════════ */
+const VOUCHER_CODES = {
+  'TESTALL2026': 'allaccess_yearly',
+  'TESTSTD2026': 'standard_yearly',
+  'QAUNLOCK':    'allaccess_yearly'
+};
+function initVoucherUI(){
+  if(!PLATFORM.isNative) return;
+  const s1 = document.getElementById('voucher-section');
+  const s2 = document.getElementById('fp-voucher-section');
+  if(s1) s1.style.display = 'block';
+  if(s2) s2.style.display = 'block';
+}
+function redeemVoucher(prefix){
+  const inputId = prefix ? prefix+'-voucher-input' : 'voucher-input';
+  const msgId = prefix ? prefix+'-voucher-msg' : 'voucher-msg';
+  const input = document.getElementById(inputId);
+  const msg = document.getElementById(msgId);
+  if(!input || !msg) return;
+  const code = input.value.trim().toUpperCase();
+  if(!code){ msg.style.color='#FF3B30'; msg.textContent='Enter a code'; return; }
+  const product = VOUCHER_CODES[code];
+  if(!product){
+    msg.style.color='#FF3B30'; msg.textContent='Invalid code';
+    input.value=''; return;
+  }
+  grantSubLocally(product);
+  msg.style.color='#2EE68A'; msg.textContent='Redeemed! All content unlocked.';
+  input.value='';
+  setTimeout(()=>{ goTo('screen-setup'); }, 1200);
+}
+
+/* ═══════════════════════════════════════════════════
+   REVENUECAT PAYMENT MODULE  — DEPRECATED / UNUSED
+   Kept for reference only. Payment router now uses Xsolla for all platforms.
+   Remove this block entirely once confirmed Xsolla mobile flow is stable.
 ════════════════════════════════════════════════════ */
 const RCAT = (() => {
   // Public RevenueCat SDK key — safe to ship in client (NOT a secret).
@@ -3914,16 +3965,19 @@ const RCAT = (() => {
 
 /* ═══════════════════════════════════════════════════
    PAYMENT ROUTER
-   Mobile app → RevenueCat.  Web browser → Xsolla.
+   Unified: Xsolla on ALL platforms (web + mobile).
    All paywall buttons call PAYMENTS.buy() — never a provider directly.
 ════════════════════════════════════════════════════ */
 const PAYMENTS = {
   buy(productId, onSuccess){
-    if(PLATFORM.isNative) return RCAT.buy(productId, onSuccess);
     return XSOLLA.buy(productId, onSuccess);
   },
   restore(){
-    if(PLATFORM.isNative) return RCAT.restore();
+    if(PLATFORM.isNative){
+      // On mobile, restoring means re-checking the Supabase profile for active sub
+      applySubFromProfile().then(()=> showToast('Purchases synced'));
+      return;
+    }
     // Web purchases ride on the Supabase session, so "restoring" is really
     // "sign in" — say so instead of leaving the player with nothing to act on.
     if(typeof HB_AUTH!=='undefined' && HB_AUTH.getUser && HB_AUTH.getUser()){
@@ -3939,12 +3993,11 @@ const PAYMENTS = {
 };
 
 /* ═══════════════════════════════════════════════════
-   XSOLLA PAYMENT MODULE   (web browser only)
-   Replaces all fake localStorage payment stubs.
+   XSOLLA PAYMENT MODULE   (all platforms — web + mobile)
 ════════════════════════════════════════════════════ */
 const XSOLLA = (() => {
   const TOKEN_URL = SUPABASE_URL + '/functions/v1/xsolla-token';
-  const SANDBOX   = true; // ← set false before going live
+  const SANDBOX   = false;
 
   function _getSB(){ return getSharedSB(); }
 
@@ -4228,7 +4281,7 @@ const HB_AUTH = (() => {
       const { data, error } = await sb.auth.getSession();
       if (error) console.warn('HB_AUTH session:', error.message);
       _user = data?.session?.user || null;
-      if (_user) { applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements(); }
+      if (_user) { applySubFromProfile(); if(PLATFORM.isNative) applySubFromProfile(); }
       sb.auth.onAuthStateChange((_evt, session) => {
         _user = session?.user || null;
         _updatePill();
@@ -4238,7 +4291,7 @@ const HB_AUTH = (() => {
         if (_evt === 'PASSWORD_RECOVERY') { _recovery = true; showResetForm(); return; }
         if (_evt === 'SIGNED_IN') {
           if (_recovery) return;          // mid-reset: leave the form up
-          hideAuthModal(); applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements();
+          hideAuthModal(); applySubFromProfile(); if(PLATFORM.isNative) applySubFromProfile();
           if (_oauthReturn) _finishOAuth();
         }
       });
@@ -4813,7 +4866,8 @@ VOICE.checkSupport();
   if(note&&PLATFORM.isNative)note.textContent='Already subscribed? Restore your previous purchase from the store.';
 })();
 // Mobile app: re-apply active entitlements (device may already be subscribed)
-if(PLATFORM.isNative)RCAT.syncEntitlements();
+if(PLATFORM.isNative)applySubFromProfile();
+initVoucherUI();
 
 // Track physical device orientation via gamma — works even when screen is orientation-locked.
 // gamma ≈ ±90 = landscape, gamma ≈ 0 = portrait. Used to block tilt triggers during accidental rotation.
