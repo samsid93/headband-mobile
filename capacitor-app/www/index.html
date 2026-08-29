@@ -2328,10 +2328,16 @@ function updateTimerDisplay(){
   document.getElementById('t-minus').disabled=G.timer<=MIN_T;
   document.getElementById('t-plus').disabled=G.timer>=MAX_T;
 }
-// Long press
-let _si=null;
-function startStep(d){SFX.stepTimer();stepTimer(d);_si=setInterval(()=>stepTimer(d),150)}
-function stopStep(){clearInterval(_si);_si=null}
+// Long press — only one direction at a time; pressing the opposite button
+// while one is held kills the first interval before starting a new one.
+let _si=null,_stepDir=0;
+function startStep(d){
+  if(_si){clearInterval(_si);_si=null;}
+  _stepDir=d;
+  SFX.stepTimer();stepTimer(d);
+  _si=setInterval(()=>stepTimer(d),150);
+}
+function stopStep(){if(_si){clearInterval(_si);_si=null;}_stepDir=0;}
 // Floating confetti emojis on home screen
 (()=>{
   const FLOATIES=['🎉','🎯','🎭','✨','🔥','🎊','⭐','💥','🎈','🏆'];
@@ -2365,9 +2371,11 @@ function stopStep(){clearInterval(_si);_si=null}
 document.addEventListener('DOMContentLoaded',()=>{
   ['t-minus','t-plus'].forEach(id=>{
     const b=document.getElementById(id),d=id==='t-minus'?-5:5;
-    b.addEventListener('mousedown',()=>startStep(d));
-    b.addEventListener('touchstart',e=>{e.preventDefault();startStep(d)},{passive:false});
-    ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,stopStep));
+    let usedTouch=false;
+    b.addEventListener('touchstart',e=>{e.preventDefault();usedTouch=true;startStep(d)},{passive:false});
+    b.addEventListener('mousedown',()=>{if(!usedTouch)startStep(d);});
+    ['mouseup','mouseleave'].forEach(ev=>b.addEventListener(ev,()=>{if(!usedTouch)stopStep();}));
+    ['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>{stopStep();setTimeout(()=>{usedTouch=false;},400);}));
   });
   updateTimerDisplay();
   if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
@@ -3124,6 +3132,7 @@ function releaseWakeLock(){
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'){
     if(G.interval&&!G.roundOver){clearInterval(G.interval);G.interval=null;G._paused=true;}
+    stopStep();
     saveGameProgress();
   } else {
     if(G._paused&&!G.roundOver&&G.sec>0){G._paused=false;startTimer();}
