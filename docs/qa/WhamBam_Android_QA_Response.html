@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wham Bam Games — Android App QA Test Report Response</title>
+<style>
+@page { margin: 20mm 18mm; size: A4; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 11pt; line-height: 1.5; color: #1a1a1a; padding: 0; }
+h1 { font-size: 22pt; font-weight: 800; color: #0a0500; margin-bottom: 4px; }
+h2 { font-size: 14pt; font-weight: 700; color: #1a1a1a; margin-top: 28px; margin-bottom: 10px; padding-bottom: 4px; border-bottom: 2px solid #FFD60A; }
+h3 { font-size: 11.5pt; font-weight: 700; color: #333; margin-top: 16px; margin-bottom: 6px; }
+p, li { margin-bottom: 6px; }
+ul, ol { padding-left: 20px; }
+.subtitle { font-size: 10pt; color: #666; margin-bottom: 20px; }
+.meta-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt; }
+.meta-table td { padding: 4px 10px; border: 1px solid #e0e0e0; }
+.meta-table td:first-child { font-weight: 600; width: 160px; background: #f8f8f8; }
+table.data { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 10pt; }
+table.data th { background: #1a1a1a; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
+table.data td { padding: 7px 10px; border: 1px solid #e0e0e0; vertical-align: top; }
+table.data tr:nth-child(even) { background: #fafafa; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: 700; white-space: nowrap; }
+.badge-fixed { background: #dcfce7; color: #166534; }
+.badge-design { background: #fef3c7; color: #92400e; }
+.badge-testcase { background: #e0e7ff; color: #3730a3; }
+.badge-limitation { background: #f3e8ff; color: #6b21a8; }
+code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9.5pt; background: #f4f4f5; padding: 1px 5px; border-radius: 3px; }
+.section-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 10px 0; }
+.divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+.page-break { page-break-before: always; }
+.footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 9pt; color: #666; text-align: center; }
+.finding { margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; }
+.finding-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.finding-id { font-weight: 800; font-size: 12pt; color: #1a1a1a; }
+.finding-title { font-weight: 700; font-size: 10.5pt; color: #333; margin-bottom: 6px; }
+.finding-quote { background: #fff7ed; border-left: 3px solid #f59e0b; padding: 8px 12px; margin: 8px 0; font-size: 10pt; color: #78350f; font-style: italic; }
+.finding-response { margin-top: 8px; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+.stat-card { text-align: center; padding: 14px 8px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.stat-num { font-size: 24pt; font-weight: 800; }
+.stat-label { font-size: 9pt; color: #666; margin-top: 2px; }
+.stat-fixed .stat-num { color: #166534; }
+.stat-design .stat-num { color: #92400e; }
+.stat-testcase .stat-num { color: #3730a3; }
+.stat-limitation .stat-num { color: #6b21a8; }
+.test-step { margin-bottom: 6px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+.test-step:last-child { border-bottom: none; }
+.step-num { display: inline-block; width: 22px; height: 22px; background: #1a1a1a; color: #fff; border-radius: 50%; text-align: center; font-size: 9pt; font-weight: 700; line-height: 22px; margin-right: 8px; vertical-align: middle; }
+.expected { color: #166534; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Wham Bam Games</h1>
+<p class="subtitle">Developer Response to Mobile App QA Test Report &amp; Re-Test Manual</p>
+
+<table class="meta-table">
+<tr><td>Date</td><td>August 29, 2026</td></tr>
+<tr><td>In Response To</td><td>Mobile App Test Report (WhamBam_Mobile_App_Test_Report_TesterInput_Highlighted)</td></tr>
+<tr><td>Application</td><td>Wham Bam &mdash; Android App (Capacitor WebView)</td></tr>
+<tr><td>Platform</td><td>Android 10+ (tested on physical devices)</td></tr>
+<tr><td>Prepared By</td><td>Development Team</td></tr>
+</table>
+
+<h2>Executive Summary</h2>
+<p>The QA tester identified 13 failed test cases during Android app testing. After a thorough code-level audit and cross-referencing every claim against the actual codebase, here is our disposition:</p>
+
+<div class="stats-grid">
+  <div class="stat-card stat-fixed"><div class="stat-num">8</div><div class="stat-label">FIXED</div></div>
+  <div class="stat-card stat-design"><div class="stat-num">2</div><div class="stat-label">BY DESIGN</div></div>
+  <div class="stat-card stat-testcase"><div class="stat-num">2</div><div class="stat-label">TEST CASE ERROR</div></div>
+  <div class="stat-card stat-limitation"><div class="stat-num">1</div><div class="stat-label">PLATFORM LIMITATION</div></div>
+</div>
+
+<table class="data">
+<tr><th>Verdict</th><th>Count</th><th>Meaning</th></tr>
+<tr><td><span class="badge badge-fixed">FIXED</span></td><td>8</td><td>Valid bugs identified and resolved in this update</td></tr>
+<tr><td><span class="badge badge-design">BY DESIGN</span></td><td>2</td><td>Working as intended &mdash; deliberate design decisions</td></tr>
+<tr><td><span class="badge badge-testcase">TEST CASE ERROR</span></td><td>2</td><td>App behavior is correct; the test expectation was wrong</td></tr>
+<tr><td><span class="badge badge-limitation">PLATFORM LIMITATION</span></td><td>1</td><td>Inherent limitation of the underlying platform API</td></tr>
+</table>
+
+<h2>Summary Table</h2>
+<table class="data">
+<tr><th>ID</th><th>Issue</th><th>Priority</th><th>Verdict</th></tr>
+<tr><td>F-005</td><td>Sound toggle does not change state</td><td>Low</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>F-006</td><td>Fullscreen button not visible on Android</td><td>Low</td><td><span class="badge badge-design">BY DESIGN</span></td></tr>
+<tr><td>F-015</td><td>Timer increments by 5s, not 1s</td><td>Medium</td><td><span class="badge badge-testcase">TEST CASE ERROR</span></td></tr>
+<tr><td>F-084</td><td>Team tie not handled correctly</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>F-112</td><td>Session resume: timer restarts from beginning</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>M-011</td><td>Voice command "Yes" inconsistent</td><td>High</td><td><span class="badge badge-limitation">PLATFORM LIMITATION</span></td></tr>
+<tr><td>M-023</td><td>Auto-rotate instructions not matching Android UI</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>M-030</td><td>Timer continues during incoming phone call</td><td>High</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>M-031</td><td>Timer continues during push notification</td><td>High</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>M-032</td><td>Timer continues when app backgrounded</td><td>High</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>M-033</td><td>Timer continues during screen lock</td><td>High</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>N-009</td><td>Auth tab switch distorts UI layout</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>P-022</td><td>Ad can be closed early via Android back button</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h2>Detailed Findings &amp; Responses</h2>
+
+<!-- F-005 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">F-005</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Sound toggle does not change state</div>
+<div class="finding-quote">Sound toggle does not change state. Audio/click sound continues after tapping the sound button.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> The Web Audio API's <code>AudioContext</code> continued playing already-scheduled oscillator nodes even after the internal <code>muted</code> flag was set. On Android WebView, this created a perceptible delay between tapping mute and audio actually stopping.</p>
+<p><strong>Fix Applied:</strong> When muted, <code>AudioContext.suspend()</code> is now called to immediately halt all audio output. When unmuted, <code>AudioContext.resume()</code> reactivates it. This ensures audio stops the instant the button is tapped.</p>
+</div>
+</div>
+
+<!-- F-006 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">F-006</span> <span class="badge badge-design">BY DESIGN</span></div>
+<div class="finding-title">Fullscreen button not visible on Android</div>
+<div class="finding-quote">Fullscreen button is not visible/available on the Android main menu, so fullscreen mode could not be tested.</div>
+<div class="finding-response">
+<p><strong>Explanation:</strong> The fullscreen button is intentionally hidden in the native app. The Android app runs inside a Capacitor WebView that is already fullscreen &mdash; the system navigation bar is hidden and the app occupies the entire screen. The fullscreen button only appears in the web browser version where the browser's URL bar and tabs can be hidden via the Fullscreen API. Showing it in the native app would be misleading as it has no effect.</p>
+<p><strong>Code Reference:</strong> <code>if(_nativeShell()){btn.style.display='none';return;}</code></p>
+</div>
+</div>
+
+<!-- F-015 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">F-015</span> <span class="badge badge-testcase">TEST CASE ERROR</span></div>
+<div class="finding-title">Timer increments by 5 seconds, not 1 second</div>
+<div class="finding-quote">Timer increased in 5-second increments when using the + control (e.g., 3:00 → 3:05 → 3:10), whereas the test case specifies 1-second increments.</div>
+<div class="finding-response">
+<p><strong>Explanation:</strong> The 5-second step size is the intended design. The timer stepper uses <code>d = id==='t-minus' ? -5 : 5</code> by design. A party game timer does not need 1-second granularity &mdash; rounds are typically 30s, 45s, 60s, 90s, or longer. The stepper is supplemented by one-tap preset buttons (30s / 45s / 60s / 90s / 2min / 3min) for quick selection.</p>
+<p><strong>Recommendation:</strong> Update the test case specification to expect 5-second increments.</p>
+</div>
+</div>
+
+<!-- F-084 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">F-084</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Team tie not handled correctly</div>
+<div class="finding-quote">Both teams finished with equal scores (2–2), but the Game Over screen declares separate 1st and 2nd places instead of showing a tie/shared win.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> The score screen ranking logic assigned sequential positions without checking for equal scores between teams.</p>
+<p><strong>Fix Applied:</strong> Teams with equal scores now share the same rank (e.g., both show 🥇 1st place). The winner announcement text now displays <em>"🤝 It's a tie! Team A &amp; Team B tied with X points!"</em> instead of declaring a single winner. Confetti and winner sound still play for tied winners.</p>
+</div>
+</div>
+
+<!-- F-112 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">F-112</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Session resume: timer restarts from beginning</div>
+<div class="finding-quote">After force-closing and reopening the app, the "Game in progress" prompt appeared and the game could be resumed, but the timer restarted from the beginning instead of preserving the remaining time.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> Game progress was only saved at round boundaries (score screen), and the save did not include the remaining timer seconds. Force-closing mid-round meant the timer value was lost.</p>
+<p><strong>Fix Applied:</strong> Three changes:
+(1) Game progress is now saved immediately when the app goes to the background (<code>visibilitychange</code> event), capturing mid-round state.
+(2) The remaining timer value (<code>secRemaining</code>) is now included in the save data.
+(3) On resume, the next round starts with the preserved remaining seconds instead of the full timer duration.</p>
+</div>
+</div>
+
+<!-- M-011 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">M-011</span> <span class="badge badge-limitation">PLATFORM LIMITATION</span></div>
+<div class="finding-title">Voice command "Yes" recognized inconsistently</div>
+<div class="finding-quote">Voice command "Yes" was recognized intermittently. In some attempts it worked on the first try, while in other attempts the command had to be repeated multiple times.</div>
+<div class="finding-response">
+<p><strong>Explanation:</strong> The word "yes" is included in the voice recognition dictionary alongside 7 phonetic variants (<code>yess, yeah, yea, yep, yup, yap</code>). The recognition engine checks up to 3 alternative transcriptions per utterance (<code>maxAlternatives: 3</code>).</p>
+<p>The inconsistency is an inherent limitation of the browser's SpeechRecognition API. Short, single-syllable words like "yes" have lower recognition confidence than longer words like "correct" or "skip." This varies by device microphone quality, ambient noise, accent, and the speech engine version on the device.</p>
+<p><strong>Recommendation to Users:</strong> Use "correct" instead of "yes" for the most reliable recognition. The setup screen tooltip already advises: <em>Say "Correct", "Yes", "Skip", "Next"</em> &mdash; listing the most reliable trigger first.</p>
+</div>
+</div>
+
+<!-- M-023 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">M-023</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Auto-rotate instructions do not match Android notification panel</div>
+<div class="finding-quote">With Auto-rotate disabled, the Up Top instructions only tell the user to turn the phone sideways. They do not provide instructions matching the current Android notification panel layout for enabling Auto-rotate.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> The Android-specific orientation unlock instructions were too vague &mdash; they referenced "notification panel" without specifying that Quick Settings requires a second swipe, and did not describe what the Auto-rotate tile looks like.</p>
+<p><strong>Fix Applied:</strong> Updated the 3-step Android instructions to:</p>
+<ol>
+<li>Swipe <strong>down from the top</strong> of the screen &mdash; swipe <strong>twice</strong> to expand Quick Settings</li>
+<li>Look for the <strong>Auto-rotate</strong> tile (🔄 icon). If it says <strong>Portrait</strong> or shows a lock icon, tap it to switch to <strong>Auto-rotate</strong></li>
+<li>Rotate your phone <strong>sideways</strong> &mdash; the screen should follow!</li>
+</ol>
+</div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- M-030 to M-033 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">M-030 / M-031 / M-032 / M-033</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Timer continues running when app is backgrounded</div>
+<div class="finding-quote">
+<strong>M-030:</strong> The app did not crash during the incoming call, but the active game timer continued running in the background.<br>
+<strong>M-031:</strong> The game timer continued running in the background [when switching to WhatsApp].<br>
+<strong>M-032:</strong> After the app was moved to the background, the game timer continued running.<br>
+<strong>M-033:</strong> After the device was locked, the game continued running in the background.
+</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> No <code>visibilitychange</code> event handler existed to pause the game timer when the WebView lost focus (phone call, notification switch, home button, screen lock).</p>
+<p><strong>Fix Applied:</strong> A <code>visibilitychange</code> listener now:</p>
+<ul>
+<li><strong>On hidden:</strong> Immediately pauses the round timer (<code>clearInterval</code>) and saves game progress including remaining seconds</li>
+<li><strong>On visible:</strong> Resumes the timer from where it was paused, and re-acquires the wake lock to prevent the screen from dimming during gameplay</li>
+</ul>
+<p>This covers all four scenarios: incoming calls, notification switches, home button, and screen lock/auto-lock. The timer is guaranteed to pause within the same event-loop tick as the visibility change.</p>
+</div>
+</div>
+
+<!-- N-009 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">N-009</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Auth tab switch distorts UI layout</div>
+<div class="finding-quote">Switching between Sign Up and Sign In tabs causes the UI layout to become distorted/broken. The interface does not remain visually stable when switching between authentication tabs.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> When switching tabs, residual error states (red validation borders on input fields, error messages) from the previous tab were not fully cleared. Additionally, if the signed-in view was displayed, switching tabs could show it alongside the signed-out form. The modal's scroll position was also not reset, causing misalignment on smaller screens.</p>
+<p><strong>Fix Applied:</strong> The tab switch function now:</p>
+<ul>
+<li>Clears <code>field-invalid</code> CSS classes from all input fields (removes red error borders)</li>
+<li>Explicitly shows the signed-out form and hides the signed-in view</li>
+<li>Resets the modal scroll position to the top</li>
+<li>Clears all field values and error/success messages (already existed)</li>
+</ul>
+</div>
+</div>
+
+<!-- P-022 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">P-022</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Ad can be closed early via Android back button</div>
+<div class="finding-quote">The rewarded ad can be closed early using the Android Back/navigation button before the 30-second countdown completes, returning the user to the menu.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> The Android hardware back button handler mapped <code>screen-ad</code> to <code>screen-home</code> in its navigation table, allowing users to exit the ad screen at any time.</p>
+<p><strong>Fix Applied:</strong> The back button is now blocked (no-op) while the ad screen is active. Users must either wait for the full countdown to complete (which unlocks the words) or use the on-screen "Close ad" button (which appears after 5 seconds but does NOT unlock words). This prevents bypassing the ad requirement while still giving users an exit that doesn't grant unearned rewards.</p>
+</div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>Additional Improvement: Word Transition Animation</h2>
+<div class="section-box">
+<p>While investigating the reported issues, we identified and fixed a performance issue with word transitions during gameplay:</p>
+<ul>
+<li><strong>Before:</strong> Words transitioned with a <code>translateX(26px)</code> slide animation that triggered layout recalculation on every frame. The text-fitting function (<code>fitWordText</code>) ran synchronously inside the 60Hz device-motion callback, stalling both the sensor handler and the animation.</li>
+<li><strong>After:</strong> Words now transition with a <code>scale(0.82 → 1.0)</code> pop animation using an overshoot easing curve. This is compositor-only (no layout recalculation). The text-fitting function is deferred to the next animation frame via <code>requestAnimationFrame</code>, so it no longer blocks the sensor path.</li>
+</ul>
+<p>Result: smoother, snappier word transitions, especially noticeable during tilt-controlled gameplay.</p>
+</div>
+
+<div class="page-break"></div>
+
+<h1>Re-Test Manual</h1>
+<p class="subtitle">Verification steps for all 13 failed test cases &mdash; for QA tester use</p>
+
+<h2>Prerequisites</h2>
+<div class="section-box">
+<ul>
+<li>Install the updated Android APK (build from August 29, 2026 or later)</li>
+<li>Physical Android device with working microphone, auto-rotate capability</li>
+<li>Clear app data before testing to ensure clean state</li>
+<li>Have a second device or person available for phone call test</li>
+</ul>
+</div>
+
+<h2>Test 1: F-005 &mdash; Sound Toggle</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Open the app and navigate to the home screen</div>
+<div class="test-step"><span class="step-num">2</span> Tap any button and confirm you hear a click/tap sound</div>
+<div class="test-step"><span class="step-num">3</span> Tap the 🔊 sound button in the top-right corner</div>
+<div class="test-step"><span class="step-num">4</span> <span class="expected">Expected: Button icon changes to 🔇, button becomes dimmed (55% opacity)</span></div>
+<div class="test-step"><span class="step-num">5</span> Tap any other button (e.g., "Select Game")</div>
+<div class="test-step"><span class="step-num">6</span> <span class="expected">Expected: No audio plays while muted</span></div>
+<div class="test-step"><span class="step-num">7</span> Tap the 🔇 button again to unmute</div>
+<div class="test-step"><span class="step-num">8</span> <span class="expected">Expected: Button returns to 🔊, a tap sound plays confirming audio is restored</span></div>
+<div class="test-step"><span class="step-num">9</span> Start a game round while muted — confirm no sounds during gameplay (correct, skip, timer, etc.)</div>
+</div>
+
+<h2>Test 2: F-006 &mdash; Fullscreen Button (Confirm By Design)</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Open the app on Android</div>
+<div class="test-step"><span class="step-num">2</span> Observe the home screen</div>
+<div class="test-step"><span class="step-num">3</span> <span class="expected">Expected: No fullscreen button is visible. The app already runs fullscreen in the native shell. This is correct behavior.</span></div>
+<div class="test-step"><span class="step-num">4</span> Compare: open https://whambam.games in Chrome on the same device</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: A "⛶ Fullscreen" button appears in the web version (bottom-right) because the browser has a URL bar to hide</span></div>
+</div>
+
+<h2>Test 3: F-015 &mdash; Timer Stepper (Confirm 5s Step)</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Navigate to any game mode setup screen</div>
+<div class="test-step"><span class="step-num">2</span> Locate the Round Timer stepper (+ / − buttons)</div>
+<div class="test-step"><span class="step-num">3</span> Tap the + button once</div>
+<div class="test-step"><span class="step-num">4</span> <span class="expected">Expected: Timer increases by 5 seconds (e.g., 1:00 → 1:05). This is the intended step size.</span></div>
+<div class="test-step"><span class="step-num">5</span> Verify preset buttons (30s, 45s, 60s, 90s, 2min, 3min) work for quick selection</div>
+<div class="test-step"><span class="step-num">6</span> Long-press the + or − button</div>
+<div class="test-step"><span class="step-num">7</span> <span class="expected">Expected: Timer auto-increments/decrements rapidly in 5s steps while held</span></div>
+</div>
+
+<h2>Test 4: F-084 &mdash; Team Tie Handling</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Select Up Top, Team mode, 2 teams, 1 round</div>
+<div class="test-step"><span class="step-num">2</span> Play Team 1's round — score exactly 2 correct</div>
+<div class="test-step"><span class="step-num">3</span> Play Team 2's round — score exactly 2 correct</div>
+<div class="test-step"><span class="step-num">4</span> Game Over screen appears</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: Both teams show 🥇 (same rank). Winner text reads "🤝 It's a tie! [Team 1] &amp; [Team 2] tied with 2 points!" Confetti fires.</span></div>
+<div class="test-step"><span class="step-num">6</span> Repeat with 3 teams where 2 teams tie for 1st and 1 team is lower</div>
+<div class="test-step"><span class="step-num">7</span> <span class="expected">Expected: Two teams show 🥇, one team shows 🥉 (3rd). Tie message names both winning teams.</span></div>
+</div>
+
+<h2>Test 5: F-112 &mdash; Session Resume Timer Preservation</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Start a game (any mode, 60s timer)</div>
+<div class="test-step"><span class="step-num">2</span> Play until ~30 seconds remain on the timer</div>
+<div class="test-step"><span class="step-num">3</span> Force-close the app (swipe it away from recent apps)</div>
+<div class="test-step"><span class="step-num">4</span> Reopen the app</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: "Game in progress" prompt appears with game details</span></div>
+<div class="test-step"><span class="step-num">6</span> Tap "Resume game"</div>
+<div class="test-step"><span class="step-num">7</span> Play through to the Ready screen and start the next round</div>
+<div class="test-step"><span class="step-num">8</span> <span class="expected">Expected: Timer starts from approximately 30 seconds (the remaining time), NOT from 60 seconds</span></div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>Test 6: M-011 &mdash; Voice Command "Yes" (Confirm Limitation)</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Enable voice commands in setup, start an Up Top round</div>
+<div class="test-step"><span class="step-num">2</span> Say "Correct" clearly</div>
+<div class="test-step"><span class="step-num">3</span> <span class="expected">Expected: Registered consistently</span></div>
+<div class="test-step"><span class="step-num">4</span> Say "Yes" clearly (repeat 5 times across different words)</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: Recognized in most attempts but may occasionally require repetition. The mic pill shows "listening…" and displays 🎙️ "Yes" → ✓ Correct! when recognized. This is a known speech recognition limitation for short words.</span></div>
+<div class="test-step"><span class="step-num">6</span> Note: "Correct" is the recommended primary trigger word for reliability</div>
+</div>
+
+<h2>Test 7: M-023 &mdash; Android Auto-Rotate Instructions</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Disable auto-rotate on the Android device (enable Portrait Lock)</div>
+<div class="test-step"><span class="step-num">2</span> Start an Up Top game and reach the "Rotate Phone" screen</div>
+<div class="test-step"><span class="step-num">3</span> Tap "👆 Show Me How to Unlock"</div>
+<div class="test-step"><span class="step-num">4</span> <span class="expected">Expected: Three Android-specific steps appear:</span></div>
+<div class="test-step" style="padding-left: 40px"><span class="expected">Step 1: "Swipe down from the top of the screen — swipe twice to expand Quick Settings"</span></div>
+<div class="test-step" style="padding-left: 40px"><span class="expected">Step 2: "Look for the Auto-rotate tile (🔄 icon). If it says Portrait or shows a lock icon, tap it to switch to Auto-rotate"</span></div>
+<div class="test-step" style="padding-left: 40px"><span class="expected">Step 3: "Rotate your phone sideways — the screen should follow!"</span></div>
+<div class="test-step"><span class="step-num">5</span> Verify steps match the actual Android Quick Settings panel on the test device</div>
+</div>
+
+<h2>Test 8: M-030 &mdash; Timer During Phone Call</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Start an Up Top round with a 60-second timer</div>
+<div class="test-step"><span class="step-num">2</span> Note the current timer value (e.g., 45 seconds remaining)</div>
+<div class="test-step"><span class="step-num">3</span> Receive an incoming phone call (or have someone call you)</div>
+<div class="test-step"><span class="step-num">4</span> Answer the call, stay on it for 15–20 seconds</div>
+<div class="test-step"><span class="step-num">5</span> End the call and return to the app</div>
+<div class="test-step"><span class="step-num">6</span> <span class="expected">Expected: Timer resumes from approximately 45 seconds (where it was paused), NOT from 25 seconds (timer kept running). The round should still be active.</span></div>
+</div>
+
+<h2>Test 9: M-031 &mdash; Timer During Push Notification</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Start an Up Top round with a 60-second timer</div>
+<div class="test-step"><span class="step-num">2</span> Note the current timer value (e.g., 40 seconds remaining)</div>
+<div class="test-step"><span class="step-num">3</span> Receive a WhatsApp/SMS notification, tap it to open the messaging app</div>
+<div class="test-step"><span class="step-num">4</span> Spend 15–20 seconds in the other app</div>
+<div class="test-step"><span class="step-num">5</span> Switch back to Wham Bam</div>
+<div class="test-step"><span class="step-num">6</span> <span class="expected">Expected: Timer resumes from approximately 40 seconds, not from 20 seconds</span></div>
+</div>
+
+<h2>Test 10: M-032 &mdash; Timer When App Backgrounded</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Start an Up Top round with a 60-second timer</div>
+<div class="test-step"><span class="step-num">2</span> Note the timer value (e.g., 50 seconds remaining)</div>
+<div class="test-step"><span class="step-num">3</span> Press the Home button to background the app</div>
+<div class="test-step"><span class="step-num">4</span> Wait 15–20 seconds</div>
+<div class="test-step"><span class="step-num">5</span> Return to the app via recents</div>
+<div class="test-step"><span class="step-num">6</span> <span class="expected">Expected: Timer resumes from approximately 50 seconds</span></div>
+</div>
+
+<h2>Test 11: M-033 &mdash; Timer During Screen Lock</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Start an Up Top round with a 60-second timer</div>
+<div class="test-step"><span class="step-num">2</span> Note the timer value (e.g., 35 seconds remaining)</div>
+<div class="test-step"><span class="step-num">3</span> Press the power button to lock the screen</div>
+<div class="test-step"><span class="step-num">4</span> Wait 15–20 seconds</div>
+<div class="test-step"><span class="step-num">5</span> Unlock the device</div>
+<div class="test-step"><span class="step-num">6</span> <span class="expected">Expected: Timer resumes from approximately 35 seconds. Round is still active.</span></div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>Test 12: N-009 &mdash; Auth Tab Switch Stability</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Open the auth modal (tap Sign Up or Sign In on home screen)</div>
+<div class="test-step"><span class="step-num">2</span> On the Sign In tab, enter an invalid email and tap Sign In to trigger error state</div>
+<div class="test-step"><span class="step-num">3</span> <span class="expected">Expected: Red error border appears on the email field</span></div>
+<div class="test-step"><span class="step-num">4</span> Switch to the Sign Up tab</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: All fields are cleared, no red borders remain, "Display name" field appears, layout is clean and stable</span></div>
+<div class="test-step"><span class="step-num">6</span> Switch back to Sign In tab</div>
+<div class="test-step"><span class="step-num">7</span> <span class="expected">Expected: All fields cleared again, "Display name" field hidden, "Forgot password?" link visible, layout stable</span></div>
+<div class="test-step"><span class="step-num">8</span> Rapidly switch between tabs 5–6 times</div>
+<div class="test-step"><span class="step-num">9</span> <span class="expected">Expected: No visual distortion, layout remains stable throughout</span></div>
+</div>
+
+<h2>Test 13: P-022 &mdash; Ad Cannot Be Closed via Back Button</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Play enough rounds to trigger an interstitial ad (every 3rd round after the grace period)</div>
+<div class="test-step"><span class="step-num">2</span> Alternatively: use a free deck, exhaust 50 free words, tap "Watch 30s Ad → 30 more words"</div>
+<div class="test-step"><span class="step-num">3</span> The ad countdown screen appears (30-second timer)</div>
+<div class="test-step"><span class="step-num">4</span> Press the Android Back button (hardware or gesture) while the countdown is running</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: Nothing happens. The ad screen remains active. The back button has no effect.</span></div>
+<div class="test-step"><span class="step-num">6</span> Wait for the "✕ Close ad" link to appear (after ~5 seconds)</div>
+<div class="test-step"><span class="step-num">7</span> Tap "✕ Close ad" before countdown completes</div>
+<div class="test-step"><span class="step-num">8</span> <span class="expected">Expected: Returns to setup screen. No words are unlocked (for the rewarded ad path).</span></div>
+<div class="test-step"><span class="step-num">9</span> Repeat, but let the full 30-second countdown complete</div>
+<div class="test-step"><span class="step-num">10</span> <span class="expected">Expected: "✅ Ad complete!" message, then words are unlocked</span></div>
+</div>
+
+<hr class="divider">
+
+<h2>Bonus Test: Word Transition Smoothness</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Start any game mode with tilt controls enabled</div>
+<div class="test-step"><span class="step-num">2</span> Tilt the phone to trigger Correct and Skip several times in quick succession</div>
+<div class="test-step"><span class="step-num">3</span> <span class="expected">Expected: Words transition with a smooth "pop" scale animation (scaling from small to full size with a slight overshoot). No lag or stuttering between words.</span></div>
+<div class="test-step"><span class="step-num">4</span> Also test with button taps in Charades mode (portrait)</div>
+<div class="test-step"><span class="step-num">5</span> <span class="expected">Expected: Same smooth transition behavior</span></div>
+</div>
+
+<div class="footer">
+Wham Bam Games &mdash; QA Response &amp; Re-Test Manual &bull; August 29, 2026 &bull; Development Team
+</div>
+
+</body>
+</html>

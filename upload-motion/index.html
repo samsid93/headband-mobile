@@ -1445,9 +1445,9 @@ body::after{content:'';position:fixed;inset:0;
         <div class="orient-step"><div class="orient-step-num">3</div><span>Rotate your phone <strong>sideways</strong> — it should now rotate!</span></div>
       </div>
       <div class="orient-hint-steps" id="orient-steps-android" style="display:none">
-        <div class="orient-step"><div class="orient-step-num">1</div><span>Swipe <strong>down from the top</strong> to open notification panel</span></div>
-        <div class="orient-step"><div class="orient-step-num">2</div><span>Find and tap <strong>Auto-rotate</strong> (or Portrait Lock) to enable auto-rotate</span></div>
-        <div class="orient-step"><div class="orient-step-num">3</div><span>Rotate your phone <strong>sideways</strong> — it should now rotate!</span></div>
+        <div class="orient-step"><div class="orient-step-num">1</div><span>Swipe <strong>down from the top</strong> of the screen — swipe <strong>twice</strong> to expand Quick Settings</span></div>
+        <div class="orient-step"><div class="orient-step-num">2</div><span>Look for the <strong>Auto-rotate</strong> tile (🔄 icon). If it says <strong>Portrait</strong> or shows a lock icon, tap it to switch to <strong>Auto-rotate</strong></span></div>
+        <div class="orient-step"><div class="orient-step-num">3</div><span>Rotate your phone <strong>sideways</strong> — the screen should follow!</span></div>
       </div>
       <button class="orient-unlock-btn" onclick="pulseOrientSteps()">👆 Show Me How to Unlock</button>
     </div>
@@ -1638,6 +1638,14 @@ body::after{content:'';position:fixed;inset:0;
     <button class="btn btn-out" onclick="goTo('screen-setup');SFX.tap()">← Back</button>
     <button type="button" id="unlock-restore" class="unlock-restore" onclick="PAYMENTS.restore()">Restore purchases</button>
     <div id="unlock-restore-note" class="unlock-restore-note">Already subscribed? Your purchases follow your account — sign in to restore them.</div>
+    <div id="voucher-section" style="display:none;margin-top:14px">
+      <button type="button" class="unlock-restore" id="voucher-toggle-btn" onclick="document.getElementById('voucher-input-wrap').style.display='flex';this.style.display='none'">Have a code?</button>
+      <div id="voucher-input-wrap" style="display:none;gap:8px;align-items:center;margin-top:8px">
+        <input type="text" id="voucher-input" placeholder="Enter code" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);border-radius:22px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;text-transform:uppercase">
+        <button type="button" onclick="redeemVoucher()" style="padding:10px 18px;background:linear-gradient(135deg,rgba(255,214,10,.35),rgba(255,107,0,.22));border:1.5px solid rgba(255,214,10,.75);border-radius:22px;color:#FFD60A;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Redeem</button>
+      </div>
+      <div id="voucher-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -1657,6 +1665,14 @@ body::after{content:'';position:fixed;inset:0;
       <div style="font-size:11px;color:var(--mut);margin-top:3px">All decks · no ads · all future decks</div>
     </div>
     <button class="btn btn-out" onclick="closeFreePaywall()">End Round</button>
+    <div id="fp-voucher-section" style="display:none;margin-top:14px">
+      <button type="button" class="unlock-restore" id="fp-voucher-toggle-btn" onclick="document.getElementById('fp-voucher-input-wrap').style.display='flex';this.style.display='none'">Have a code?</button>
+      <div id="fp-voucher-input-wrap" style="display:none;gap:8px;align-items:center;margin-top:8px">
+        <input type="text" id="fp-voucher-input" placeholder="Enter code" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false" style="flex:1;padding:10px 14px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.22);border-radius:22px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;text-transform:uppercase">
+        <button type="button" onclick="redeemVoucher('fp')" style="padding:10px 18px;background:linear-gradient(135deg,rgba(255,214,10,.35),rgba(255,107,0,.22));border:1.5px solid rgba(255,214,10,.75);border-radius:22px;color:#FFD60A;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Redeem</button>
+      </div>
+      <div id="fp-voucher-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:16px"></div>
+    </div>
   </div>
 </div>
 
@@ -1776,7 +1792,7 @@ const SFX=(()=>{
   const beep=(f,t,d,v,dl=0)=>{if(muted)return;try{const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime+dl);g.gain.setValueAtTime(0,c.currentTime+dl);g.gain.linearRampToValueAtTime(v,c.currentTime+dl+.01);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+dl+d);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d+.05)}catch(e){}};
   return{
     isMuted(){return muted},
-    toggleMute(){muted=!muted;localStorage.setItem('hb_muted',muted?'1':'0');return muted},
+    toggleMute(){muted=!muted;localStorage.setItem('hb_muted',muted?'1':'0');if(ctx){try{muted?ctx.suspend():ctx.resume()}catch(e){}}return muted},
     newWord(){beep(900,'sine',.08,.06)},
     tap(){beep(600,'sine',.06,.12)},
     correct(st=0){const m=1+Math.min(st,8)*.07;[523,659,784].forEach((f,i)=>beep(f*m,'sine',.22,.18,i*.03));beep(1047*m,'sine',.18,.12,.08)},
@@ -2202,13 +2218,12 @@ const GAME_SAVE_TTL=24*60*60*1000;
 let _resumeOffered=false;
 
 function saveGameProgress(){
-  // Nothing worth restoring before a round has actually been played
-  if(!G.gameTurnCount||G.gameTurnCount<1)return;
+  if(!G.gameTurnCount&&!G._paused&&!G.sec)return;
   try{
     localStorage.setItem(GAME_SAVE_KEY,JSON.stringify({
       ts:Date.now(),
       gameStyle:G.gameStyle, deck:G.deck, mode:G.mode,
-      timer:G.timer, maxRounds:G.maxRounds,
+      timer:G.timer, secRemaining:G.sec, maxRounds:G.maxRounds,
       teamCount:G.teamCount, curTeam:G.curTeam,
       classicTotal:G.classicTotal, gameTurnCount:G.gameTurnCount, turnCount:G.turnCount,
       teams:(G.teams||[]).slice(0,G.teamCount).map(t=>({
@@ -2225,7 +2240,7 @@ function loadGameProgress(){
   try{
     const s=JSON.parse(localStorage.getItem(GAME_SAVE_KEY)||'null');
     if(!s||!s.ts||Date.now()-s.ts>GAME_SAVE_TTL)return null;
-    if(!s.gameStyle||!s.gameTurnCount)return null;
+    if(!s.gameStyle)return null;
     return s;
   }catch(e){return null}
 }
@@ -2265,7 +2280,7 @@ function resumeGame(){
   if(!s){showToast('That game has expired');return}
   SFX.tap();
   G.gameStyle=s.gameStyle; G.deck=s.deck; G.mode=s.mode;
-  G.timer=s.timer; G.maxRounds=s.maxRounds;
+  G.timer=s.timer; G._resumeSec=s.secRemaining||0; G.maxRounds=s.maxRounds;
   G.teamCount=s.teamCount; G.curTeam=s.curTeam;
   G.classicTotal=s.classicTotal; G.gameTurnCount=s.gameTurnCount; G.turnCount=s.turnCount||0;
   G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:t.players||[],playerIdx:t.playerIdx||0}));
@@ -3105,8 +3120,17 @@ async function acquireWakeLock(){
 function releaseWakeLock(){
   if(_wakeLock){_wakeLock.release().catch(()=>{});_wakeLock=null}
 }
-// Re-acquire if page becomes visible again (iOS Safari releases wake lock on tab switch)
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&_wakeLock===null&&G.sec>0)acquireWakeLock()});
+// Pause game timer when app is backgrounded (call, notification, home button, screen lock)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){
+    if(G.interval&&!G.roundOver){clearInterval(G.interval);G.interval=null;G._paused=true;}
+    saveGameProgress();
+  } else {
+    if(G._paused&&!G.roundOver&&G.sec>0){G._paused=false;startTimer();}
+    else{G._paused=false;}
+    if(_wakeLock===null&&G.sec>0)acquireWakeLock();
+  }
+});
 
 /* Stop decorative work while backgrounded.
    Previously the only visibilitychange handler reacquired the wake lock; the
@@ -3218,7 +3242,7 @@ async function beginRound(){
 
   const allWords=shuffle([...deck.words]);
   G.words=limit<99999?allWords.slice(0,Math.min(allWords.length,limit)):allWords;
-  G.idx=0;G.correct=0;G.skipped=0;G.buzzed=0;G.sec=G.timer;G.roundWords=[];
+  G.idx=0;G.correct=0;G.skipped=0;G.buzzed=0;G.sec=(G._resumeSec>0?G._resumeSec:G.timer);G._resumeSec=0;G.roundWords=[];
   G.roundOver=false;G.wordsStartIdx=0;
   G.streak=0;updateStreakChip();
   G.goldenIdx=-1;
@@ -3481,6 +3505,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).c
     // Mid-round: back ends the round rather than stranding the player.
     if(id === 'screen-play'){ if(typeof endRoundEarly === 'function') endRoundEarly(); return; }
     if(id === 'screen-countdown'){ if(typeof abortCountdown === 'function') abortCountdown(); return; }
+    if(id === 'screen-ad'){ return; }
 
     if(PARENT[id]){ goTo(PARENT[id]); if(window.SFX) SFX.tap(); return; }
     App.exitApp();                                   // only from Home
@@ -3704,10 +3729,14 @@ function showScore(){
   if(G.mode==='team'){
     document.getElementById('sc-sub').textContent=`${G.teams[G.curTeam].name} scored ${pts} pts`;
     if(gameOver){
-      // Final standings: sorted, medals, podium colors
+      // Final standings: sorted, medals, podium colors — tied teams share same rank
       const sorted=[...G.teams].slice(0,G.teamCount).sort((a,b)=>b.score-a.score);
       const MEDALS=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
-      cards.innerHTML=`<div class="result-cards">${sorted.map((t,i)=>`<div class="rcard${i===0?' winner':i===1?' r2':i===2?' r3':''}"><div class="rrank">${MEDALS[i]||'#'+(i+1)}</div><div><div class="rname">${esc(t.name)}</div><div class="rdetail">${t.score} total pts</div></div><div class="rpts" data-v="${t.score}">0</div></div>`).join('')}</div>`;
+      const ranks=sorted.map((t,i)=>{
+        if(i===0) return 0;
+        return sorted[i].score===sorted[i-1].score?ranks[i-1]:i;
+      });
+      cards.innerHTML=`<div class="result-cards">${sorted.map((t,i)=>`<div class="rcard${ranks[i]===0?' winner':ranks[i]===1?' r2':ranks[i]===2?' r3':''}"><div class="rrank">${MEDALS[ranks[i]]||'#'+(ranks[i]+1)}</div><div><div class="rname">${esc(t.name)}</div><div class="rdetail">${t.score} total pts</div></div><div class="rpts" data-v="${t.score}">0</div></div>`).join('')}</div>`;
     } else {
       // Mid-game scoreboard: turn order, no medals; unplayed teams show — instead of 0
       const nextIdx=(G.curTeam+1)%G.teamCount;
@@ -3718,10 +3747,16 @@ function showScore(){
       }).join('')}</div>`;
     }
     cards.querySelectorAll('.rpts[data-v]').forEach(el=>countUp(el,parseInt(el.dataset.v)||0));
-    if(gameOver&&sorted[0].score!==sorted[1].score){
-      document.getElementById('sc-winner-text').textContent=`🎉 ${sorted[0].name} wins with ${sorted[0].score} points!`;
-      setTimeout(()=>{SFX.winner();burstConfetti()},300);
-    } else if(!gameOver&&sorted[0].score!==sorted[1].score){
+    if(gameOver){
+      const tied=sorted.filter(t=>t.score===sorted[0].score);
+      if(tied.length>1){
+        document.getElementById('sc-winner-text').textContent=`🤝 It's a tie! ${tied.map(t=>t.name).join(' & ')} tied with ${sorted[0].score} points!`;
+        setTimeout(()=>{SFX.winner();burstConfetti()},300);
+      } else {
+        document.getElementById('sc-winner-text').textContent=`🎉 ${sorted[0].name} wins with ${sorted[0].score} points!`;
+        setTimeout(()=>{SFX.winner();burstConfetti()},300);
+      }
+    } else if(sorted[0].score!==sorted[1].score){
       setTimeout(()=>SFX.winner(),300);
     }
   } else {
@@ -3981,9 +4016,44 @@ function grantSubLocally(productId){
 }
 
 /* ═══════════════════════════════════════════════════
-   REVENUECAT PAYMENT MODULE  (mobile app only)
-   Uses the @revenuecat/purchases-capacitor plugin via Capacitor.Plugins.Purchases.
-   Web browsers never hit this path — they use XSOLLA.
+   VOUCHER CODE REDEMPTION (native app only — for QA testing)
+   Shows "Have a code?" on unlock/paywall screens when running inside Capacitor.
+════════════════════════════════════════════════════ */
+const VOUCHER_CODES = {
+  'TESTALL2026': 'allaccess_yearly',
+  'TESTSTD2026': 'standard_yearly',
+  'QAUNLOCK':    'allaccess_yearly'
+};
+function initVoucherUI(){
+  if(!PLATFORM.isNative) return;
+  const s1 = document.getElementById('voucher-section');
+  const s2 = document.getElementById('fp-voucher-section');
+  if(s1) s1.style.display = 'block';
+  if(s2) s2.style.display = 'block';
+}
+function redeemVoucher(prefix){
+  const inputId = prefix ? prefix+'-voucher-input' : 'voucher-input';
+  const msgId = prefix ? prefix+'-voucher-msg' : 'voucher-msg';
+  const input = document.getElementById(inputId);
+  const msg = document.getElementById(msgId);
+  if(!input || !msg) return;
+  const code = input.value.trim().toUpperCase();
+  if(!code){ msg.style.color='#FF3B30'; msg.textContent='Enter a code'; return; }
+  const product = VOUCHER_CODES[code];
+  if(!product){
+    msg.style.color='#FF3B30'; msg.textContent='Invalid code';
+    input.value=''; return;
+  }
+  grantSubLocally(product);
+  msg.style.color='#2EE68A'; msg.textContent='Redeemed! All content unlocked.';
+  input.value='';
+  setTimeout(()=>{ goTo('screen-setup'); }, 1200);
+}
+
+/* ═══════════════════════════════════════════════════
+   REVENUECAT PAYMENT MODULE  — DEPRECATED / UNUSED
+   Kept for reference only. Payment router now uses Xsolla for all platforms.
+   Remove this block entirely once confirmed Xsolla mobile flow is stable.
 ════════════════════════════════════════════════════ */
 const RCAT = (() => {
   // Public RevenueCat SDK key — safe to ship in client (NOT a secret).
@@ -4090,16 +4160,18 @@ const RCAT = (() => {
 
 /* ═══════════════════════════════════════════════════
    PAYMENT ROUTER
-   Mobile app → RevenueCat.  Web browser → Xsolla.
+   Unified: Xsolla on ALL platforms (web + mobile).
    All paywall buttons call PAYMENTS.buy() — never a provider directly.
 ════════════════════════════════════════════════════ */
 const PAYMENTS = {
   buy(productId, onSuccess){
-    if(PLATFORM.isNative) return RCAT.buy(productId, onSuccess);
     return XSOLLA.buy(productId, onSuccess);
   },
   restore(){
-    if(PLATFORM.isNative) return RCAT.restore();
+    if(PLATFORM.isNative){
+      applySubFromProfile().then(()=> showToast('Purchases synced'));
+      return;
+    }
     // Web purchases ride on the Supabase session, so "restoring" is really
     // "sign in" — say so instead of leaving the player with nothing to act on.
     if(typeof HB_AUTH!=='undefined' && HB_AUTH.getUser && HB_AUTH.getUser()){
@@ -4115,12 +4187,12 @@ const PAYMENTS = {
 };
 
 /* ═══════════════════════════════════════════════════
-   XSOLLA PAYMENT MODULE   (web browser only)
+   XSOLLA PAYMENT MODULE   (all platforms — web + mobile)
    Replaces all fake localStorage payment stubs.
 ════════════════════════════════════════════════════ */
 const XSOLLA = (() => {
   const TOKEN_URL = SUPABASE_URL + '/functions/v1/xsolla-token';
-  const SANDBOX   = true; // ← set false before going live
+  const SANDBOX   = false;
 
   function _getSB(){ return getSharedSB(); }
 
@@ -4404,7 +4476,7 @@ const HB_AUTH = (() => {
       const { data, error } = await sb.auth.getSession();
       if (error) console.warn('HB_AUTH session:', error.message);
       _user = data?.session?.user || null;
-      if (_user) { applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements(); }
+      if (_user) { applySubFromProfile(); applySubFromProfile(); }
       sb.auth.onAuthStateChange((_evt, session) => {
         _user = session?.user || null;
         _updatePill();
@@ -4414,7 +4486,7 @@ const HB_AUTH = (() => {
         if (_evt === 'PASSWORD_RECOVERY') { _recovery = true; showResetForm(); return; }
         if (_evt === 'SIGNED_IN') {
           if (_recovery) return;          // mid-reset: leave the form up
-          hideAuthModal(); applySubFromProfile(); if(PLATFORM.isNative) RCAT.syncEntitlements();
+          hideAuthModal(); applySubFromProfile(); applySubFromProfile();
           if (_oauthReturn) _finishOAuth();
         }
       });
@@ -4462,21 +4534,21 @@ const HB_AUTH = (() => {
     document.getElementById('auth-tab-in').classList.toggle('auth-tab-active', !isUp);
     document.getElementById('auth-tab-up').classList.toggle('auth-tab-active', isUp);
     document.getElementById('auth-name-wrap').style.display = isUp ? 'block' : 'none';
-    // L-1: the agreement notice belongs on the tab where an account is created
     const legal = document.getElementById('auth-legal');
     if (legal) legal.style.display = isUp ? 'block' : 'none';
     document.getElementById('auth-submit-btn').textContent = isUp ? 'Create Account' : 'Sign In';
     document.getElementById('auth-pass').autocomplete = isUp ? 'new-password' : 'current-password';
-    // M-8: the red ring is the browser's own :invalid state on a type=email input,
-    // not an attribute we set — so it only clears when the value does. Reset the
-    // fields so an error from the other tab cannot bleed into this one.
     ['auth-email','auth-pass','auth-name'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.value = '';
+      if (el) { el.value = ''; el.classList.remove('field-invalid'); }
     });
     document.getElementById('auth-reset').style.display = 'none';
     document.getElementById('auth-forgot').style.display = isUp ? 'none' : '';
+    document.getElementById('auth-signed-out').style.display = 'block';
+    document.getElementById('auth-signed-in').style.display = 'none';
     _clearMsg();
+    const modal = document.getElementById('auth-modal');
+    if (modal) modal.scrollTop = 0;
   }
 
   async function submit() {
@@ -4989,7 +5061,8 @@ VOICE.checkSupport();
   if(note&&PLATFORM.isNative)note.textContent='Already subscribed? Restore your previous purchase from the store.';
 })();
 // Mobile app: re-apply active entitlements (device may already be subscribed)
-if(PLATFORM.isNative)RCAT.syncEntitlements();
+if(PLATFORM.isNative)applySubFromProfile();
+initVoucherUI();
 
 // Track physical device orientation via gamma — works even when screen is orientation-locked.
 // gamma ≈ ±90 = landscape, gamma ≈ 0 = portrait. Used to block tilt triggers during accidental rotation.
