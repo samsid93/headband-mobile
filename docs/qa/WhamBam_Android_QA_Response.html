@@ -64,10 +64,10 @@ code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9.5pt; b
 </table>
 
 <h2>Executive Summary</h2>
-<p>The QA tester identified 13 failed test cases during Android app testing. After a thorough code-level audit and cross-referencing every claim against the actual codebase, here is our disposition:</p>
+<p>The QA tester identified 13 failed test cases during Android app testing, plus one additional critical bug discovered during re-testing. After a thorough code-level audit and cross-referencing every claim against the actual codebase, here is our disposition:</p>
 
 <div class="stats-grid">
-  <div class="stat-card stat-fixed"><div class="stat-num">8</div><div class="stat-label">FIXED</div></div>
+  <div class="stat-card stat-fixed"><div class="stat-num">9</div><div class="stat-label">FIXED</div></div>
   <div class="stat-card stat-design"><div class="stat-num">2</div><div class="stat-label">BY DESIGN</div></div>
   <div class="stat-card stat-testcase"><div class="stat-num">2</div><div class="stat-label">TEST CASE ERROR</div></div>
   <div class="stat-card stat-limitation"><div class="stat-num">1</div><div class="stat-label">PLATFORM LIMITATION</div></div>
@@ -75,7 +75,7 @@ code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9.5pt; b
 
 <table class="data">
 <tr><th>Verdict</th><th>Count</th><th>Meaning</th></tr>
-<tr><td><span class="badge badge-fixed">FIXED</span></td><td>8</td><td>Valid bugs identified and resolved in this update</td></tr>
+<tr><td><span class="badge badge-fixed">FIXED</span></td><td>9</td><td>Valid bugs identified and resolved in this update</td></tr>
 <tr><td><span class="badge badge-design">BY DESIGN</span></td><td>2</td><td>Working as intended &mdash; deliberate design decisions</td></tr>
 <tr><td><span class="badge badge-testcase">TEST CASE ERROR</span></td><td>2</td><td>App behavior is correct; the test expectation was wrong</td></tr>
 <tr><td><span class="badge badge-limitation">PLATFORM LIMITATION</span></td><td>1</td><td>Inherent limitation of the underlying platform API</td></tr>
@@ -97,6 +97,7 @@ code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9.5pt; b
 <tr><td>M-033</td><td>Timer continues during screen lock</td><td>High</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
 <tr><td>N-009</td><td>Auth tab switch distorts UI layout</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
 <tr><td>P-022</td><td>Ad can be closed early via Android back button</td><td>Medium</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
+<tr><td>T-001</td><td>Timer stepper meltdown on simultaneous +/&minus; press</td><td>High</td><td><span class="badge badge-fixed">FIXED</span></td></tr>
 </table>
 
 <div class="page-break"></div>
@@ -241,6 +242,27 @@ code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9.5pt; b
 </div>
 
 <div class="page-break"></div>
+
+<!-- T-001 -->
+<div class="finding">
+<div class="finding-header"><span class="finding-id">T-001</span> <span class="badge badge-fixed">FIXED</span></div>
+<div class="finding-title">Timer stepper meltdown when +/&minus; pressed simultaneously</div>
+<div class="finding-quote">If someone taps the timer + and &minus; buttons at the same time, the timer goes haywire &mdash; rapidly incrementing and decrementing, triggering preset buttons, and the stepper beep sound keeps ringing continuously even after closing the app to the background.</div>
+<div class="finding-response">
+<p><strong>Root Cause:</strong> Three compounding bugs in the timer stepper long-press handler:</p>
+<ol>
+<li><strong>Leaked interval:</strong> Both +/&minus; buttons shared a single interval handle (<code>_si</code>). Pressing both overwrote the handle, leaking one interval that ran forever &mdash; stepping the timer in one direction at 150ms with no way to stop it.</li>
+<li><strong>Double-triggering on touch:</strong> On Android, both <code>touchstart</code> and <code>mousedown</code> events fired for a single tap, creating two overlapping intervals per button press.</li>
+<li><strong>No background cleanup:</strong> Leaked intervals survived <code>visibilitychange</code> &mdash; <code>SFX.stepTimer()</code> beeps kept firing at 6.7 Hz even with the app off-screen, draining battery and producing audible noise.</li>
+</ol>
+<p><strong>Fix Applied:</strong></p>
+<ul>
+<li><code>startStep()</code> now kills any running interval before starting a new one &mdash; pressing the opposite button cleanly cancels the first</li>
+<li>Touch and mouse events are de-duplicated with a <code>usedTouch</code> flag &mdash; touch wins, mouse is suppressed for 400ms after touchend</li>
+<li><code>stopStep()</code> is called on <code>visibilitychange</code> hidden as a safety net, killing any orphaned interval when the app goes to the background</li>
+</ul>
+</div>
+</div>
 
 <h2>Additional Improvement: Word Transition Animation</h2>
 <div class="section-box">
@@ -417,6 +439,22 @@ code { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 9.5pt; b
 </div>
 
 <hr class="divider">
+
+<h2>Test 14: T-001 &mdash; Timer Stepper Simultaneous Press</h2>
+<div class="section-box">
+<div class="test-step"><span class="step-num">1</span> Navigate to any game mode setup screen</div>
+<div class="test-step"><span class="step-num">2</span> Locate the Round Timer stepper (+ / &minus; buttons)</div>
+<div class="test-step"><span class="step-num">3</span> Press both + and &minus; buttons simultaneously with two fingers</div>
+<div class="test-step"><span class="step-num">4</span> <span class="expected">Expected: Timer may step once in one direction but does NOT run away. No rapid-fire beeping. Timer value stays stable.</span></div>
+<div class="test-step"><span class="step-num">5</span> Release both fingers</div>
+<div class="test-step"><span class="step-num">6</span> <span class="expected">Expected: Timer stops changing immediately. No residual beeping.</span></div>
+<div class="test-step"><span class="step-num">7</span> Repeat: press +, then while holding it, also press &minus;</div>
+<div class="test-step"><span class="step-num">8</span> <span class="expected">Expected: Timer switches direction cleanly (stops going up, starts going down). Only one direction active at a time.</span></div>
+<div class="test-step"><span class="step-num">9</span> While holding a stepper button, press the Home button to background the app</div>
+<div class="test-step"><span class="step-num">10</span> <span class="expected">Expected: No beeping or timer sounds continue in the background. Complete silence.</span></div>
+<div class="test-step"><span class="step-num">11</span> Return to the app</div>
+<div class="test-step"><span class="step-num">12</span> <span class="expected">Expected: Timer is at a normal value. No runaway stepping. App is responsive.</span></div>
+</div>
 
 <h2>Bonus Test: Word Transition Smoothness</h2>
 <div class="section-box">
