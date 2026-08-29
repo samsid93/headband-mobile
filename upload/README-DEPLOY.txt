@@ -7,19 +7,21 @@ sit next to the HTML file — do not put them in subfolders.
 
 FILES
 -----
-headband-game-web.html    The game (all HTML/CSS/JS inline)
+index.html                The game (all HTML/CSS/JS inline)
 logo.png                  Favicon, apple-touch-icon, og:image, home logo, ad logo
 splash.png                Splash / landing screen — PORTRAIT art (phones)
 splash-desktop.png        Splash / landing screen — LANDSCAPE art (desktop)
 mode-poster.svg           Select-Game screen — PORTRAIT art (stacked panels)
 mode-poster-desktop.png   Select-Game screen — LANDSCAPE art (side-by-side)
+legal-style.css           Shared stylesheet for privacy/terms pages
+privacy.html              Privacy Policy page
+terms.html                Terms of Service page
 
 NOTE ON THE HTML FILENAME
 -------------------------
-Kept as headband-game-web.html to match the existing deployment. If your
-host serves the site root from index.html, rename it to index.html after
-upload (or keep whatever name your current live file uses). The asset
-filenames must NOT be renamed — they are referenced by name in the HTML.
+The game file is index.html — synced from the root headband-game-web.html
+(source of truth). Asset filenames must NOT be renamed — they are
+referenced by name in the HTML.
 
 IMPORTANT — logo.png is referenced by ABSOLUTE URL for social sharing:
   https://whambam.games/logo.png

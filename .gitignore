@@ -1,11 +1,12 @@
 # Credentials / secrets — never commit
-xsolla-setup-steps.txt
-supabase-wiring-steps.txt
-Apple Secret.txt
-GITHUB-SECRETS-COPY-PASTE.txt
+docs/setup/Apple Secret.txt
+docs/setup/GITHUB-SECRETS-COPY-PASTE.txt
+docs/setup/xsolla-setup-steps.txt
+docs/setup/supabase-wiring-steps.txt
 *.env
 .env.*
 *.p8
+*.mobileprovision
 
 # OS
 .DS_Store

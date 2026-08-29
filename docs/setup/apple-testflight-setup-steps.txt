@@ -1,0 +1,131 @@
+WHAM BAM — APPLE / TESTFLIGHT SETUP STEPS
+==========================================
+Goal: get an installable build of the Wham Bam iOS app onto a real iPhone via
+TestFlight. Apple has no unsigned/sideload path — every install is tied to a
+developer account, so these account-side steps are required before any CI
+build can produce something installable.
+
+Bundle ID already confirmed in the project: games.whambam.app
+Code signing already set to Automatic in Xcode — Xcode/xcodebuild will create
+the certificate and provisioning profile on demand via the API key in step 4,
+no manual cert/profile juggling needed.
+
+Steps 1-5 below are account actions only you can do — no browser/Mac access
+from this side. Do them in order, then hand back the 4 secrets in step 5 and
+say "done" — the rest (CI wiring, first build, push to TestFlight) gets done
+from here.
+
+
+STEP 1 — Register the Bundle ID
+--------------------------------
+developer.apple.com/account
+  -> Certificates, IDs & Profiles
+  -> Identifiers
+  -> "+" (top left)
+  -> App IDs -> App
+  -> Bundle ID: EXPLICIT (not wildcard)
+  -> games.whambam.app
+  -> Register
+
+No extra capabilities need to be enabled right now (no push notifications
+wired up yet).
+
+
+STEP 2 — Create the app record in App Store Connect
+-----------------------------------------------------
+appstoreconnect.apple.com
+  -> Apps
+  -> "+" -> New App
+  -> Platform: iOS
+  -> Name: Wham Bam
+       (must be globally unique across the whole App Store — if it's taken,
+       stop and tell me, we'll pick a variant like "Wham Bam!! Party Game")
+  -> Primary language: English (or your choice)
+  -> Bundle ID: select games.whambam.app from the dropdown
+       (only shows up after Step 1 is done)
+  -> SKU: any unique string you won't reuse elsewhere, e.g. whambam-ios-001
+  -> User Access: Full Access
+  -> Create
+
+
+STEP 3 — Get your Team ID
+---------------------------
+developer.apple.com/account
+  -> Membership details (or top of the Certificates/IDs/Profiles page)
+  -> Team ID: a 10-character code, e.g. A1B2C3D4E5
+       (write this down — needed in Step 5)
+
+
+STEP 4 — Generate an App Store Connect API key
+-------------------------------------------------
+appstoreconnect.apple.com
+  -> Users and Access
+  -> Integrations tab
+  -> App Store Connect API
+  -> Generate API Key (or the "+" button)
+  -> Name: anything, e.g. "CI signing"
+  -> Access: App Manager
+  -> Generate
+
+On the resulting page, IMMEDIATELY:
+  - Download the .p8 private key file
+      Apple only allows this download ONCE. If you lose it you have to
+      revoke the key and generate a new one — there is no way to
+      re-download the same key later.
+  - Note the Key ID  (short alphanumeric code shown next to the key)
+  - Note the Issuer ID  (a UUID shown at the top of the Integrations page,
+      shared across all your API keys)
+
+
+STEP 5 — Add 4 secrets to GitHub
+------------------------------------
+Go to the repo on GitHub:
+  Settings -> Secrets and variables -> Actions -> New repository secret
+
+Add these 4 secrets (add them directly in GitHub — do not paste the values
+into chat):
+
+  APPLE_TEAM_ID                  <- the Team ID from Step 3
+  APP_STORE_CONNECT_KEY_ID       <- the Key ID from Step 4
+  APP_STORE_CONNECT_ISSUER_ID    <- the Issuer ID from Step 4
+  APP_STORE_CONNECT_KEY_P8       <- paste the FULL contents of the .p8 file
+                                     from Step 4, including the
+                                     -----BEGIN PRIVATE KEY----- and
+                                     -----END PRIVATE KEY----- lines
+
+Then say "done" — the iOS CI workflow gets wired to sign the build using
+these and push it straight to TestFlight on the next push.
+
+
+STEP 6 — After the first successful CI run
+----------------------------------------------
+appstoreconnect.apple.com -> your app -> TestFlight tab
+
+Two ways to get it onto a phone:
+  - Internal testers (fastest): add yourself/team under "App Store Connect
+    Users" as an internal tester. No Apple review, available almost
+    immediately after the build finishes processing (~15-30 min after CI
+    uploads it).
+  - External testers: invite by email. First submission needs a short Apple
+    beta review (usually under 24h), then it's instant for future builds.
+
+On the iPhone:
+  1. Install the "TestFlight" app from the App Store.
+  2. Open the invite email (or accept via App Store Connect if you added
+     yourself as internal) and tap "View in TestFlight".
+  3. Install Wham Bam from there.
+
+
+NOTES
+-----
+- ITSAppUsesNonExemptEncryption is already set to false in Info.plist, so the
+  export-compliance question during processing should clear automatically —
+  no manual step needed there.
+- These 4 secrets are sensitive. If the .p8 contents or any of these values
+  are ever pasted into a chat, a document, or committed to the repo, revoke
+  the key in App Store Connect and generate a new one.
+- This path (Automatic signing + App Store Connect API key) intentionally
+  skips fastlane match / a separate encrypted-certs repo — fewer moving
+  parts for a single-maintainer project. Xcode creates the distribution
+  certificate and provisioning profile itself, on the CI runner, the first
+  time the workflow runs with these secrets present.

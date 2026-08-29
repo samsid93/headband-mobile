@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhamBam — Manual Testing Guide (iOS & Android)</title>
+<style>
+@page { margin: 0.7in 0.65in; size: A4; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.55; color: #1a1a1a; max-width: 850px; margin: 0 auto; padding: 40px 32px; }
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; color: #0a0500; }
+h2 { font-size: 20px; font-weight: 700; margin-top: 28px; margin-bottom: 8px; color: #1a1a1a; border-bottom: 2px solid #f5c518; padding-bottom: 4px; page-break-after: avoid; break-after: avoid; }
+h3 { font-size: 16px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: #333; page-break-after: avoid; break-after: avoid; }
+.subtitle { font-size: 14px; color: #666; margin-bottom: 6px; }
+.version-info { font-size: 13px; color: #888; margin-bottom: 32px; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+.badge-ios { background: #007aff20; color: #007aff; border: 1px solid #007aff40; }
+.badge-android { background: #34a85320; color: #1b7a34; border: 1px solid #34a85340; }
+.badge-both { background: #f5c51820; color: #8a6d00; border: 1px solid #f5c51860; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: left; border: 1px solid #e0e0e0; }
+th { background: #f8f8f8; font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.3px; }
+tr:nth-child(even) { background: #fafafa; }
+.checklist { list-style: none; padding: 0; }
+.checklist li { padding: 6px 0 6px 28px; position: relative; font-size: 14px; border-bottom: 1px solid #f0f0f0; }
+.checklist li:last-child { border-bottom: none; }
+.checklist li::before { content: "\2610"; position: absolute; left: 4px; top: 6px; font-size: 16px; color: #999; }
+.section-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 16px 20px; margin: 10px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.priority-high { color: #d32f2f; font-weight: 600; }
+.priority-med { color: #f57c00; font-weight: 600; }
+.priority-low { color: #388e3c; font-weight: 600; }
+.note { background: #fffde7; border-left: 3px solid #f5c518; padding: 8px 14px; margin: 10px 0; font-size: 13px; border-radius: 0 4px 4px 0; }
+.warning { background: #fff3e0; border-left: 3px solid #ff9800; padding: 8px 14px; margin: 10px 0; font-size: 13px; border-radius: 0 4px 4px 0; }
+.page-break { page-break-before: always; }
+.header-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+.logo-text { font-size: 32px; font-weight: 800; color: #f5c518; text-shadow: 1px 1px 0 #0a0500; letter-spacing: -0.5px; }
+.toc { background: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 8px; padding: 20px 24px; margin: 20px 0 32px; }
+.toc h3 { margin-top: 0; margin-bottom: 10px; }
+.toc ol { padding-left: 20px; font-size: 14px; }
+.toc li { padding: 3px 0; }
+.toc a { color: #1a1a1a; text-decoration: none; }
+.toc a:hover { color: #007aff; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media print {
+  body { padding: 0; }
+  .section-card { break-inside: avoid; box-shadow: none; }
+  .page-break { break-before: page; }
+  h2, h3 { break-after: avoid; orphans: 3; widows: 3; }
+  .note, .warning { break-inside: avoid; }
+  table { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="header-bar">
+  <span class="logo-text">WhamBam!</span>
+</div>
+<h1>Manual Testing Guide</h1>
+<p class="subtitle">iOS (TestFlight) & Android (Internal Testing)</p>
+<p class="version-info">Document Version 1.1 &nbsp;|&nbsp; Date: August 18, 2026 &nbsp;|&nbsp; Prepared by: WhamBam Games</p>
+
+<div class="toc">
+<h3>Contents</h3>
+<ol>
+  <li><a href="#overview">App Overview & Game Modes</a></li>
+  <li><a href="#setup">Test Environment Setup</a></li>
+  <li><a href="#uptop">Up Top!! Mode Testing</a></li>
+  <li><a href="#charades">Charades!! Mode Testing</a></li>
+  <li><a href="#dontsayit">Don't Say It!! Mode Testing</a></li>
+  <li><a href="#tilt">Tilt & Sensor Testing</a></li>
+  <li><a href="#setup-flow">Game Setup Flow</a></li>
+  <li><a href="#permissions">Device Permissions</a></li>
+  <li><a href="#orientation">Orientation & Layout</a></li>
+  <li><a href="#audio">Audio & SFX</a></li>
+  <li><a href="#auth">Authentication & Access</a></li>
+  <li><a href="#achievements">Achievements & Progress</a></li>
+  <li><a href="#edge">Edge Cases & Stability</a></li>
+  <li><a href="#devices">Target Devices</a></li>
+  <li><a href="#reporting">Bug Reporting Guidelines</a></li>
+</ol>
+</div>
+
+<!-- SECTION 1 -->
+<h2 id="overview">1. App Overview & Game Modes</h2>
+<div class="section-card">
+<p><strong>WhamBam!</strong> is a party game app featuring the <strong>TOP 3 party games in 1 app</strong>. It includes 24 decks, tilt controls, voice commands, and team play.</p>
+
+<h3 style="margin-top:16px;">The 3 Game Modes</h3>
+<table>
+<tr><th>Mode</th><th>How It Works</th><th>Orientation</th><th>Controls</th></tr>
+<tr>
+  <td><strong>🙆 Up Top!!</strong></td>
+  <td>Phone on forehead — others see the word and give verbal clues. Player guesses.</td>
+  <td>Landscape</td>
+  <td>Tilt forward = Correct, Tilt backward = Skip. Voice commands optional.</td>
+</tr>
+<tr>
+  <td><strong>🤫 Charades!!</strong></td>
+  <td>Only you see the word — act it out without speaking. Others guess.</td>
+  <td>Portrait (default) or Landscape</td>
+  <td>Manual buttons only. Tilt & voice toggles are disabled.</td>
+</tr>
+<tr>
+  <td><strong>🚫 Don't Say It!!</strong></td>
+  <td>Hold phone facing you — describe the word to your team without saying the forbidden words shown on screen.</td>
+  <td>Portrait</td>
+  <td>Manual buttons only. Tilt & voice toggles are disabled.</td>
+</tr>
+</table>
+
+<h3 style="margin-top:16px;">Play Modes</h3>
+<ul style="margin: 6px 0 0 20px; font-size: 14px;">
+  <li><strong>🎯 Classic</strong> — single player / pass-and-play</li>
+  <li><strong>👥 Team</strong> — 2–6 teams take turns, highest score wins</li>
+</ul>
+
+<h3 style="margin-top:16px;">Timer Options</h3>
+<p style="font-size:14px;">30s, 45s, 60s (default), 90s, 2 min, 3 min</p>
+
+<h3 style="margin-top:16px;">Round Options</h3>
+<p style="font-size:14px;">∞ Free Play (default), 3 Rounds, 5 Rounds, 7 Rounds</p>
+</div>
+
+<!-- SECTION 2 -->
+<h2 id="setup">2. Test Environment Setup</h2>
+<div class="section-card">
+<h3>iOS (TestFlight) <span class="badge badge-ios">iOS</span></h3>
+<ul class="checklist">
+  <li>Install TestFlight from the App Store</li>
+  <li>Accept the invite link sent to your Apple ID email</li>
+  <li>Install WhamBam from TestFlight</li>
+  <li>Ensure device is on iOS 16 or later</li>
+  <li>Ensure device is NOT in Low Power Mode (affects sensors)</li>
+</ul>
+
+<h3 style="margin-top:16px;">Android <span class="badge badge-android">Android</span></h3>
+<ul class="checklist">
+  <li>Install APK directly (or accept Play Store internal test invite)</li>
+  <li>Enable "Install from unknown sources" if using APK</li>
+  <li>Ensure device is on Android 8.0 (API 26) or later</li>
+  <li>Grant all permissions when prompted</li>
+</ul>
+</div>
+
+<div class="note">
+<strong>Debug Mode:</strong> Tap the top-right corner of the Home screen <strong>6 times rapidly</strong>. This enables a live sensor overlay showing x/y/z values, roll, gamma, and armed state. Use this to diagnose tilt issues.
+</div>
+
+<!-- SECTION 3 -->
+<h2 id="uptop">3. Up Top!! Mode Testing</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span></p>
+<p style="font-size:13px; margin-bottom:14px; color:#555;"><em>Phone on forehead — others see the word and give verbal clues.</em></p>
+<ul class="checklist">
+  <li>Select "Up Top!!" from mode selection screen</li>
+  <li>Choose a deck — deck grid shows with word count labels</li>
+  <li>Tilt and Voice toggles are ENABLED (full opacity, interactive)</li>
+  <li>Game prompts landscape orientation before starting</li>
+  <li>Word card appears with category label (green pill) above it</li>
+  <li>Word text displays in UPPERCASE</li>
+  <li>Tilt forward (away from face) &rarr; registers CORRECT (green flash + sound)</li>
+  <li>Tilt backward (toward face) &rarr; registers SKIP (red flash + sound)</li>
+  <li>Next word appears immediately after correct/skip</li>
+  <li>Timer counts down visibly during gameplay</li>
+  <li>Round ends when timer hits zero</li>
+  <li>Score screen displays in PORTRAIT with correct/skipped tallies</li>
+  <li>Word list on score screen shows each word with correct/skip status</li>
+  <li>"Play Again" button starts a new round with same settings</li>
+  <li>"Home" button returns to main menu</li>
+  <li>Words do NOT repeat within the same round</li>
+</ul>
+
+<h3 style="margin-top:16px;">Voice Commands (Up Top!! only)</h3>
+<ul class="checklist">
+  <li>Enable Voice toggle on setup screen</li>
+  <li>Microphone permission prompt appears (first time)</li>
+  <li>Listening pill/indicator appears during gameplay</li>
+  <li>Say "Correct" or "Yes" &rarr; registers as CORRECT</li>
+  <li>Say "Skip" or "Next" &rarr; registers as SKIP</li>
+  <li>Voice commands work alongside tilt (both active simultaneously)</li>
+  <li>Chrome-only warning appears on unsupported browsers</li>
+</ul>
+</div>
+
+<!-- SECTION 4 -->
+<h2 id="charades">4. Charades!! Mode Testing</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span></p>
+<p style="font-size:13px; margin-bottom:14px; color:#555;"><em>Only you see the word — act it out, no talking!</em></p>
+<ul class="checklist">
+  <li>Select "Charades!!" from mode selection screen</li>
+  <li>Choose a deck — deck grid shows normally</li>
+  <li>Tilt toggle is GREYED OUT (opacity 0.35, not clickable, unchecked)</li>
+  <li>Voice toggle is GREYED OUT (opacity 0.35, not clickable, unchecked)</li>
+  <li>In portrait (default): card displays vertically — large text facing you/audience</li>
+  <li>In landscape: card displays in standard landscape layout (same as Up Top)</li>
+  <li>Manual CORRECT button works</li>
+  <li>Manual SKIP button works</li>
+  <li>No landscape prompt — game starts directly (portrait is default)</li>
+  <li>Timer runs and round ends correctly</li>
+  <li>Score screen works same as Up Top mode</li>
+</ul>
+</div>
+
+<!-- SECTION 5 -->
+<h2 id="dontsayit">5. Don't Say It!! Mode Testing</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span></p>
+<p style="font-size:13px; margin-bottom:14px; color:#555;"><em>Hold phone facing you — describe the word to your team without saying the forbidden words!</em></p>
+<ul class="checklist">
+  <li>Select "Don't Say It!!" from mode selection screen</li>
+  <li>Deck selection is HIDDEN — this mode uses its own fixed mega-deck</li>
+  <li>Tilt toggle is GREYED OUT (not clickable)</li>
+  <li>Voice toggle is GREYED OUT (not clickable)</li>
+  <li>Game plays in PORTRAIT orientation</li>
+  <li>Word card shows the TARGET word prominently</li>
+  <li>FORBIDDEN words list displays below the target word (with ✕ markers)</li>
+  <li>Category hint is HIDDEN in this mode</li>
+  <li>Manual CORRECT button works (described successfully without forbidden words)</li>
+  <li>Manual SKIP button works (marked with "buzzer" button)</li>
+  <li>"Change Deck" button is HIDDEN during this mode</li>
+  <li>Timer runs and round ends correctly</li>
+  <li>Score screen works same as other modes</li>
+  <li>Font size for target word is slightly larger than other modes</li>
+</ul>
+</div>
+
+<!-- SECTION 6 -->
+<h2 id="tilt">6. Tilt & Sensor Testing</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span> &nbsp; (Up Top!! mode only)</p>
+<ul class="checklist">
+  <li>Tilt responds within ~250ms of completing the gesture (sustained hold required — intentional)</li>
+  <li>No accidental triggers while phone is held still at forehead</li>
+  <li>Both tilt directions (forward/backward) work reliably</li>
+  <li>Rapid consecutive tilts have a brief cooldown (~300ms, no double-fires)</li>
+  <li>After a tilt registers, phone must return to neutral before next tilt works</li>
+  <li>Tilt works in BOTH landscape orientations (phone can be held either way)</li>
+  <li>Tilt does NOT fire when phone is held portrait/vertical</li>
+  <li>Tilt does NOT fire during countdown screen</li>
+  <li>Tilt does NOT fire after round ends</li>
+  <li>Tilt does NOT fire in Charades or Don't Say It modes (toggles disabled)</li>
+</ul>
+</div>
+
+<div class="warning">
+<strong>Known &amp; accepted behavior:</strong> A slight asymmetry between forward/backward sensitivity is normal — one direction may feel marginally easier depending on hand angle. An off-centre resting hold can make one direction nearer its threshold. This is NOT a bug.
+</div>
+
+<div class="section-card">
+<h3>Platform-Specific Tilt Notes</h3>
+<table>
+<tr><th>Platform</th><th>Behavior</th></tr>
+<tr><td><span class="badge badge-ios">iOS</span></td><td>Motion permission dialog appears on first use. If denied, tilt won't work — user must re-enable in Settings > WhamBam > Motion & Fitness. Additionally, <code>screen.orientation.lock()</code> is NOT supported on iOS — app uses physical gyroscope check instead.</td></tr>
+<tr><td><span class="badge badge-android">Android</span></td><td>No runtime permission needed for accelerometer. Orientation lock works natively. Tilt should work immediately.</td></tr>
+</table>
+</div>
+
+<!-- SECTION 7 -->
+<h2 id="setup-flow">7. Game Setup Flow</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span></p>
+<ul class="checklist">
+  <li>Home screen loads with WhamBam branding and play button</li>
+  <li>Mode selection shows all 3 games as comic-style panels (Up Top / Charades / Don't Say It)</li>
+  <li>Tapping a mode panel navigates to setup screen with correct banner color and label</li>
+  <li>Setup screen banner shows mode name with correct tint (green/pink-purple/blue)</li>
+  <li>Tapping setup banner returns to mode selection</li>
+  <li>Deck selection shows grid with word count labels (hidden for Don't Say It)</li>
+  <li>Play mode selector: Classic (default) / Team</li>
+  <li>Selecting Team mode reveals team count (2–6) and team setup</li>
+  <li>Timer presets: 30s, 45s, 60s (default), 90s, 2 min, 3 min</li>
+  <li>Round presets: ∞ Free Play (default), 3, 5, 7 rounds</li>
+  <li>Team setup screen: add/remove teams, edit names, add players (optional)</li>
+  <li>Ready screen shows team name and "▶ START!" button</li>
+  <li>Tapping START triggers countdown: 3… 2… 1… LET'S GO!!! (yellow final frame)</li>
+  <li>"← Go back" pill buttons navigate backward through flow correctly</li>
+  <li>How-to guide appears on first play of each mode (dismissible)</li>
+</ul>
+</div>
+
+<!-- SECTION 8 -->
+<h2 id="permissions">8. Device Permissions</h2>
+<div class="section-card">
+<h3>iOS <span class="badge badge-ios">iOS</span></h3>
+<ul class="checklist">
+  <li>Motion & Orientation permission dialog appears before first Up Top!! game</li>
+  <li>Accepting permission &rarr; tilt works immediately</li>
+  <li>Denying permission &rarr; game still playable via manual buttons</li>
+  <li>After denying: re-granting in iOS Settings restores tilt on next launch</li>
+  <li>Microphone permission requested only if Voice toggle is enabled (Up Top!! mode)</li>
+  <li>Denying microphone &rarr; voice won't work but tilt and buttons still function</li>
+</ul>
+
+<h3 style="margin-top:16px;">Android <span class="badge badge-android">Android</span></h3>
+<ul class="checklist">
+  <li>No special permission needed for accelerometer/gyroscope</li>
+  <li>Microphone permission requested only if Voice toggle is enabled</li>
+  <li>App works correctly if microphone permission is denied (voice just won't work)</li>
+</ul>
+</div>
+
+<!-- SECTION 9 -->
+<h2 id="orientation">9. Orientation & Layout</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span></p>
+<ul class="checklist">
+  <li>Home / Mode Select / Setup / Teams / Score screens display in PORTRAIT</li>
+  <li>Up Top!! gameplay operates in LANDSCAPE</li>
+  <li>Charades gameplay defaults to PORTRAIT (can also work in landscape)</li>
+  <li>Don't Say It!! gameplay operates in PORTRAIT</li>
+  <li>Up Top!! shows landscape prompt before game starts ("rotate your phone")</li>
+  <li>Score screen shows "rotate to portrait" overlay if held in landscape</li>
+  <li>No content gets cut off by notch / Dynamic Island / camera punch-hole</li>
+  <li>Safe area insets respected on all screens</li>
+  <li>Fullscreen button hidden during gameplay and countdown</li>
+  <li>Layout doesn't glitch when rapidly rotating the device</li>
+</ul>
+
+<h3 style="margin-top:16px;">Platform-Specific</h3>
+<table>
+<tr><th>Platform</th><th>Note</th></tr>
+<tr><td><span class="badge badge-ios">iOS</span></td><td>Orientation lock is NOT supported in WKWebView. App relies on physical device orientation detection. Verify landscape is detected properly in Up Top mode.</td></tr>
+<tr><td><span class="badge badge-android">Android</span></td><td>Orientation lock works natively. Verify screens lock to correct orientation per mode.</td></tr>
+</table>
+</div>
+
+<!-- SECTION 10 -->
+<h2 id="audio">10. Audio & SFX</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-med">Priority: MEDIUM</span></p>
+<ul class="checklist">
+  <li>CORRECT sound plays on successful tilt/tap (all modes)</li>
+  <li>SKIP sound plays on skip tilt/tap (all modes)</li>
+  <li>Tap/UI sound plays on button presses throughout the app</li>
+  <li>Countdown beeps play for 3-2-1</li>
+  <li>Round-end buzzer plays when timer expires</li>
+  <li>Voice command acknowledgement beep plays (Up Top!! with voice enabled)</li>
+  <li>No audio delay or stutter during rapid tilts/taps</li>
+  <li>Audio does NOT play when app is backgrounded</li>
+  <li>Audio respects device silent/mute switch (iOS) / Do Not Disturb (Android)</li>
+  <li>Audio works with Bluetooth headphones connected</li>
+  <li>Volume is appropriate (not too loud on max, audible on mid)</li>
+</ul>
+</div>
+
+<!-- SECTION 11 -->
+<h2 id="auth">11. Authentication & Access</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-med">Priority: MEDIUM</span></p>
+<ul class="checklist">
+  <li>Sign-up tab: password under 8 characters &rarr; shows error, blocks submission</li>
+  <li>Sign-up tab: "Forgot password" link is NOT visible</li>
+  <li>Sign-in tab: "Forgot password" link IS visible and functional</li>
+  <li>Sign-up with valid email + password (8+ chars) &rarr; account created</li>
+  <li>Sign-in with valid credentials &rarr; success, returns to app</li>
+  <li>Sign-in with wrong password &rarr; clear error message</li>
+  <li>Sign-out &rarr; returns to logged-out state</li>
+  <li>Tab switching (Sign In / Sign Up) is smooth, no UI glitches</li>
+  <li>Free decks accessible without any login</li>
+  <li>Premium/locked decks show lock indicator</li>
+  <li>Purchasing/unlocking a deck &rarr; deck becomes playable immediately</li>
+  <li>Access persists after closing and reopening the app</li>
+</ul>
+</div>
+
+<!-- SECTION 12 -->
+<h2 id="achievements">12. Achievements & Progress</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-low">Priority: LOW</span></p>
+<ul class="checklist">
+  <li>Complete a round with 5+ correct and 0 skips &rarr; "Perfect Round" achievement toast appears</li>
+  <li>Achievement persists after closing and reopening the app</li>
+  <li>Achievement does NOT re-trigger on subsequent perfect rounds (already unlocked)</li>
+  <li>Game history / resume: closing app mid-game and returning shows resume prompt</li>
+</ul>
+</div>
+
+<!-- SECTION 13 -->
+<h2 id="edge">13. Edge Cases & Stability</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;"><span class="badge badge-both">iOS & Android</span> &nbsp; <span class="priority-high">Priority: HIGH</span></p>
+<ul class="checklist">
+  <li>Background the app mid-game &rarr; return: app resumes or resets cleanly (no crash)</li>
+  <li>Receive a phone call during gameplay &rarr; return: app recovers</li>
+  <li>Notification banner during gameplay &rarr; does not interfere with tilt/buttons</li>
+  <li>Lock screen during game &rarr; unlock: app still functional</li>
+  <li>Play 5+ consecutive rounds &rarr; no slowdown, memory leaks, or crashes</li>
+  <li>Rapidly tap buttons during countdown &rarr; no broken state</li>
+  <li>Kill app and reopen &rarr; returns to Home screen cleanly</li>
+  <li>No internet connection &rarr; app still functional (offline-first game)</li>
+  <li>Low battery / Low Power Mode &rarr; tilt still works (especially iOS)</li>
+  <li>Switch between all 3 game modes in rapid succession &rarr; no stuck state</li>
+  <li>Play all 3 modes in one session without restarting &rarr; no cross-mode bugs</li>
+  <li>Team mode: complete full multi-round game with 3+ teams &rarr; leaderboard correct</li>
+</ul>
+</div>
+
+<!-- SECTION 14 -->
+<h2 id="devices">14. Target Devices</h2>
+<div class="section-card">
+<div class="two-col">
+<div>
+<h3>iOS <span class="badge badge-ios">iOS</span></h3>
+<table>
+<tr><th>Priority</th><th>Device</th><th>Reason</th></tr>
+<tr><td class="priority-high">High</td><td>iPhone SE (3rd gen)</td><td>Smallest screen</td></tr>
+<tr><td class="priority-high">High</td><td>iPhone 15/16 Pro</td><td>Dynamic Island</td></tr>
+<tr><td class="priority-med">Medium</td><td>iPhone 12/13</td><td>Notch, common</td></tr>
+<tr><td class="priority-med">Medium</td><td>iPhone XR/11</td><td>Older LCD notch</td></tr>
+<tr><td class="priority-low">Low</td><td>iPad (any)</td><td>Tablet layout</td></tr>
+</table>
+</div>
+<div>
+<h3>Android <span class="badge badge-android">Android</span></h3>
+<table>
+<tr><th>Priority</th><th>Device</th><th>Reason</th></tr>
+<tr><td class="priority-high">High</td><td>Samsung Galaxy S23/S24</td><td>Popular flagship</td></tr>
+<tr><td class="priority-high">High</td><td>Google Pixel 7/8</td><td>Stock Android</td></tr>
+<tr><td class="priority-med">Medium</td><td>Samsung Galaxy A54</td><td>Mid-range, common</td></tr>
+<tr><td class="priority-med">Medium</td><td>OnePlus / Xiaomi</td><td>Alt OEM sensors</td></tr>
+<tr><td class="priority-low">Low</td><td>Samsung tablet</td><td>Tablet layout</td></tr>
+</table>
+</div>
+</div>
+</div>
+
+<div class="note">
+<strong>OS Versions to cover:</strong><br>
+iOS: 16, 17, 18+ &nbsp;&nbsp;|&nbsp;&nbsp; Android: 8.0 (Oreo) through 15
+</div>
+
+<!-- SECTION 15 -->
+<h2 id="reporting">15. Bug Reporting Guidelines</h2>
+<div class="section-card">
+<p style="font-size:14px; margin-bottom:12px;">When reporting a bug, include the following:</p>
+
+<table>
+<tr><th style="width:30%">Field</th><th>Description</th></tr>
+<tr><td><strong>Device & OS</strong></td><td>e.g., iPhone 15 Pro, iOS 18.1 / Samsung Galaxy S24, Android 14</td></tr>
+<tr><td><strong>App Version</strong></td><td>Shown in TestFlight or About section</td></tr>
+<tr><td><strong>Game Mode</strong></td><td>Up Top!! / Charades!! / Don't Say It!!</td></tr>
+<tr><td><strong>Play Mode</strong></td><td>Classic / Team (and how many teams)</td></tr>
+<tr><td><strong>Steps to Reproduce</strong></td><td>Numbered steps, starting from Home screen</td></tr>
+<tr><td><strong>Expected Result</strong></td><td>What should happen</td></tr>
+<tr><td><strong>Actual Result</strong></td><td>What actually happened</td></tr>
+<tr><td><strong>Frequency</strong></td><td>Always / Sometimes / Once</td></tr>
+<tr><td><strong>Screenshot / Video</strong></td><td>Attach screen recording if possible</td></tr>
+<tr><td><strong>Sensor Debug</strong></td><td>For tilt issues: enable debug (6 taps top-right on Home), screenshot the overlay values</td></tr>
+</table>
+
+<h3 style="margin-top:20px;">Severity Levels</h3>
+<table>
+<tr><th>Level</th><th>Definition</th><th>Example</th></tr>
+<tr><td class="priority-high">Critical</td><td>App crashes or core gameplay broken</td><td>Tilt doesn't work at all; app crashes on launch; game freezes</td></tr>
+<tr><td class="priority-high">High</td><td>Major feature unusable</td><td>Score screen shows wrong results; a game mode won't start; forbidden words don't display</td></tr>
+<tr><td class="priority-med">Medium</td><td>Feature works but with issues</td><td>Tilt occasionally double-fires; layout overlap on one device; audio delayed</td></tr>
+<tr><td class="priority-low">Low</td><td>Minor polish / cosmetic</td><td>Slight animation stutter; text truncated on small screen; color inconsistency</td></tr>
+</table>
+</div>
+
+<div style="margin-top: 48px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center; font-size: 12px; color: #999;">
+WhamBam Games &nbsp;|&nbsp; Manual Testing Guide v1.1 &nbsp;|&nbsp; August 2026<br>
+Confidential &mdash; For internal QA use only
+</div>
+
+</body>
+</html>
