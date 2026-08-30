@@ -924,6 +924,8 @@ body::after{content:'';position:fixed;inset:0;
 .setup-mode-banner::before{content:'';position:absolute;inset:-40%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.1) 0deg 6deg,transparent 6deg 16deg);pointer-events:none}
 .setup-mode-banner:active{transform:scale(.97)}
 .smb-lbl{position:relative;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.8)}
+.setup-blink{font-size:15px;letter-spacing:2.5px;color:#fff;text-shadow:0 0 10px rgba(255,255,255,.6),0 1px 3px rgba(0,0,0,.5);animation:setupBlink 1.2s ease-in-out infinite}
+@keyframes setupBlink{0%,100%{opacity:1;text-shadow:0 0 10px rgba(255,255,255,.6),0 1px 3px rgba(0,0,0,.5)}50%{opacity:.5;text-shadow:0 0 4px rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.5)}}
 .smb-name{position:relative;font-size:27px;font-weight:900;line-height:1.1;margin-top:3px;color:#FFD60A;font-family:'Nunito',sans-serif;text-shadow:2.5px 2.5px 0 rgba(10,5,0,.85),-1px -1px 0 rgba(10,5,0,.85),1px -1px 0 rgba(10,5,0,.85),-1px 1px 0 rgba(10,5,0,.85)}
 .smb-hint{position:relative;margin-top:9px;background:rgba(255,248,228,.96);color:#231A05;font-size:12px;font-weight:700;line-height:1.35;padding:8px 11px;border-radius:10px;border:2px solid rgba(10,5,0,.7);box-shadow:2px 2px 0 rgba(0,0,0,.3)}
 .smb-change{position:relative;margin-top:10px;font-size:10.5px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,.92)}
@@ -1242,7 +1244,7 @@ body::after{content:'';position:fixed;inset:0;
   <button type="button" class="back-btn" onclick="goTo('screen-mode');SFX.tap()">Go back</button>
   <!-- Which game is being set up — big, centred, tap to change -->
   <div class="setup-mode-banner smb-headsup" id="setup-mode-banner" onclick="goTo('screen-mode');SFX.tap()">
-    <div class="smb-lbl">Setting up</div>
+    <div class="smb-lbl setup-blink"><b>SET UP GAME</b></div>
     <div class="smb-name" id="setup-mode-chip">🙆 UP TOP!!</div>
     <div class="smb-hint" id="style-hint">Phone on forehead — others give verbal clues</div>
     <div class="smb-change">CHANGE GAME ▸</div>
@@ -4205,6 +4207,21 @@ const XSOLLA = (() => {
 
   function _getSB(){ return getSharedSB(); }
 
+  // PayStation needs a buyer country to build its billing-method list. Send the one
+  // the browser reports; the server falls back to US and PayStation lets the buyer
+  // change it, so a wrong guess is a prefilled field, never a dead checkout.
+  function _detectCountry(){
+    try{
+      const langs = [navigator.language].concat(navigator.languages || []);
+      for(const l of langs){
+        if(!l) continue;
+        const r = new Intl.Locale(l).maximize().region;
+        if(r && /^[A-Z]{2}$/.test(r)) return r;
+      }
+    }catch(e){}
+    return null;
+  }
+
   async function buy(productId, onSuccess){
     const sb = _getSB();
     if(!sb){ showToast('Payment unavailable'); return; }
@@ -4223,7 +4240,7 @@ const XSOLLA = (() => {
       const resp = await fetch(TOKEN_URL, {
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
-        body: JSON.stringify({ product_id: productId })
+        body: JSON.stringify({ product_id: productId, country: _detectCountry() })
       });
       if(!resp.ok) throw new Error(await resp.text());
       const respData = await resp.json();

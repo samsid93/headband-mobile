@@ -31,48 +31,108 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: cors })
     }
 
-    const { product_id } = await req.json()
+    const { product_id, country } = await req.json()
     const product = PRODUCTS[product_id]
     if (!product) {
       return new Response('Unknown product', { status: 400, headers: cors })
     }
+
+    // PayStation resolves the billing-method list from the buyer's country. If it
+    // cannot resolve one it renders an empty list ("billing method is not available"),
+    // so always send a country and let the buyer correct it in the UI. A code Xsolla
+    // does not know is a hard 422, so the request below retries without it.
+    const buyerCountry = /^[A-Za-z]{2}$/.test(country ?? '')
+      ? String(country).toUpperCase()
+      : 'US'
 
     // Fetch display name for PayStation UI
     const { data: profile } = await sb.from('profiles')
       .select('display_name').eq('id', user.id).maybeSingle()
     const displayName = profile?.display_name || user.email?.split('@')[0] || 'Player'
 
-    const tokenPayload = {
-      user: {
-        id:    { value: user.id },
-        email: { value: user.email },
-        name:  { value: displayName },
-      },
-      settings: {
-        project_id: parseInt(XSOLLA_PROJECT_ID),
-        return_url: 'https://whambam.games',
-        ui: { theme: 'dark' },
-        ...(SANDBOX ? { mode: 'sandbox' } : {}),
-      },
-      purchase: {
-        virtual_items: {
-          items: [{ sku: product.sku, amount: 1 }]
+    // v3 demands user.country.value OR an X-User-Ip header — with neither it 422s.
+    const clientIp = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim()
+
+    const buyer = (country: string | null) => ({
+      id:      { value: user.id },
+      email:   { value: user.email },
+      name:    { value: displayName },
+      ...(country
+        ? { country: { value: country, allow_modify: true } }
+        : {}),
+    })
+
+    // Store API v3. Xsolla support confirmed this is the endpoint to use: unlike the
+    // legacy merchant token API it registers a real order, without which PayStation
+    // renders the method list and then rejects every method with error 2002.
+    // Note v3 has no settings.mode — sandbox goes through the legacy API below.
+    const storeRequest = (country: string | null) => ({
+      url: `https://store.xsolla.com/api/v3/project/${XSOLLA_PROJECT_ID}/admin/payment/token`,
+      body: {
+        user: buyer(country),
+        settings: {
+          return_url: 'https://whambam.games',
+          currency: 'USD',
+          ui: { theme: 'dark' },
+        },
+        purchase: {
+          items: [{ sku: product.sku, quantity: 1 }]
         }
       }
-    }
+    })
+
+    // Legacy merchant API — kept only because it is the one that accepts
+    // settings.mode:'sandbox', which the setup doc's test flow relies on.
+    const legacyRequest = (country: string | null) => ({
+      url: `https://api.xsolla.com/merchant/v2/merchants/${XSOLLA_MERCHANT_ID}/token`,
+      body: {
+        user: buyer(country),
+        settings: {
+          project_id: parseInt(XSOLLA_PROJECT_ID),
+          return_url: 'https://whambam.games',
+          currency: 'USD',
+          ui: { theme: 'dark' },
+          mode: 'sandbox',
+        },
+        purchase: {
+          virtual_items: {
+            items: [{ sku: product.sku, amount: 1 }]
+          }
+        }
+      }
+    })
 
     const basicAuth = btoa(`${XSOLLA_MERCHANT_ID}:${XSOLLA_API_KEY}`)
-    const xResp = await fetch(
-      `https://api.xsolla.com/merchant/v2/merchants/${XSOLLA_MERCHANT_ID}/token`,
-      {
+    const mintToken = (country: string | null) => {
+      const { url, body } = SANDBOX ? legacyRequest(country) : storeRequest(country)
+      return fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${basicAuth}`,
           'Content-Type':  'application/json',
+          ...(clientIp ? { 'X-User-Ip': clientIp } : {}),
         },
-        body: JSON.stringify(tokenPayload)
+        body: JSON.stringify(body)
+      })
+    }
+
+    // Prefer Xsolla's own IP geolocation over the browser's locale: a locale says what
+    // language the buyer reads, not where they can pay from, and sending country wins
+    // over X-User-Ip — which is what pinned every checkout to the US. Country is the
+    // fallback for when the edge runtime hands us no client IP.
+    console.log('xsolla-token: clientIp', clientIp || '(none)', 'locale country', buyerCountry)
+    let xResp = await mintToken(clientIp ? null : buyerCountry)
+
+    // A country code Xsolla does not recognise is a 422 — on v3 an opaque PayStation
+    // exception naming no field. v3 also 422s when given neither country nor IP, so
+    // the retry always supplies a country rather than dropping both.
+    if (xResp.status === 422) {
+      const retryCountry = clientIp ? buyerCountry : (buyerCountry === 'US' ? null : 'US')
+      if (retryCountry) {
+        console.warn('Xsolla 422 — retrying with country', retryCountry, ':', await xResp.text())
+        xResp = await mintToken(retryCountry)
       }
-    )
+    }
 
     if (!xResp.ok) {
       const errText = await xResp.text()
@@ -85,7 +145,7 @@ serve(async (req) => {
 
     const xBody = await xResp.json()
     console.log('Xsolla token response body:', JSON.stringify(xBody))
-    const { token } = xBody
+    const { token, order_id } = xBody
     if (!token) {
       console.error('Xsolla returned no token:', JSON.stringify(xBody))
       return new Response(
@@ -94,7 +154,7 @@ serve(async (req) => {
       )
     }
     return new Response(
-      JSON.stringify({ token }),
+      JSON.stringify({ token, order_id }),
       { headers: { ...cors, 'Content-Type': 'application/json' } }
     )
 

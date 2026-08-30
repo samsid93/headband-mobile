@@ -14,16 +14,15 @@ serve(async (req) => {
 
   // Verify Xsolla signature: SHA1(body + project_secret_key)
   const authHeader  = req.headers.get('Authorization') ?? ''
-  const receivedSig = authHeader.replace('Signature ', '').trim()
+  const receivedSig = authHeader.replace('Signature ', '').trim().toLowerCase()
   const expectedSig = await sha1hex(body + XSOLLA_SECRET)
 
-  if (receivedSig !== expectedSig) {
-    console.error('Xsolla webhook: signature mismatch — received:', receivedSig, 'expected:', expectedSig)
-    // Log mismatch but allow through during testing — re-enable rejection after confirming secret
-    // return new Response(
-    //   JSON.stringify({ error: { code: 'INVALID_SIGNATURE', message: 'Signature mismatch' } }),
-    //   { status: 401, headers: { 'Content-Type': 'application/json' } }
-    // )
+  if (!timingSafeEqual(receivedSig, expectedSig)) {
+    console.error('Xsolla webhook: signature mismatch — received:', receivedSig)
+    return new Response(
+      JSON.stringify({ error: { code: 'INVALID_SIGNATURE', message: 'Signature mismatch' } }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    )
   }
 
   const data       = JSON.parse(body)
@@ -36,8 +35,16 @@ serve(async (req) => {
 
   // payment: real purchase completed
   if (notifType === 'payment') {
+    // Store API v3 orders and legacy merchant purchases nest the sku differently.
+    // Logged (purchase only — no user PII) so the real shape is on record.
+    console.log('Xsolla payment purchase:', JSON.stringify(data.purchase))
+
     const userId = data.user?.id as string | undefined
-    const sku    = data.purchase?.virtual_items?.items?.[0]?.sku as string | undefined
+    const sku    = (
+      data.purchase?.virtual_items?.items?.[0]?.sku ??
+      data.purchase?.items?.[0]?.sku ??
+      data.items?.[0]?.sku
+    ) as string | undefined
 
     if (!userId || !sku) {
       console.error('Xsolla webhook payment: missing user.id or sku', data)
@@ -72,6 +79,14 @@ serve(async (req) => {
   // All other notification types — acknowledge and ignore
   return new Response(null, { status: 204 })
 })
+
+// Constant-time compare so a rejected caller cannot learn the signature byte by byte.
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
 
 async function sha1hex(str: string): Promise<string> {
   const data   = new TextEncoder().encode(str)
