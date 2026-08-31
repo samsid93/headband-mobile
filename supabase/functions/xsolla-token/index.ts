@@ -104,7 +104,7 @@ serve(async (req) => {
 
     const basicAuth = btoa(`${XSOLLA_MERCHANT_ID}:${XSOLLA_API_KEY}`)
     const mintToken = (country: string | null) => {
-      const { url, body } = SANDBOX ? legacyRequest(country) : storeRequest(country)
+      const { url, body } = storeRequest(country)
       return fetch(url, {
         method: 'POST',
         headers: {
