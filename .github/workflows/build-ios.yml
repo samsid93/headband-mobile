@@ -49,6 +49,8 @@ jobs:
       APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
       APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
       APP_STORE_CONNECT_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+      DISTRIBUTION_CERT_P12: ${{ secrets.DISTRIBUTION_CERT_P12 }}
+      DISTRIBUTION_CERT_PASSWORD: ${{ secrets.DISTRIBUTION_CERT_PASSWORD }}
 
     steps:
       # submodules: false — mobile/flutter is recorded as a gitlink but the repo
@@ -72,12 +74,16 @@ jobs:
           echo "APP_STORE_CONNECT_KEY_ID     len=${#APP_STORE_CONNECT_KEY_ID}"
           echo "APP_STORE_CONNECT_ISSUER_ID  len=${#APP_STORE_CONNECT_ISSUER_ID}"
           echo "APP_STORE_CONNECT_KEY_P8     len=${#APP_STORE_CONNECT_KEY_P8}"
+          echo "DISTRIBUTION_CERT_P12       len=${#DISTRIBUTION_CERT_P12}"
+          echo "DISTRIBUTION_CERT_PASSWORD  len=${#DISTRIBUTION_CERT_PASSWORD}"
 
           MISSING=""
           [ -z "$APPLE_TEAM_ID" ]               && MISSING="$MISSING APPLE_TEAM_ID"
           [ -z "$APP_STORE_CONNECT_KEY_ID" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_ID"
           [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"
           [ -z "$APP_STORE_CONNECT_KEY_P8" ]    && MISSING="$MISSING APP_STORE_CONNECT_KEY_P8"
+          [ -z "$DISTRIBUTION_CERT_P12" ]       && MISSING="$MISSING DISTRIBUTION_CERT_P12"
+          [ -z "$DISTRIBUTION_CERT_PASSWORD" ]  && MISSING="$MISSING DISTRIBUTION_CERT_PASSWORD"
 
           if [ -n "$MISSING" ]; then
             echo ""
@@ -144,15 +150,6 @@ jobs:
       - name: Build and upload to TestFlight
         working-directory: capacitor-app/ios/App
         run: fastlane beta
-
-      - name: Upload distribution cert for reuse
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-cert-p12
-          path: ~/dist_cert.p12
-          retention-days: 1
-          if-no-files-found: ignore
 
       - name: Upload build logs
         if: always()

@@ -36,21 +36,20 @@ platform :ios do
       # the first would be rejected. GITHUB_RUN_NUMBER is monotonic per workflow.
       build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
 
-      # ── Phase 1: create cert via API, export .p12 for reuse ────────────────
-      # After this run succeeds, download the dist_cert.p12 artifact, base64 it,
-      # and add as DISTRIBUTION_CERT_P12 secret. Then switch this block to the
-      # import_certificate approach so the cert is reused and never recreated.
+      # ── Import distribution certificate from GitHub secret ──────────────
+      # The .p12 was exported from a previous CI run and stored as a
+      # base64-encoded secret. Importing it avoids `cert` creating a new
+      # certificate on every run and hitting Apple's 3-cert cap.
       kc_path = File.expand_path("~/Library/Keychains/#{KEYCHAIN_NAME}-db")
-      cert(
-        api_key: api_key,
+      p12_path = File.expand_path("~/dist_cert.p12")
+      File.write(p12_path, Base64.decode64(ENV.fetch("DISTRIBUTION_CERT_P12")))
+      import_certificate(
+        certificate_path: p12_path,
+        certificate_password: ENV.fetch("DISTRIBUTION_CERT_PASSWORD"),
         keychain_path: kc_path,
         keychain_password: keychain_password
       )
-
-      p12_export = File.expand_path("~/dist_cert.p12")
-      sh("security", "export", "-k", kc_path, "-t", "identities",
-         "-f", "pkcs12", "-P", "ci_export_2026", "-o", p12_export)
-      UI.message("Exported .p12 to #{p12_export} (password: ci_export_2026)")
+      File.delete(p12_path) if File.exist?(p12_path)
 
       sigh(api_key: api_key, app_identifier: APP_ID, platform: "ios", force: true)
       profile_name = lane_context[SharedValues::SIGH_NAME]
