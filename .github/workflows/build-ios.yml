@@ -145,6 +145,15 @@ jobs:
         working-directory: capacitor-app/ios/App
         run: fastlane beta
 
+      - name: Upload distribution cert for reuse
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-cert-p12
+          path: ~/dist_cert.p12
+          retention-days: 1
+          if-no-files-found: ignore
+
       - name: Upload build logs
         if: always()
         uses: actions/upload-artifact@v4
