@@ -4203,7 +4203,7 @@ const PAYMENTS = {
 ════════════════════════════════════════════════════ */
 const XSOLLA = (() => {
   const TOKEN_URL = SUPABASE_URL + '/functions/v1/xsolla-token';
-  const SANDBOX   = true;
+  const SANDBOX   = false;
 
   function _getSB(){ return getSharedSB(); }
 
@@ -4254,10 +4254,7 @@ const XSOLLA = (() => {
       return;
     }
 
-    // Embed PayStation in a fullscreen iframe overlay — inline, no new tab, no widget SDK
-    const baseUrl = SANDBOX
-      ? 'https://sandbox-secure.xsolla.com/paystation3/'
-      : 'https://secure.xsolla.com/paystation3/';
+    const baseUrl = 'https://secure.xsolla.com/paystation3/';
     _openPayFrame(baseUrl + '?access_token=' + token, productId, onSuccess);
   }
 
@@ -4268,15 +4265,10 @@ const XSOLLA = (() => {
     const wrap = document.createElement('div');
     wrap.id = 'xsolla-pay-overlay';
     wrap.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(10,5,0,0.92);display:flex;flex-direction:column;';
-    const testCardBanner = SANDBOX ? `
-      <div style="background:#FFD600;color:#000;padding:8px 14px;font-size:13px;font-weight:700;font-family:inherit;text-align:center;line-height:1.5;">
-        🧪 SANDBOX MODE — Use test card: <span style="font-family:monospace;letter-spacing:1px;">4111 1111 1111 1111</span><br>
-        Exp: any future date &nbsp;|&nbsp; CVV: any 3 digits &nbsp;|&nbsp; Cardholder: any name
-      </div>` : '';
     wrap.innerHTML = `
       <div style="display:flex;justify-content:flex-end;padding:10px 14px;">
         <button id="xsolla-pay-close" style="background:#FF2D55;color:#fff;border:none;border-radius:20px;padding:8px 18px;font-weight:800;font-family:inherit;font-size:15px;cursor:pointer;">✕ Close</button>
-      </div>${testCardBanner}
+      </div>
       <iframe src="${url}" allow="payment" style="flex:1;border:none;width:100%;background:#fff;border-radius:16px 16px 0 0;"></iframe>`;
     document.body.appendChild(wrap);
     document.getElementById('xsolla-pay-close').onclick = () => { _closePayFrame(); _resetPayBtn(); };
