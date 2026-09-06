@@ -25,21 +25,29 @@ enable_signup = true
 enable_confirmations = true
 # Keep sign-in secure on email change
 secure_email_change_enabled = true
+# Sign-in code (the app's "Email me a sign-in code" flow). The mail carries both
+# a link and {{ .Token }}; the app asks for the 6 digits so the player never has
+# to leave it. GoTrue's default send rate is one mail per minute per address —
+# the in-app "Send a new code" button matches that with a 60s cooldown.
+otp_length = 6
+otp_expiry = 3600
 
 # ---- Branded "Confirm signup" email ----
 [auth.email.template.confirmation]
 subject = "Confirm your Wham Bam account 🎉"
 content_path = "./templates/confirmation.html"
 
-# ---- (Optional) brand the other emails too. Create the HTML files first,
-#      then uncomment. ----
+# ---- Sign-in code email. MUST contain {{ .Token }} — the app's code-entry
+#      screen has nothing to type without it. ----
+[auth.email.template.magic_link]
+subject = "Your Wham Bam sign-in code 🔐"
+content_path = "./templates/magic_link.html"
+
+# ---- (Optional) brand the recovery mail too — templates/recovery.html already
+#      exists, this only needs uncommenting. ----
 # [auth.email.template.recovery]
 # subject = "Reset your Wham Bam password"
 # content_path = "./templates/recovery.html"
-#
-# [auth.email.template.magic_link]
-# subject = "Your Wham Bam sign-in link"
-# content_path = "./templates/magic_link.html"
 
 # ---- (Optional) Custom SMTP = full de-brand (sender becomes your domain).
 #      Fill host/port/user from your provider (Resend/Postmark/SES/...),

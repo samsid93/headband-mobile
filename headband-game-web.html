@@ -4348,6 +4348,8 @@ const HB_AUTH = (() => {
   let _user = null;
   let _lbTab = 'local'; // 'local' | 'global'
   let _recovery = false; // true while the player is setting a new password
+  let _otpEmail = null;  // address a login code was just sent to (code-entry view)
+  let _otpTimer = null;  // resend cooldown ticker
 
   function _client() {
     if (!_sb) _sb = getSharedSB();
@@ -4391,6 +4393,11 @@ const HB_AUTH = (() => {
       return 'That email already has an account. Try signing in instead.';
     if (m.includes('invalid login credentials'))
       return 'Email or password is incorrect.';
+    // OTP sign-in: shouldCreateUser:false on an address with no account
+    if (m.includes('signups not allowed for otp') || m.includes('signups not allowed'))
+      return 'No account found for that email. Use Sign Up to create one.';
+    if (m.includes('token has expired') || m.includes('invalid token') || m.includes('otp_expired'))
+      return 'That code is wrong or has expired. Request a new one.';
     if (m.includes('email not confirmed'))
       return 'Please confirm your email first — check your inbox for the link.';
     if (m.includes('password should be at least') || m.includes('password is too short'))
@@ -4461,6 +4468,8 @@ const HB_AUTH = (() => {
     const avatar = _user.user_metadata?.avatar_url;
     document.getElementById('auth-signed-out').style.display='none';
     document.getElementById('auth-signed-in').style.display='block';
+    const otp = document.getElementById('auth-otp');
+    if (otp) otp.style.display = 'none';
     const av = document.getElementById('auth-avatar');
     av.innerHTML = avatar ? `<img src="${avatar}" alt="">` : _avatarInitials(name);
     document.getElementById('auth-display-name').textContent = name;
@@ -4536,6 +4545,16 @@ const HB_AUTH = (() => {
         if (box) { box.textContent = ''; box.classList.remove('show'); }
       });
     });
+    // Code field: digits only, and Enter submits (the on-screen numeric keypad
+    // has no other obvious "go").
+    const otpInp = document.getElementById('auth-otp-code');
+    if (otpInp) {
+      otpInp.addEventListener('input', () => {
+        otpInp.value = otpInp.value.replace(/\D/g, '').slice(0, 6);
+        _otpMsg('ok', '');
+      });
+      otpInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); verifyLoginCode(); } });
+    }
   }
 
   function showAuthModal() {
@@ -4545,6 +4564,8 @@ const HB_AUTH = (() => {
     _clearMsg();
     modal.style.display = 'flex';
     document.getElementById('auth-reset').style.display = 'none';
+    if (_otpEmail && !_user) { _showOtpView(_otpEmail); return; }  // don't bury a half-typed code
+    document.getElementById('auth-otp').style.display = 'none';
     if (_user) _renderSignedIn(); else _renderSignedOut();
   }
   function hideAuthModal() {
@@ -4566,7 +4587,9 @@ const HB_AUTH = (() => {
       if (el) { el.value = ''; el.classList.remove('field-invalid'); }
     });
     document.getElementById('auth-reset').style.display = 'none';
+    document.getElementById('auth-otp').style.display = 'none';
     document.getElementById('auth-forgot').style.display = isUp ? 'none' : '';
+    document.getElementById('auth-code-btn').style.display = isUp ? 'none' : '';
     document.getElementById('auth-signed-out').style.display = 'block';
     document.getElementById('auth-signed-in').style.display = 'none';
     _clearMsg();
@@ -4593,8 +4616,19 @@ const HB_AUTH = (() => {
     btn.disabled = true; btn.textContent = '…';
     try {
       if (isUp) {
-        const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name || email.split('@')[0] } } });
+        const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name || email.split('@')[0] } } });
         if (error) throw error;
+        // Supabase does NOT return an error when the address is already
+        // registered — to block address enumeration it replies 200 with a decoy
+        // user whose `identities` array is EMPTY, and sends no mail. Without
+        // this check the player is told "check your email" for a confirmation
+        // that will never arrive. Send them to Sign In with the email kept.
+        if (Array.isArray(data?.user?.identities) && data.user.identities.length === 0) {
+          switchTab('in');
+          document.getElementById('auth-email').value = email;
+          _fieldErr('email', 'That email already has an account — sign in instead.');
+          return;
+        }
         _showOk('Check your email to confirm your account!');
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
@@ -4604,7 +4638,116 @@ const HB_AUTH = (() => {
     } catch (err) {
       _showErr(_authErrMsg(err));
     } finally {
-      btn.disabled = false; btn.textContent = isUp ? 'Create Account' : 'Sign In';
+      // Read the tab back rather than reusing isUp — the duplicate-email branch
+      // above may have flipped the form over to Sign In.
+      const stillUp = document.getElementById('auth-tab-up').classList.contains('auth-tab-active');
+      btn.disabled = false; btn.textContent = stillUp ? 'Create Account' : 'Sign In';
+    }
+  }
+
+  /* ---- Sign in with a 6-digit emailed code -------------------------------
+     A link in an email drags the player out to a browser and, in the native
+     app, into a different context entirely. A code they can copy back keeps
+     them in the app. Supabase sends BOTH in one mail: the magic-link template
+     must contain {{ .Token }} (see supabase/templates/magic_link.html) or the
+     mail arrives with a link only and this flow has nothing to type. */
+  function _otpMsg(id, msg) {
+    const err = document.getElementById('auth-otp-err');
+    const ok  = document.getElementById('auth-otp-ok');
+    if (!err || !ok) return;
+    err.style.display = 'none'; ok.style.display = 'none';
+    const el = id === 'err' ? err : ok;
+    if (msg) { el.textContent = msg; el.style.display = 'block'; }
+  }
+  function _otpCooldown(sec) {
+    const btn = document.getElementById('auth-otp-resend');
+    if (!btn) return;
+    clearInterval(_otpTimer);
+    let left = sec;
+    const tick = () => {
+      if (left <= 0) { clearInterval(_otpTimer); btn.disabled = false; btn.textContent = 'Send a new code'; return; }
+      btn.disabled = true; btn.textContent = `Send a new code (${left}s)`;
+      left--;
+    };
+    tick();
+    _otpTimer = setInterval(tick, 1000);
+  }
+  function _showOtpView(email) {
+    _otpEmail = email;
+    document.getElementById('auth-signed-out').style.display = 'none';
+    document.getElementById('auth-signed-in').style.display = 'none';
+    document.getElementById('auth-reset').style.display = 'none';
+    document.getElementById('auth-otp').style.display = 'block';
+    document.getElementById('auth-otp-to').textContent = email;
+    const code = document.getElementById('auth-otp-code');
+    code.value = '';
+    setTimeout(() => code.focus(), 50);
+  }
+  function cancelOtp() {
+    clearInterval(_otpTimer);
+    _otpEmail = null;
+    document.getElementById('auth-otp').style.display = 'none';
+    _otpMsg('ok', '');
+    switchTab('in');
+  }
+  async function _sendCode(email, btn, label) {
+    const sb = _client();
+    if (!sb) throw new Error('Auth service unavailable. Check your connection.');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      // shouldCreateUser:false — this is the SIGN IN tab, so an unknown address
+      // must not silently create a half-made account.
+      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: authRedirectTo() } });
+      if (error) throw error;
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = label; }
+    }
+  }
+  async function emailLoginCode() {
+    const email = document.getElementById('auth-email').value.trim();
+    _clearMsg();
+    if (!email) { _fieldErr('email', 'Enter your email address first.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { _fieldErr('email', 'That does not look like a valid email.'); return; }
+    const btn = document.getElementById('auth-code-btn');
+    try {
+      await _sendCode(email, btn, '✉️ Email me a sign-in code');
+      _showOtpView(email);
+      _otpMsg('ok', 'Code sent — check your inbox (and spam).');
+      _otpCooldown(60);
+    } catch (err) {
+      _showErr(_authErrMsg(err));
+    }
+  }
+  async function resendLoginCode() {
+    if (!_otpEmail) return;
+    const btn = document.getElementById('auth-otp-resend');
+    try {
+      await _sendCode(_otpEmail, btn, 'Send a new code');
+      _otpMsg('ok', 'New code sent.');
+      _otpCooldown(60);
+    } catch (err) {
+      _otpMsg('err', _authErrMsg(err));
+    }
+  }
+  async function verifyLoginCode() {
+    const sb = _client();
+    if (!sb) { _otpMsg('err', 'Auth service unavailable.'); return; }
+    const token = (document.getElementById('auth-otp-code').value || '').replace(/\D/g, '');
+    if (token.length !== 6) { _otpMsg('err', 'Enter the 6-digit code from the email.'); return; }
+    const btn = document.getElementById('auth-otp-btn');
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      // type:'email' covers the magic-link/OTP token GoTrue mails for sign-in.
+      const { data, error } = await sb.auth.verifyOtp({ email: _otpEmail, token, type: 'email' });
+      if (error) throw error;
+      clearInterval(_otpTimer);
+      document.getElementById('auth-otp').style.display = 'none';
+      _otpEmail = null;
+      if (data?.user) { _user = data.user; _renderSignedIn(); _updatePill(); applySubFromProfile(); }
+    } catch (err) {
+      _otpMsg('err', _authErrMsg(err));
+    } finally {
+      btn.disabled = false; btn.textContent = 'Sign in';
     }
   }
 
@@ -4640,6 +4783,7 @@ const HB_AUTH = (() => {
     modal.style.display = 'flex';
     document.getElementById('auth-signed-out').style.display = 'none';
     document.getElementById('auth-signed-in').style.display = 'none';
+    document.getElementById('auth-otp').style.display = 'none';
     document.getElementById('auth-reset').style.display = 'block';
     document.getElementById('auth-new-pass').value = '';
   }
@@ -4786,7 +4930,7 @@ const HB_AUTH = (() => {
   function getTab() { return _lbTab; }
   function getUser() { return _user; }
 
-  return { init, showAuthModal, hideAuthModal, switchTab, submit, googleSignIn, signOut, syncScore, fetchGlobalLB, switchLBTab, getTab, getUser, forgotPassword, submitNewPassword, _authErrMsg };
+  return { init, showAuthModal, hideAuthModal, switchTab, submit, googleSignIn, signOut, syncScore, fetchGlobalLB, switchLBTab, getTab, getUser, forgotPassword, submitNewPassword, emailLoginCode, resendLoginCode, verifyLoginCode, cancelOtp, _authErrMsg };
 })();
 
 // backdrop listener wired in init() after DOM is ready
@@ -5267,6 +5411,7 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       </div>
       <button id="auth-submit-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submit()">Sign In</button>
       <button type="button" id="auth-forgot" class="auth-forgot" onclick="HB_AUTH.forgotPassword()">Forgot password?</button>
+      <button type="button" id="auth-code-btn" class="btn btn-out" style="margin-top:10px" onclick="HB_AUTH.emailLoginCode()">✉️ Email me a sign-in code</button>
       <div class="auth-divider" id="auth-or"><span>or</span></div>
       <button class="btn auth-google-btn" onclick="HB_AUTH.googleSignIn()">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="vertical-align:middle;margin-right:8px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.705A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.705V4.963H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.295C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
@@ -5280,6 +5425,18 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       <div id="auth-display-name" style="font-size:18px;font-weight:800;color:var(--txt);margin-bottom:4px"></div>
       <div id="auth-user-email" style="font-size:12px;color:var(--mut);margin-bottom:20px"></div>
       <button class="btn btn-out" onclick="HB_AUTH.signOut()" style="margin-top:0">Sign Out</button>
+    </div>
+
+    <!-- one-time-code sign-in — no leaving the app for an inbox link -->
+    <div id="auth-otp" style="display:none">
+      <div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:6px">Enter your sign-in code</div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:14px">We emailed a 6-digit code to <b id="auth-otp-to" style="color:var(--txt)"></b>. Paste it below — no need to leave the app.</div>
+      <div id="auth-otp-err" class="auth-msg auth-msg-err" style="display:none"></div>
+      <div id="auth-otp-ok" class="auth-msg auth-msg-ok" style="display:none"></div>
+      <input id="auth-otp-code" class="inp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="123456" style="text-align:center;letter-spacing:6px;font-weight:800">
+      <button id="auth-otp-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.verifyLoginCode()">Sign in</button>
+      <button type="button" id="auth-otp-resend" class="btn btn-out" style="margin-top:10px" onclick="HB_AUTH.resendLoginCode()">Send a new code</button>
+      <button type="button" class="auth-forgot" onclick="HB_AUTH.cancelOtp()">← Use my password instead</button>
     </div>
 
     <!-- set-a-new-password view — shown after following the reset link -->
