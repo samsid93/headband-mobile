@@ -2282,7 +2282,11 @@ function resumeGame(){
   if(!s){showToast('That game has expired');return}
   SFX.tap();
   G.gameStyle=s.gameStyle; G.deck=s.deck; G.mode=s.mode;
-  G.timer=s.timer; G._resumeSec=s.secRemaining||0; G.maxRounds=s.maxRounds;
+  // F-112 — secRemaining is deliberately NOT restored. The interrupted round
+  // cannot be resumed mid-word (the word list position is not saved), so it is
+  // replayed from the start; handing that replay the leftover seconds gave the
+  // player a short round for no visible reason.
+  G.timer=s.timer; G._resumeSec=0; G.maxRounds=s.maxRounds;
   G.teamCount=s.teamCount; G.curTeam=s.curTeam;
   G.classicTotal=s.classicTotal; G.gameTurnCount=s.gameTurnCount; G.turnCount=s.turnCount||0;
   G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:t.players||[],playerIdx:t.playerIdx||0}));
@@ -2299,9 +2303,10 @@ function resumeGame(){
   if(typeof refreshDeckGrid==='function')refreshDeckGrid();
   if(G.deck&&G.deck!=='dontsayit'&&typeof selDeck==='function')selDeck(G.deck);
   showToast('▶ Game resumed');
-  // playAgain() advances the team and lands on Ready — exactly the state the
-  // player was in when they closed the tab.
-  playAgain();
+  // F-112 — playAgain() is reused to reach Ready, but its team advance must NOT
+  // run here: curTeam was saved as the team whose turn was interrupted, and
+  // advancing skipped their round entirely. keepTeam replays that turn.
+  playAgain(true);
 }
 function declineResume(){
   SFX.tap();
@@ -2332,6 +2337,10 @@ function updateTimerDisplay(){
 }
 // Long press — only one direction at a time; pressing the opposite button
 // while one is held kills the first interval before starting a new one.
+//
+// The 5-second step is intended, not a defect: it is what makes the 10s..600s
+// range crossable by hand. QA raised it as F-015 asking for 1-second steps —
+// declined by design. Do not "fix" it again.
 let _si=null,_stepDir=0;
 function startStep(d){
   if(_si){clearInterval(_si);_si=null;}
@@ -2380,19 +2389,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     ['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>{stopStep();setTimeout(()=>{usedTouch=false;},400);}));
   });
   updateTimerDisplay();
-  if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){
-    // Neither Android WebView nor iOS WKWebView exposes SpeechRecognition, so
-    // the native builds always land here. "Try Chrome" is nonsense inside the
-    // app — tell those players what actually works instead.
-    const vu=document.getElementById('voice-unsupported');
-    const hw=document.getElementById('home-browser-warn');
-    if(_nativeShell()){
-      if(vu)vu.textContent='⚠ Voice guessing isn’t available in the app yet — use tilt or the on-screen buttons.';
-      if(hw)hw.textContent='⚠ Voice guessing isn’t available in the app yet';
-    }
-    if(vu)vu.style.display='block';
-    if(hw)hw.style.display='block';
-  }
+  updateVoiceSupportNotice();
 
   // Voice toggle landscape hint
   const voiceToggle=document.getElementById('tog-voice');
@@ -2589,11 +2586,20 @@ function setupPermissions(){
   // Mic permission is requested lazily when beginRound() fires (which is itself a direct tap)
   if(G.voiceEnabled){
     if(!VOICE.isSupported()){
-      // Browser doesn't support it at all — show warning but don't block
+      // Not supported at all — show warning but don't block.
+      // M-042: the native apps used to ALWAYS land here, so "this browser" was
+      // the only thing an App Store player ever saw, even after granting the
+      // microphone. With the native speech plugin in place this branch now only
+      // means the device itself has no recogniser — say that instead.
       document.getElementById('mic-perm-block').style.display='block';
       const st=document.getElementById('mic-perm-status');
       const btn=document.getElementById('mic-perm-btn');
-      if(st){st.textContent='Voice not supported in this browser';st.className='perm-status err'}
+      if(st){
+        st.textContent=_nativeShell()
+          ? 'Voice guessing isn’t available on this device — use tilt or the on-screen buttons'
+          : 'Voice not supported in this browser';
+        st.className='perm-status err';
+      }
       if(btn)btn.style.display='none';
     } else if(!VOICE.permissionGranted){
       // Show the mic card but mark it as optional — Start is NOT disabled
@@ -2801,10 +2807,15 @@ function updateRotateStatus(){
   } else {
     el.innerHTML='↺ &nbsp;Rotate your phone to landscape first';
     el.className='rot-wait';
-    // WebView: portrait lock bypassed natively — no manual hint needed
-    if(hint)hint.style.display=_isWebView?'none':'flex';
-    if(!_isWebView){
-      const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+    // M-022 — the hint used to be hidden in ANY native shell, on the assumption
+    // that the wrapper locks orientation itself. That holds on Android. On iOS
+    // the system rotation lock overrides the app, so the player was told to
+    // rotate, could not rotate, and was shown nothing explaining why. Hide it
+    // only where it is genuinely redundant: the Android app.
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+    const hideHint=_isWebView && !isIOS;
+    if(hint)hint.style.display=hideHint?'none':'flex';
+    if(!hideHint){
       const iosSteps=document.getElementById('orient-steps-ios');
       const andSteps=document.getElementById('orient-steps-android');
       if(iosSteps)iosSteps.style.display=isIOS?'flex':'none';
@@ -3005,6 +3016,28 @@ function onMotion(e){
   }
 }
 
+/* The "voice won't work here" notice. Asked twice: once at DOMContentLoaded so
+   a plain browser without the Web Speech API is told immediately, and again
+   once VOICE.checkSupport() has heard back from the native plugin, which is the
+   only thing that can tell us a device has no speech recogniser installed. */
+function updateVoiceSupportNotice(){
+  const vu=document.getElementById('voice-unsupported');
+  const hw=document.getElementById('home-browser-warn');
+  const ok=VOICE.isSupported();
+  if(ok){
+    if(vu)vu.style.display='none';
+    if(hw)hw.style.display='none';
+    return;
+  }
+  // "Try Chrome" is nonsense inside the app — tell those players what works.
+  if(_nativeShell()){
+    if(vu)vu.textContent='⚠ Voice guessing isn’t available on this device — use tilt or the on-screen buttons.';
+    if(hw)hw.textContent='⚠ Voice guessing isn’t available on this device';
+  }
+  if(vu)vu.style.display='block';
+  if(hw)hw.style.display='block';
+}
+
 /* ═══════════════════════════
    VOICE ENGINE
 ═══════════════════════════ */
@@ -3013,8 +3046,21 @@ const VOICE=(()=>{
   let recog=null,active=false,dbTs=0;
   let _permGranted=false;
 
-  // ── isSupported was missing — this was crashing setupPermissions ──
-  function isSupported(){ return !!SR; }
+  /* M-010 → M-015 — voice never worked in the native apps because neither
+     WKWebView nor Android WebView exposes the Web Speech API: SR is undefined
+     there, so start() bailed and every spoken command was ignored. The native
+     builds now go through @capacitor-community/speech-recognition instead.
+     One module, two back-ends, same public surface — every call site below is
+     unchanged. */
+  const NSR=()=>PLATFORM.speech;
+  // Presence of the plugin is the optimistic answer; available() can downgrade
+  // it for a device with no recogniser installed. isSupported() has to stay
+  // synchronous (setupPermissions calls it), so it cannot await that probe.
+  let _nativeOK=!!NSR();
+  let _listeners=[];
+
+  function isSupported(){ return !!SR || _nativeOK; }
+  function usingNative(){ return _nativeOK && !!NSR(); }
 
   const CW=[
     'correct','correcto','correct one',
@@ -3099,21 +3145,83 @@ const VOICE=(()=>{
     // Small tap sound for feedback
     SFX.tap();
   }
+  /* Native listening. The plugin stops on its own after each utterance (and iOS
+     caps a single session at about a minute), so 'listeningState' is what keeps
+     it continuous — the same job recog.onend does for the browser back-end. */
+  async function _startNative(){
+    const P=NSR();
+    if(!P)return;
+    try{
+      await _stopNative();                       // never stack two sessions
+      _listeners.push(await P.addListener('partialResults',d=>{
+        if(!active||!d||!d.matches)return;
+        // Partials repeat and grow; process()'s own 700ms debounce is what
+        // stops "cor…", "correct" firing twice.
+        for(const m of d.matches){ if(m) process(m); }
+      }));
+      _listeners.push(await P.addListener('listeningState',d=>{
+        if(d&&d.status==='stopped'&&active){
+          setTimeout(()=>{ if(active) P.start(_OPTS).catch(()=>{}); },250);
+        }
+      }));
+      await P.start(_OPTS);
+      showMic('listening');
+    }catch(err){
+      console.warn('[VOICE] native start:',err&&err.message);
+      showMic('off');active=false;
+    }
+  }
+  const _OPTS={language:'en-US',maxResults:5,partialResults:true,popup:false};
+  async function _stopNative(){
+    const P=NSR();
+    if(!P)return;
+    for(const h of _listeners){ try{ await h.remove(); }catch(e){} }
+    _listeners=[];
+    try{ await P.stop(); }catch(e){}
+  }
+
   function start(){
     if(!isSupported()||active)return;
+    active=true;
+    if(usingNative()){ _startNative(); return; }
     recog=new SR();recog.continuous=true;recog.interimResults=false;recog.lang='en-US';recog.maxAlternatives=3;
     recog.onstart=()=>showMic('listening');
     recog.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)for(let a=0;a<e.results[i].length;a++)process(e.results[i][a].transcript)};
     recog.onerror=e=>{if(e.error==='not-allowed'){showMic('off');active=false;return}};
     recog.onend=()=>{if(active)setTimeout(()=>{try{if(active)recog.start()}catch(err){}},200)};
-    try{recog.start();active=true}catch(err){showMic('off')}
+    try{recog.start()}catch(err){active=false;showMic('off')}
   }
-  function stop(){active=false;showMic('off');if(recog){try{recog.abort()}catch(e){}}recog=null}
+  function stop(){
+    active=false;showMic('off');
+    if(usingNative()){ _stopNative(); return; }
+    if(recog){try{recog.abort()}catch(e){}}recog=null;
+  }
   async function requestPermission(){
+    // Native asks for speech recognition AND the microphone behind one alias;
+    // getUserMedia would only cover the microphone and iOS would still refuse.
+    if(usingNative()){
+      try{
+        const r=await NSR().requestPermissions();
+        _permGranted = r && r.speechRecognition==='granted';
+        if(!_permGranted)G.voiceEnabled=false;
+        return _permGranted;
+      }catch(e){ _permGranted=false;G.voiceEnabled=false;return false; }
+    }
     try{const s=await navigator.mediaDevices.getUserMedia({audio:true,video:false});s.getTracks().forEach(t=>t.stop());_permGranted=true;return true}
     catch(e){_permGranted=false;G.voiceEnabled=false;return false}
   }
   async function checkSupport(){
+    if(NSR()){
+      try{
+        const a=await NSR().available();
+        _nativeOK=!!(a&&a.available);            // no recogniser on device -> off
+        if(_nativeOK){
+          const p=await NSR().checkPermissions();
+          if(p&&p.speechRecognition==='granted')_permGranted=true;
+        }
+      }catch(e){ _nativeOK=false; }
+      return;
+    }
     if(navigator.permissions){try{const r=await navigator.permissions.query({name:'microphone'});if(r.state==='granted')_permGranted=true;r.onchange=()=>{_permGranted=r.state==='granted'}}catch(e){}}
   }
   return{start,stop,isSupported,requestPermission,checkSupport,get permissionGranted(){return _permGranted}};
@@ -3732,7 +3840,9 @@ function showScore(){
       } else {
         playBtn.textContent='▶ Play Again';
       }
-      playBtn.onclick=playAgain;
+      // Wrapped, not passed by reference: an onclick handler receives the Event
+      // as its first argument, which playAgain() would read as keepTeam.
+      playBtn.onclick=()=>playAgain();
     }
   }
 
@@ -3871,9 +3981,11 @@ function dismissTeamSplash(){
   if(f)f();
 }
 
-function playAgain(){
+// keepTeam — set only by resumeGame(), which restores the team whose turn was
+// interrupted and must replay it rather than skip past it (F-112).
+function playAgain(keepTeam){
   SFX.tap();
-  if(G.mode==='team')G.curTeam=(G.curTeam+1)%G.teamCount;
+  if(G.mode==='team'&&keepTeam!==true)G.curTeam=(G.curTeam+1)%G.teamCount;
   // Restore tilt/voice from user's setup selection (endRound sets G.tiltEnabled=false)
   const tiltTog=document.getElementById('tog-tilt');
   const voiceTog=document.getElementById('tog-voice');
@@ -3986,6 +4098,12 @@ const PLATFORM = {
   get browser(){
     return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.Browser : null;
   },
+  // Native speech. No WebView on either platform exposes the Web Speech API, so
+  // voice guessing in the app runs through this plugin instead
+  // (@capacitor-community/speech-recognition).
+  get speech(){
+    return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.SpeechRecognition : null;
+  },
   get app(){
     return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null;
   }
@@ -4007,6 +4125,31 @@ const AUTH_ORIGIN = 'https://whambam.games';
 function authRedirectTo(){
   return (PLATFORM.isNative ? AUTH_ORIGIN : window.location.origin) + '/';
 }
+
+/* L-002 / L-003 — an <a target="_blank"> is inert inside a WKWebView: there is
+   no second window to open into and Capacitor does not implement
+   createWebViewWith, so the tap is swallowed with no error and no navigation.
+   Terms and Privacy therefore did nothing in the iOS app while working fine on
+   the website. Route every such link through the in-app browser when running
+   natively. Delegated rather than wired per-anchor so the four legal links
+   (footer, cookie notice, and two in the auth modal) and any added later are
+   all covered by one handler.
+   The href is resolved against AUTH_ORIGIN, not location.href: the bundled app
+   runs from capacitor://localhost, and "terms.html" relative to THAT is a URL
+   no browser can open. */
+document.addEventListener('click', e => {
+  if(!PLATFORM.isNative) return;
+  const a = e.target && e.target.closest ? e.target.closest('a[target="_blank"]') : null;
+  if(!a) return;
+  const href = a.getAttribute('href');
+  if(!href || href === '#') return;
+  e.preventDefault();
+  let url;
+  try{ url = new URL(href, AUTH_ORIGIN + '/').href; }catch(_){ return; }
+  const b = PLATFORM.browser;
+  if(b) b.open({ url }).catch(()=>{ window.open(url, '_system'); });
+  else window.open(url, '_system');
+});
 
 /* ═══════════════════════════════════════════════════
    LOCAL SUBSCRIPTION GRANT
@@ -5219,7 +5362,7 @@ function showToast(msg){
 /* ═══════════════════════════
    INIT
 ═══════════════════════════ */
-VOICE.checkSupport();
+VOICE.checkSupport().then(updateVoiceSupportNotice).catch(()=>{});
 
 // Restore is offered on every platform (M-1) — only the explanatory note differs,
 // since web purchases are tied to the account rather than to the store.

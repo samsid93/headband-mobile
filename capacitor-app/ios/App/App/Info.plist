@@ -32,6 +32,11 @@
 	     hard crash on iOS, not a soft failure. -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Wham Bam listens for your team's guesses when voice mode is switched on.</string>
+	<!-- SFSpeechRecognizer is a SEPARATE consent from the microphone: the mic
+	     string alone lets the app record but still hard-crashes the moment
+	     speech recognition starts. Both are required for voice guessing. -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Wham Bam turns what your team shouts into "correct" or "skip" so nobody has to touch the phone mid-round.</string>
 	<!-- Skips the export-compliance prompt on every TestFlight upload. The app
 	     uses only standard HTTPS, which is exempt. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
