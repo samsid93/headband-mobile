@@ -767,7 +767,8 @@ body::after{content:'';position:fixed;inset:0;
 .unlock-title{font-size:24px;font-weight:900;color:var(--acc);margin-bottom:5px;font-family:'Nunito',sans-serif}
 .unlock-deck-name{font-size:16px;font-weight:700;color:var(--txt);margin-bottom:6px}
 .unlock-sub{font-size:13px;color:var(--mut);margin-bottom:26px}
-.unlock-options{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+/* Single column — the ad option was removed, premium is purchase-only. */
+.unlock-options{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:22px}
 .unlock-option{padding:22px 14px;background:rgba(255,255,255,.04);border:1.5px solid var(--bdr2);border-radius:var(--rM);cursor:pointer;transition:transform var(--dur-base) var(--ease-pop),background var(--dur-base),border-color var(--dur-base),box-shadow var(--dur-base);position:relative;overflow:hidden}
 .unlock-option:active{transform:scale(.97)}
 .unlock-option:hover{border-color:var(--acc);background:rgba(255,214,10,.08)}
@@ -1620,14 +1621,12 @@ body::after{content:'';position:fixed;inset:0;
     <div class="unlock-deck-name" id="unlock-deck-name">Bollywood Movies</div>
     <div class="unlock-sub" id="unlock-modal-sub">Choose how to unlock</div>
     <div class="unlock-price" id="unlock-price"></div>
+    <!-- Premium decks are a paid product: no ad option here. An ad buys words on
+         a FREE deck only (see #free-paywall-modal), never access to a premium
+         category. -->
     <div class="unlock-options" id="unlock-options-wrap">
-      <div class="unlock-option" id="unlock-opt-ad" onclick="selectUnlockMethod('ad')">
-        <div class="uo-icon" aria-hidden="true">📺</div>
-        <div class="uo-title" id="unlock-ad-label">Watch 30s Ad</div>
-        <div class="uo-sub" id="unlock-ad-sub">30 more words</div>
-      </div>
       <div class="unlock-option" id="unlock-opt-pay" onclick="selectUnlockMethod('pay')">
-        <div class="uo-icon" aria-hidden="true">💳</div>
+        <div class="uo-icon" id="unlock-pay-icon" aria-hidden="true">💳</div>
         <div class="uo-title" id="unlock-pay-label">$0.99 / year</div>
         <div class="uo-sub" id="unlock-pay-sub">Unlocks the full category</div>
       </div>
@@ -1656,9 +1655,9 @@ body::after{content:'';position:fixed;inset:0;
   <div class="fp-modal-wrap">
     <div class="fp-hero" aria-hidden="true">⚡</div>
     <div class="fp-title">Word Limit Reached</div>
-    <div class="fp-sub" id="fp-deck-info">You've used your 50 free words on this deck.<br>Watch an ad for 30 more, or subscribe.</div>
+    <div class="fp-sub" id="fp-deck-info">You've used your free words on this deck.<br>Watch an ad to keep playing, or subscribe.</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
-      <button class="btn btn-pur" onclick="freePaywallAd()">📺 Watch 30s Ad → 30 more words</button>
+      <button class="btn btn-pur" onclick="freePaywallAd()">📺 Watch 30s Ad → keep playing</button>
       <button class="btn btn-pri" onclick="freePaywallSub()">💳 $0.99 / year → full category</button>
     </div>
     <div class="fp-allaccess" onclick="allAccessUpgrade()">
@@ -2008,18 +2007,12 @@ const G={
 /* ═══════════════════════════
    NAV
 ═══════════════════════════ */
-function getDeckCntLabel(d){
-  if(G.allAccess) return d.words.length+' entries';
-  if(!d.premium){
-    const sub=getTmpPool(d.id,_subKey);
-    if(sub) return d.words.length+' entries';
-    return FREE_LIMIT+' free';
-  } else {
-    const psub=getTmpPool(d.id,_psubKey);
-    if(psub) return d.words.length+' entries';
-    return '';
-  }
-}
+/* Deck counts are never shown to players. Pool sizes and remaining-word tallies
+   are internal accounting only: quoting them turns a deck into a number to
+   haggle over and makes a full category look small. This helper is kept as the
+   single place a deck sub-label could come back, and it deliberately returns
+   nothing numeric. */
+function getDeckCntLabel(){ return ''; }
 let _screenWCTimer=0;
 function goTo(id){
   /* Content is rebuilt BEFORE the class swap, not after.
@@ -2116,10 +2109,20 @@ function selGameStyle(s){
   const tiltTog=document.getElementById('tog-tilt');
   const voiceTog=document.getElementById('tog-voice');
   const sensorsOn=s==='headsup';
+  /* On a device with no accelerometer the tilt row is removed from the layout
+     entirely rather than dimmed: a greyed-out switch still reads as "this
+     should work", which is what made Up Top look broken on a laptop. */
+  const tiltOK=tiltCapable();
+  if(tiltRow)tiltRow.style.display=tiltOK?'':'none';
   if(sensorsOn){
-    if(tiltRow){tiltRow.style.opacity='1';tiltRow.style.pointerEvents=''}
+    if(tiltRow&&tiltOK){tiltRow.style.opacity='1';tiltRow.style.pointerEvents=''}
     if(voiceRow){voiceRow.style.opacity='1';voiceRow.style.pointerEvents=''}
-    if(tiltTog)tiltTog.checked=true;
+    if(tiltTog)tiltTog.checked=tiltOK;
+    // Voice is the only hands-free control left without tilt, so it starts on —
+    // but only where the browser can actually listen. Where it cannot (desktop
+    // Safari has no SpeechRecognition), the on-screen buttons remain the way to
+    // play, which is already the documented fallback.
+    if(!tiltOK&&voiceTog&&VOICE.isSupported())voiceTog.checked=true;
   }else{
     if(tiltRow){tiltRow.style.opacity='.35';tiltRow.style.pointerEvents='none'}
     if(voiceRow){voiceRow.style.opacity='.35';voiceRow.style.pointerEvents='none'}
@@ -2292,7 +2295,11 @@ function resumeGame(){
   G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:t.players||[],playerIdx:t.playerIdx||0}));
   while(G.teams.length<G.teamCount)G.teams.push({name:'Team '+(G.teams.length+1),players:[],score:0});
   const st=s.settings||{};
-  G.skipDeduct=!!st.skipDeduct; G.voiceEnabled=!!st.voiceEnabled; G.tiltEnabled=!!st.tiltEnabled;
+  // tiltEnabled is clamped to what THIS device can do — the same account can
+  // save a game on a phone and resume it in a desktop browser, which would
+  // otherwise restore a tilt setting nothing can satisfy.
+  G.skipDeduct=!!st.skipDeduct; G.voiceEnabled=!!st.voiceEnabled;
+  G.tiltEnabled=!!st.tiltEnabled && tiltCapable();
   if(st.charadesOrientation)G.charadesOrientation=st.charadesOrientation;
   // Mirror the restored settings back into the setup controls, so a later
   // playAgain() (which reads the toggles) does not silently undo them.
@@ -2797,6 +2804,26 @@ function _nativeShell(){
       || !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : window.Capacitor.isNative));
 }
 const _isWebView=_nativeShell();
+
+/* Can this device actually produce a tilt?
+   Desktop and laptop browsers DEFINE DeviceMotionEvent but have no
+   accelerometer behind it, so Up Top offered a "Tilt controls" switch that can
+   never fire — the round just sat there. Only the WEB build is gated: the
+   native apps always run on a handheld, and a phone browser keeps tilt.
+   A handheld is identified by its INPUT profile rather than its user-agent,
+   which is far more durable than a device-name regex. A touchscreen laptop does
+   report a coarse pointer, but it also has a mouse, so `any-hover: hover` keeps
+   it on the desktop side — exactly where it belongs, since it has no sensor.
+   Computed once and cached: the answer cannot change during a session. */
+let _tiltCapable=null;
+function tiltCapable(){
+  if(_tiltCapable!==null)return _tiltCapable;
+  if(_nativeShell())return(_tiltCapable=true);
+  if(typeof DeviceMotionEvent==='undefined')return(_tiltCapable=false);
+  const mq=q=>!!(window.matchMedia&&window.matchMedia(q).matches);
+  return(_tiltCapable = mq('(any-pointer: coarse)') && mq('(any-hover: none)'));
+}
+
 function updateRotateStatus(){
   const el=document.getElementById('rotate-status');if(!el)return;
   const hint=document.getElementById('orient-lock-hint');
@@ -3052,15 +3079,23 @@ const VOICE=(()=>{
      builds now go through @capacitor-community/speech-recognition instead.
      One module, two back-ends, same public surface — every call site below is
      unchanged. */
-  const NSR=()=>PLATFORM.speech;
-  // Presence of the plugin is the optimistic answer; available() can downgrade
-  // it for a device with no recogniser installed. isSupported() has to stay
-  // synchronous (setupPermissions calls it), so it cannot await that probe.
-  let _nativeOK=!!NSR();
+  /* PLATFORM is a `const` declared AFTER this module, so touching it while this
+     IIFE is still evaluating throws "Cannot access 'PLATFORM' before
+     initialization" — which aborts the rest of the top-level script and leaves
+     PLATFORM, XSOLLA and PAYMENTS undefined. That is exactly what an eager
+     `let _nativeOK = !!NSR()` here did: it silently killed payments.
+     Every read of PLATFORM is therefore deferred to call time, and guarded. */
+  const NSR=()=>{ try{ return PLATFORM.speech; }catch(e){ return null; } };
+  // null = not probed yet. Presence of the plugin is the optimistic answer;
+  // available() can downgrade it for a device with no recogniser installed.
+  // isSupported() has to stay synchronous (setupPermissions calls it), so it
+  // cannot await that probe.
+  let _nativeOK=null;
   let _listeners=[];
 
-  function isSupported(){ return !!SR || _nativeOK; }
-  function usingNative(){ return _nativeOK && !!NSR(); }
+  function _nativeReady(){ if(_nativeOK===null)_nativeOK=!!NSR(); return _nativeOK; }
+  function isSupported(){ return !!SR || _nativeReady(); }
+  function usingNative(){ return _nativeReady() && !!NSR(); }
 
   const CW=[
     'correct','correcto','correct one',
@@ -3317,11 +3352,9 @@ function hasDeckAccess(d){
   if(isDeckOwned(d))return true;
   return !!(getTmpPool(d.id,_psubKey)||getTmpPool(d.id,_ptmpKey));
 }
-/* Words left on a premium deck that is playable but not owned. */
-function premWordsLeft(d){
-  const p=getTmpPool(d.id,_psubKey)||getTmpPool(d.id,_ptmpKey);
-  return p?p.rem:0;
-}
+/* premWordsLeft() removed with the "N words left" deck label. The remaining
+   count is still tracked in the pool and still gates play — it is simply never
+   rendered, so nothing needs to read it back out for display. */
 
 function recordWordUsed(deckId,count){
   if(G.wordPool==='allaccess'||!G.wordPool||count===0)return;
@@ -4367,12 +4400,30 @@ const XSOLLA = (() => {
 
   async function buy(productId, onSuccess){
     const sb = _getSB();
-    if(!sb){ showToast('Payment unavailable'); return; }
+    if(!sb){ showToast('Payment unavailable — sign-in service did not load'); _resetPayBtn(); return; }
 
-    const { data:{ session } } = await sb.auth.getSession();
+    // getSession() was awaited bare. Anything it throws — blocked storage, a
+    // corrupt stored session, no network — rejected buy() as an unhandled
+    // promise, so the button produced NOTHING: no toast, no overlay, no error a
+    // player could report. Every exit from here now says something.
+    let session;
+    try{
+      const { data, error } = await sb.auth.getSession();
+      if(error) throw error;
+      session = data && data.session;
+    }catch(e){
+      console.error('[XSOLLA] session lookup failed:', e);
+      showToast('Could not check your sign-in — try again');
+      _resetPayBtn();
+      return;
+    }
     if(!session){
       showToast('Sign in first to purchase');
-      HB_AUTH.showAuthModal();
+      _resetPayBtn();
+      if(typeof HB_AUTH !== 'undefined' && HB_AUTH.showAuthModal){
+        HB_AUTH.showAuthModal();
+        if(HB_AUTH.switchTab) HB_AUTH.switchTab('in');
+      }
       return;
     }
 
@@ -4385,14 +4436,27 @@ const XSOLLA = (() => {
         headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
         body: JSON.stringify({ product_id: productId, country: _detectCountry() })
       });
-      if(!resp.ok) throw new Error(await resp.text());
+      if(!resp.ok) throw new Error('HTTP ' + resp.status + ' — ' + (await resp.text()).slice(0,200));
       const respData = await resp.json();
       console.log('[XSOLLA] token response:', respData);
       token = respData.token;
       if(!token) throw new Error('No payment token in response: ' + JSON.stringify(respData));
     } catch(e){
+      // One generic toast for every cause made this undiagnosable from a bug
+      // report. The distinct cases are worth telling apart: an expired session
+      // is the player's to fix, a 5xx is ours.
       console.error('[XSOLLA] token error:',e);
-      showToast('Payment unavailable — try again later');
+      const m = (e && e.message) || '';
+      if(/HTTP 401|HTTP 403/.test(m)){
+        showToast('Your sign-in expired — sign in again');
+        if(typeof HB_AUTH !== 'undefined' && HB_AUTH.showAuthModal) HB_AUTH.showAuthModal();
+      } else if(/Failed to fetch|NetworkError|Network request failed/i.test(m)){
+        showToast('No connection — check your internet');
+      } else if(/HTTP 5\d\d/.test(m)){
+        showToast('Payment service is down — try again shortly');
+      } else {
+        showToast('Payment unavailable — try again later');
+      }
       _resetPayBtn();
       return;
     }
@@ -4448,8 +4512,8 @@ const XSOLLA = (() => {
   }
 
   function _resetPayBtn(){
-    const btn = document.getElementById('unlock-opt-pay');
-    if(btn){ btn.style.opacity='1'; btn.innerHTML=`<div class="uo-icon" aria-hidden="true">💳</div><div class="uo-title">$0.99 / year</div><div class="uo-sub">Unlocks the full category</div>`; }
+    // Delegates rather than rewriting innerHTML — see setPayBtnState().
+    if(typeof resetPayBtnState==='function') resetPayBtnState();
   }
 
   return { buy };
@@ -5152,12 +5216,16 @@ function showUnlockModal(deckId){
   G.pendingUnlockDeck=deckId;
   const deck=DECKS.find(d=>d.id===deckId);
   if(!deck)return;
-  document.getElementById('unlock-deck-name').textContent=deck.name+' '+deck.icon;
-  document.getElementById('unlock-ad-label').textContent=`Watch ${AD_SECS}s Ad`;
-  document.getElementById('unlock-ad-sub').textContent=`${AD_WORD_BATCH} more words`;
-  document.getElementById('unlock-pay-label').textContent='$0.99 / year';
-  document.getElementById('unlock-pay-sub').textContent='Unlocks the full category';
-  document.getElementById('unlock-price').textContent=`${deck.words.length} available words`;
+  // Every write here is null-guarded on purpose: this function's job is to OPEN
+  // the modal, and it must never be stopped by a missing label. A throw here
+  // used to skip goTo() entirely, leaving a dead-looking deck tile.
+  const set=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  set('unlock-deck-name', deck.name+' '+deck.icon);
+  // Resets the tile in case a previous attempt left it on "Opening payment…".
+  resetPayBtnState();
+  // No word count is shown to players anywhere — the pool size is an internal
+  // number, and quoting it invites "is that a lot?" instead of selling the deck.
+  set('unlock-price','');
   goTo('screen-unlock');
 }
 
@@ -5167,7 +5235,7 @@ function showFreePaywall(deckId){
   const modal=document.getElementById('free-paywall-modal');
   if(!modal)return;
   const info=document.getElementById('fp-deck-info');
-  if(info&&deck)info.textContent=`You've used your ${FREE_LIMIT} free words on ${deck.name}. Watch an ad for ${AD_WORD_BATCH} more, or subscribe.`;
+  if(info&&deck)info.textContent=`You've used your free words on ${deck.name}. Watch an ad to keep playing, or subscribe.`;
   modal.style.display='flex';
   SFX.tap();
 }
@@ -5179,7 +5247,7 @@ function freePaywallAd(){
   document.getElementById('free-paywall-modal').style.display='none';
   startAdWatch(AD_SECS,()=>{
     setTmpPool(G.pendingUnlockDeck,_tmpKey,AD_WORD_BATCH,AD_GRANT_MS);
-    showToast(`✅ ${AD_WORD_BATCH} more words unlocked!`);
+    showToast(`✅ Ad watched — keep playing!`);
     setTimeout(()=>beginRound(),800);
   });
 }
@@ -5200,16 +5268,33 @@ function allAccessUpgrade(){
 
 function selectUnlockMethod(method){
   SFX.tap();
+  // 'ad' is deliberately not handled: a premium deck cannot be unlocked by
+  // watching an ad. Ads grant words on free decks only.
   if(method==='pay') unlockDeckWithPayment();
-  else if(method==='ad') startAdWatch(AD_SECS,()=>completePremiumAdUnlock());
   else if(method==='allaccess') unlockAllAccess();
 }
 
-function unlockDeckWithPayment(){
+/* The pay tile carries LABELLED children (#unlock-pay-icon / -label / -sub).
+   Never replace its innerHTML: doing so deleted those ids, and the next
+   showUnlockModal() then threw on a null before it could call goTo(), so the
+   unlock modal silently stopped opening for every deck after the first payment
+   attempt. Write text into the existing nodes instead. */
+function setPayBtnState(icon,title,sub,busy){
   const btn=document.getElementById('unlock-opt-pay');
-  if(btn){btn.style.opacity='0.7';btn.innerHTML=`<div class="uo-icon" aria-hidden="true">⏳</div><div class="uo-title">Opening payment…</div><div class="uo-sub">Please wait</div>`;}
+  if(btn)btn.style.opacity=busy?'0.7':'1';
+  const i=document.getElementById('unlock-pay-icon');
+  const t=document.getElementById('unlock-pay-label');
+  const s=document.getElementById('unlock-pay-sub');
+  if(i)i.textContent=icon;
+  if(t)t.textContent=title;
+  if(s)s.textContent=sub;
+}
+function resetPayBtnState(){ setPayBtnState('💳','$0.99 / year','Unlocks the full category',false); }
+
+function unlockDeckWithPayment(){
+  setPayBtnState('⏳','Opening payment…','Please wait',true);
   PAYMENTS.buy('standard_yearly', ()=>{
-    if(btn){btn.style.opacity='1';btn.innerHTML=`<div class="uo-icon" aria-hidden="true">💳</div><div class="uo-title">$0.99 / year</div><div class="uo-sub">Unlocks the full category</div>`;}
+    resetPayBtnState();
     if(!G.unlockedDecks.includes(G.pendingUnlockDeck)){G.unlockedDecks.push(G.pendingUnlockDeck);localStorage.setItem('hb_unlocked',JSON.stringify(G.unlockedDecks));}
     // Paying for a premium deck must also grant its word pool, or the deck
     // reads as unlocked but still hits the limit gate on the next round.
@@ -5229,15 +5314,10 @@ function unlockAllAccess(){
   });
 }
 
-function completePremiumAdUnlock(){
-  // Ad grants words only — deliberately NOT added to G.unlockedDecks, so the
-  // deck stays in the premium carousel instead of posing as purchased.
-  setTmpPool(G.pendingUnlockDeck,_ptmpKey,AD_WORD_BATCH,AD_GRANT_MS);
-  refreshDeckGrid();
-  const deck=DECKS.find(d=>d.id===G.pendingUnlockDeck);
-  showToast(`🎉 ${deck?deck.name:''} — ${AD_WORD_BATCH} more words!`);
-  setTimeout(()=>{goTo('screen-setup');selDeck(G.pendingUnlockDeck)},1200);
-}
+/* completePremiumAdUnlock() was removed with the premium ad option — premium
+   decks are purchase-only. The _ptmpKey READ paths stay (hasDeckAccess,
+   wordsLeftFor, recordWordUsed) so anyone still holding an ad grant from an
+   earlier build keeps playing it out; nothing issues a new one. */
 
 function startAdWatch(adSecs,onComplete){
   _adOnComplete=onComplete||null;
@@ -5258,7 +5338,7 @@ function startAdWatch(adSecs,onComplete){
   if(cancelBtn)cancelBtn.classList.remove('visible');
   if(statusTitle)statusTitle.textContent='📺 Watching Ad…';
   if(statusSub)statusSub.textContent='Please keep this screen open';
-  if(adNote)adNote.textContent=`${AD_WORD_BATCH} more words unlock after this ad`;
+  if(adNote)adNote.textContent=`Keep playing once this ad finishes`;
 
   let cancelTimer=setTimeout(()=>{if(cancelBtn)cancelBtn.classList.add('visible')},5000);
   clearInterval(adInterval);
@@ -5302,7 +5382,9 @@ function makeDeckCard(d){
   }
   el.className=cls;
   el.id='dk-'+d.id;
-  const adWords=(d.premium&&!owned&&access)?`<div class="deck-cnt">${premWordsLeft(d)} words left</div>`:'';
+  // No "N words left" label — players are never shown a word count. The green
+  // premium-adunlocked border already signals the deck is playable.
+  const adWords='';
   el.innerHTML=`<div class="deck-icon" aria-hidden="true">${d.icon}</div><div class="deck-name">${d.name}</div>${adWords}${!d.premium?'<div class="deck-free-badge">FREE</div>':''}${d.premium&&!access?'<div class="deck-lock-overlay">🔒</div>':''}${d.id===G.deck?'<div class="deck-sel-overlay"><span class="deck-sel-badge">✓ Selected</span></div>':''}`;
   el.onclick=()=>{SFX.tap();d.premium&&!access?showUnlockModal(d.id):selDeck(d.id)};
   return el;
