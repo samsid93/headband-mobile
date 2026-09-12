@@ -1787,13 +1787,48 @@ body::after{content:'';position:fixed;inset:0;
    SOUND ENGINE
 ═══════════════════════════ */
 const SFX=(()=>{
-  let ctx=null;
+  let ctx=null, master=null;
   let muted=localStorage.getItem('hb_muted')==='1';
-  const ac=()=>{if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx};
-  const beep=(f,t,d,v,dl=0)=>{if(muted)return;try{const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime+dl);g.gain.setValueAtTime(0,c.currentTime+dl);g.gain.linearRampToValueAtTime(v,c.currentTime+dl+.01);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+dl+d);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d+.05)}catch(e){}};
+  /* Every sound is routed through a master gain, and muting drives that gain to
+     zero. It used to call ctx.suspend() instead, which does not survive an app
+     WebView: a programmatically suspended context will only restart from inside
+     a user gesture on iOS, and resume() can reject outright — so switching sound
+     off and back on killed audio for the rest of the session and the button
+     looked dead. Gain is instant, symmetrical, and cuts already-scheduled
+     oscillators too, which is what the suspend was there for. */
+  const ac=()=>{
+    if(!ctx){
+      ctx=new(window.AudioContext||window.webkitAudioContext)();
+      master=ctx.createGain();
+      master.gain.value=muted?0:1;
+      master.connect(ctx.destination);
+    }
+    return ctx;
+  };
+  /* Both WebViews hand back a SUSPENDED context under the autoplay policy; it
+     only starts from inside a user gesture. Because the context was created
+     lazily by the first beep(), whichever sound came first decided the whole
+     session — if that was a countdown tick rather than a tap, nothing ever
+     played and the sound toggle had nothing to toggle. Start it on the first
+     real interaction instead. */
+  const _wake=()=>{ try{ const c=ac(); if(c.state!=='running') c.resume().catch(()=>{}); }catch(e){} };
+  ['pointerdown','touchstart','keydown'].forEach(ev=>
+    document.addEventListener(ev,_wake,{once:true,passive:true,capture:true}));
+  const beep=(f,t,d,v,dl=0)=>{if(muted)return;try{const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(master||c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime+dl);g.gain.setValueAtTime(0,c.currentTime+dl);g.gain.linearRampToValueAtTime(v,c.currentTime+dl+.01);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+dl+d);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d+.05)}catch(e){}};
   return{
     isMuted(){return muted},
-    toggleMute(){muted=!muted;localStorage.setItem('hb_muted',muted?'1':'0');if(ctx){try{muted?ctx.suspend():ctx.resume()}catch(e){}}return muted},
+    toggleMute(){
+      muted=!muted;
+      localStorage.setItem('hb_muted',muted?'1':'0');
+      try{
+        const c=ac();                       // first tap may be what creates it
+        if(master)master.gain.value=muted?0:1;
+        // Unmuting is always a tap, so this is exactly the moment a suspended
+        // context is permitted to start.
+        if(!muted&&c.state!=='running')c.resume().catch(()=>{});
+      }catch(e){}
+      return muted;
+    },
     newWord(){beep(900,'sine',.08,.06)},
     tap(){beep(600,'sine',.06,.12)},
     correct(st=0){const m=1+Math.min(st,8)*.07;[523,659,784].forEach((f,i)=>beep(f*m,'sine',.22,.18,i*.03));beep(1047*m,'sine',.18,.12,.08)},
@@ -2214,9 +2249,17 @@ function openCookiePrefs(){
 
 /* ═══════════════════════════
    M-2 — GAME PROGRESS RECOVERY
-   Saved at round boundaries, never mid-round: a round with 12 seconds left on
-   the clock cannot be resumed fairly, and the real loss players complained about
-   is accumulated team scores in a long game, not one interrupted round.
+   Resumes an interrupted round EXACTLY where it stopped: same word, same
+   position in the shuffled list, same seconds on the clock, same score and
+   skip counts, same word history.
+   The whole in-play word list is part of the snapshot on purpose. Re-shuffling
+   on resume would hand the player a different deck order, so "same place" would
+   be meaningless — the index only identifies a word if the list around it is
+   the one that was being played. It is bounded by the round's word limit, so
+   the payload stays small.
+   Words consumed before the interruption are NOT charged twice: the pool is
+   only debited in endRound(), which never ran for the interrupted round, so the
+   single debit at the end of the resumed round covers the whole thing.
 ═══════════════════════════ */
 const GAME_SAVE_KEY='hb_game_progress';
 const GAME_SAVE_TTL=24*60*60*1000;
@@ -2237,7 +2280,17 @@ function saveGameProgress(){
       settings:{
         skipDeduct:!!G.skipDeduct, voiceEnabled:!!G.voiceEnabled,
         tiltEnabled:!!G.tiltEnabled, charadesOrientation:G.charadesOrientation
-      }
+      },
+      // Mid-round snapshot. Only written while a round is genuinely in flight —
+      // once the round is over there is nothing to return to, and a stale
+      // snapshot would drop the next round onto a dead word list.
+      round:(!G.roundOver && G.words && G.words.length && G.sec>0) ? {
+        deck:G.deck, gameStyle:G.gameStyle,
+        words:G.words, idx:G.idx, sec:G.sec,
+        correct:G.correct, skipped:G.skipped, buzzed:G.buzzed||0,
+        roundWords:G.roundWords||[], streak:G.streak||0,
+        goldenIdx:(typeof G.goldenIdx==='number')?G.goldenIdx:-1
+      } : null
     }));
   }catch(e){/* storage full or blocked — recovery is a nicety, never fail the game */}
 }
@@ -2285,11 +2338,13 @@ function resumeGame(){
   if(!s){showToast('That game has expired');return}
   SFX.tap();
   G.gameStyle=s.gameStyle; G.deck=s.deck; G.mode=s.mode;
-  // F-112 — secRemaining is deliberately NOT restored. The interrupted round
-  // cannot be resumed mid-word (the word list position is not saved), so it is
-  // replayed from the start; handing that replay the leftover seconds gave the
-  // player a short round for no visible reason.
-  G.timer=s.timer; G._resumeSec=0; G.maxRounds=s.maxRounds;
+  // F-112 — the clock and the place in the deck are both restored. An earlier
+  // pass dropped the leftover seconds because the word position was not saved,
+  // which made a partial timer unfair; now that the whole round is snapshotted,
+  // the seconds are the correct thing to restore.
+  G.timer=s.timer; G.maxRounds=s.maxRounds;
+  G._resumeRound=(s.round&&s.round.words&&s.round.words.length)?s.round:null;
+  G._resumeSec=G._resumeRound?(s.round.sec||0):0;
   G.teamCount=s.teamCount; G.curTeam=s.curTeam;
   G.classicTotal=s.classicTotal; G.gameTurnCount=s.gameTurnCount; G.turnCount=s.turnCount||0;
   G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:t.players||[],playerIdx:t.playerIdx||0}));
@@ -3392,12 +3447,30 @@ async function beginRound(){
     });
   }
 
-  const allWords=shuffle([...deck.words]);
-  G.words=limit<99999?allWords.slice(0,Math.min(allWords.length,limit)):allWords;
-  G.idx=0;G.correct=0;G.skipped=0;G.buzzed=0;G.sec=(G._resumeSec>0?G._resumeSec:G.timer);G._resumeSec=0;G.roundWords=[];
+  // Resuming an interrupted round replays its exact state — the same shuffled
+  // list, the same index, clock, counters and word history. Re-shuffling here
+  // would silently change which word the saved index points at.
+  // Discard the snapshot if the player changed deck or mode on the way to
+  // Start — those words belong to a round they are no longer playing.
+  let R=G._resumeRound; G._resumeRound=null;
+  if(R && (R.deck!==G.deck || R.gameStyle!==G.gameStyle)) R=null;
+  if(R){
+    G.words=R.words;
+    G.idx=R.idx||0; G.correct=R.correct||0; G.skipped=R.skipped||0; G.buzzed=R.buzzed||0;
+    G.roundWords=R.roundWords||[]; G.streak=R.streak||0;
+    G.goldenIdx=(typeof R.goldenIdx==='number')?R.goldenIdx:-1;
+    G.sec=(R.sec>0?R.sec:G.timer);
+  }else{
+    const allWords=shuffle([...deck.words]);
+    G.words=limit<99999?allWords.slice(0,Math.min(allWords.length,limit)):allWords;
+    G.idx=0;G.correct=0;G.skipped=0;G.buzzed=0;G.roundWords=[];
+    G.streak=0;
+    G.goldenIdx=-1;
+    G.sec=(G._resumeSec>0?G._resumeSec:G.timer);
+  }
+  G._resumeSec=0;
   G.roundOver=false;G.wordsStartIdx=0;
-  G.streak=0;updateStreakChip();
-  G.goldenIdx=-1;
+  updateStreakChip();
   document.getElementById('screen-play').classList.remove('tension');
   applyDeckTint();
   TILT.reset();
@@ -5444,7 +5517,14 @@ function showToast(msg){
 /* ═══════════════════════════
    INIT
 ═══════════════════════════ */
-VOICE.checkSupport().then(updateVoiceSupportNotice).catch(()=>{});
+/* Deferred off the boot path. On a native build this is a bridge round-trip to
+   the speech plugin, and nothing needs the answer until the player reaches the
+   setup screen — so it must not sit between load and first paint. */
+(()=>{
+  const go=()=>{ VOICE.checkSupport().then(updateVoiceSupportNotice).catch(()=>{}); };
+  if('requestIdleCallback' in window) requestIdleCallback(go,{timeout:2000});
+  else setTimeout(go,600);
+})();
 
 // Restore is offered on every platform (M-1) — only the explanatory note differs,
 // since web purchases are tied to the account rather than to the store.
