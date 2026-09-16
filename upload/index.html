@@ -169,7 +169,7 @@ body::after{content:'';position:fixed;inset:0;
 @keyframes ctaGlow{0%,100%{opacity:.45}50%{opacity:1}}
 .splash-start:active{animation:none;transform:scale(.95)}
 .splash-start:active::after{animation:none;opacity:.75}
-.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:20;padding:14px 20px 34px;display:flex;flex-direction:column;align-items:center;gap:8px;background:linear-gradient(to top,rgba(18,8,0,.98) 60%,transparent)}
+
 
 /* ── HOME ── */
 .home-glow{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(255,214,10,0.22) 0%,rgba(255,80,0,0.14) 40%,transparent 70%);top:50%;left:50%;transform:translate(-65%,-85%);pointer-events:none;animation:homeGlow1 5s ease-in-out infinite}
@@ -415,6 +415,33 @@ body::after{content:'';position:fixed;inset:0;
 .pwrap{min-height:28px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ptag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.07);border:1px solid var(--bdr);border-radius:22px;padding:5px 11px;font-size:12px}
 .prem{color:var(--skp);cursor:pointer;font-size:14px;line-height:1}
+.tsplash-picks{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;z-index:1;max-width:340px}
+.tsplash-pchip{padding:8px 16px;background:rgba(255,255,255,0.09);border:1.5px solid rgba(255,255,255,0.22);border-radius:22px;font-size:13px;font-weight:700;color:var(--txt);cursor:pointer;font-family:inherit;transition:transform .14s,background .14s,border-color .14s}
+.tsplash-pchip.selected{background:linear-gradient(135deg,rgba(255,214,10,0.35),rgba(255,107,0,0.22));color:#FFD60A;border-color:rgba(255,214,10,0.75);box-shadow:0 0 14px rgba(255,214,10,0.3)}
+.tsplash-pchip:active{transform:scale(0.93)}
+.tsplash-pchip.done{opacity:.35;pointer-events:none;text-decoration:line-through}
+.rcard-players{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px}
+.rcard-player{font-size:11px;color:var(--mut)}
+.rcard-player b{color:var(--txt);font-weight:700}
+.mvp-line{font-size:15px;font-weight:800;color:var(--acc);margin-top:6px}
+.champ-banner{text-align:center;margin-bottom:14px;padding:18px 16px;background:linear-gradient(135deg,rgba(255,196,0,.18),rgba(255,107,0,.08));border:2px solid rgba(255,214,10,.5);border-radius:18px;width:100%;max-width:380px;animation:champPulse 1.5s ease-in-out infinite}
+@keyframes champPulse{0%,100%{box-shadow:0 0 20px rgba(255,214,10,.25)}50%{box-shadow:0 0 40px rgba(255,214,10,.45)}}
+.champ-trophy{font-size:48px;margin-bottom:4px}
+.champ-congrats{font-size:12px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:2px}
+.champ-name{font-size:28px;font-weight:900;color:var(--txt);margin:4px 0}
+.champ-score{font-size:14px;color:var(--mut);font-weight:700}
+.matchup-section{width:100%;max-width:380px;margin-top:10px}
+.matchup-title{font-size:13px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.matchup-card{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.08);border:1.5px solid var(--bdr2);border-radius:14px;margin-bottom:8px}
+.matchup-vs{font-size:11px;font-weight:900;color:var(--mut);flex-shrink:0}
+.matchup-p{flex:1;text-align:center}
+.matchup-p.won{color:var(--cor);font-weight:800}
+.matchup-p.lost{color:var(--mut);opacity:.7}
+.matchup-p.tied{color:var(--txt)}
+.matchup-pname{font-size:12px;font-weight:700}
+.matchup-pteam{font-size:10px;color:var(--mut)}
+.matchup-pscore{font-size:18px;font-weight:900}
+.matchup-winner{font-size:10px;font-weight:800;color:var(--acc)}
 .parow{display:flex;gap:8px;align-items:stretch}
 /* 16px is a hard floor on every input: iOS Safari auto-zooms the whole page when
    a field smaller than that receives focus, and does not zoom back out — the
@@ -1132,7 +1159,11 @@ body::after{content:'';position:fixed;inset:0;
   <!-- Hidden diagnostics toggle: 6 taps in the top-right corner of Home turns the
        live tilt readout on/off. Invisible and non-focusable, so players never meet
        it, but it makes the sensor numbers obtainable from a shipped APK. -->
-  <button id="dbg-tap" aria-hidden="true" tabindex="-1" style="position:absolute;top:0;right:0;width:58px;height:58px;opacity:0;background:transparent;border:0;padding:0;z-index:60"></button>
+  <!-- Hidden diagnostics target (6 taps). Sits BELOW #mute-btn in the stack:
+       at z-index 60 it covered the speaker button completely and swallowed
+       every tap. Enlarged so the corner band left of and under the speaker is
+       still comfortably tappable. -->
+  <button id="dbg-tap" aria-hidden="true" tabindex="-1" style="position:absolute;top:0;right:0;width:76px;height:76px;opacity:0;background:transparent;border:0;padding:0;z-index:20"></button>
   <!-- Graffiti background — Final Logo.svg palette -->
   <div class="home-graffiti" aria-hidden="true">
     <div class="gburst"></div>
@@ -1306,10 +1337,11 @@ body::after{content:'';position:fixed;inset:0;
   <div class="setup-section">
     <div class="lbl">Number of Rounds</div>
     <div class="tpresets" role="group" aria-label="Number of rounds">
-      <button type="button" class="tpreset rp-active" id="rp-free" aria-pressed="true" onclick="setMaxRounds(0)">∞ Free Play</button>
+      <button type="button" class="tpreset rp-active" id="rp-1" aria-pressed="true" onclick="setMaxRounds(1)">1 Round</button>
       <button type="button" class="tpreset" id="rp-3" aria-pressed="false" onclick="setMaxRounds(3)">3 Rounds</button>
       <button type="button" class="tpreset" id="rp-5" aria-pressed="false" onclick="setMaxRounds(5)">5 Rounds</button>
       <button type="button" class="tpreset" id="rp-7" aria-pressed="false" onclick="setMaxRounds(7)">7 Rounds</button>
+      <button type="button" class="tpreset" id="rp-free" aria-pressed="false" onclick="setMaxRounds(0)">∞ Free Play</button>
     </div>
     <div style="font-size:11px;color:var(--mut);margin-top:6px;padding:0 2px">Each team plays the selected number of rounds, then game ends with a winner</div>
   </div>
@@ -1344,7 +1376,7 @@ body::after{content:'';position:fixed;inset:0;
   <div class="opt-card" style="width:100%;max-width:370px;margin-bottom:12px;margin-top:16px">
     <div class="opt-row"><div><div class="opt-lbl">Skips deduct points</div><div class="opt-sub">Each skip removes 1 point</div></div><label class="toggle"><input type="checkbox" id="tog-skip-t"><span class="tslider"></span></label></div>
   </div>
-  <div class="bottom-bar"><button class="btn btn-pri" onclick="startGame()">Start Game →</button></div>
+  <div style="width:100%;max-width:370px;padding-bottom:20px;margin-top:8px"><button class="btn btn-pri" onclick="startGame()" style="max-width:100%">Start Game →</button></div>
 </div>
 
 <!-- HOW TO PLAY MODAL (not a .screen — floats as overlay, never intercepts navigation) -->
@@ -1495,7 +1527,7 @@ body::after{content:'';position:fixed;inset:0;
       <div class="perm-card tilt-p">
         <div class="perm-icon" aria-hidden="true">📱</div>
         <div class="perm-title">Motion sensor needed</div>
-        <div class="perm-sub">iOS requires permission to use the tilt sensor. Tap below.</div>
+        <div class="perm-sub">iPhone and iPad need your permission before the tilt sensor can be used. Tap below.</div>
         <button class="btn perm-btn-tilt" id="tilt-perm-btn" onclick="requestTiltPerm()">Enable Tilt Sensor</button>
         <div class="perm-status" id="tilt-perm-status"></div>
       </div>
@@ -1582,6 +1614,8 @@ body::after{content:'';position:fixed;inset:0;
     <div style="font-size:22px;font-weight:900;color:var(--acc)">Game Over!</div>
     <div id="sc-winner-text" style="font-size:14px;font-weight:700;color:var(--txt);margin-top:4px"></div>
   </div>
+  <div id="sc-champ-banner" style="display:none"></div>
+  <div id="sc-matchups" style="display:none"></div>
   <div id="sc-cards"></div>
   <div class="sc-wordlist" id="sc-wordlist" style="display:none">
     <div class="sc-wl-title">Words This Round</div>
@@ -2029,7 +2063,7 @@ const G={
   teamCount:2,
   teams:[{name:'Team 1',players:[],score:0},{name:'Team 2',players:[],score:0}],
   curTeam:0,
-  maxRounds:0, gameTurnCount:0, classicTotal:0,
+  maxRounds:1, gameTurnCount:0, classicTotal:0,
   unlockedDecks:JSON.parse(localStorage.getItem('hb_unlocked')||'[]'),
   pendingUnlockDeck:null,
   turnCount:0, lastAdTs:0,
@@ -2184,6 +2218,10 @@ function renderTeamBlocks(){
   const wrap=document.getElementById('team-blocks-wrap');if(!wrap)return;
   wrap.innerHTML='';
   for(let i=0;i<G.teamCount;i++){
+    G.teams[i].players=[];
+    G.teams[i].score=0;
+    G.teams[i].playerIdx=0;
+    G.teams[i].playedIdxs=[];
     const t=i+1,col=TEAM_COLORS[i]||'bl',ph=TEAM_PLACEHOLDERS[i]||'Team name';
     wrap.insertAdjacentHTML('beforeend',`<div class="team-block"><div class="team-hdr"><div class="tdot ${col}"></div><div class="tdot-lbl">Team ${t}</div></div><div class="tnf"><label class="lbl" for="tn${t}">Team Name</label><input class="inp" id="tn${t}" name="hb-tm-${t}" type="text" placeholder="${ph}" maxlength="20" autocomplete="nope" autocorrect="off" autocapitalize="words" spellcheck="false"></div><hr class="divthin"><span class="plbl">Players (optional)</span><div class="pwrap" id="t${t}pw"><span style="font-size:12px;color:var(--mut)">No players added</span></div><div class="parow"><input class="inp" id="t${t}pi" name="hb-pl-${t}" type="text" placeholder="Add player" maxlength="20" autocomplete="nope" autocorrect="off" autocapitalize="words" spellcheck="false" onkeydown="if(event.key==='Enter')addP(${t})"><div class="pabtn" onclick="addP(${t})">+</div></div></div>`);
   }
@@ -2192,18 +2230,22 @@ function renderTeamBlocks(){
 /* Rounds selector */
 function setMaxRounds(n){
   G.maxRounds=n;
-  const active=n===0?'rp-free':n===3?'rp-3':n===5?'rp-5':'rp-7';
-  ['rp-free','rp-3','rp-5','rp-7'].forEach(id=>{
+  const active=n===0?'rp-free':n===1?'rp-1':n===3?'rp-3':n===5?'rp-5':'rp-7';
+  ['rp-1','rp-3','rp-5','rp-7','rp-free'].forEach(id=>{
     const el=document.getElementById(id);if(!el)return;
     const on=id===active;
     el.classList.toggle('rp-active',on);
     el.setAttribute('aria-pressed',on?'true':'false');
   });
 }
+function _totalTPR(){
+  let s=0;
+  for(let i=0;i<G.teamCount;i++)s+=Math.max(G.teams[i].players.length,1);
+  return s;
+}
 function isGameOver(){
   if(G.maxRounds===0)return false;
-  const turnsNeeded=G.maxRounds*(G.mode==='team'?G.teamCount:1);
-  return G.gameTurnCount>=turnsNeeded;
+  return G.gameTurnCount>=G.maxRounds*_totalTPR();
 }
 
 /* ═══════════════════════════
@@ -2316,7 +2358,8 @@ function maybeOfferResume(){
   const NAMES={headsup:'Up Top!!',charades:'Charades!!',dontsayit:"Don't Say It!!"};
   const modal=document.getElementById('resume-modal');
   if(!modal)return;
-  const roundsPer=s.mode==='team'?s.teamCount:1;
+  const mpp=s.mode==='team'?Math.max(1,...s.teams.map(t=>(t.players||[]).length)):1;
+  const roundsPer=s.mode==='team'?mpp*s.teamCount:1;
   const roundNum=Math.min(Math.ceil(s.gameTurnCount/roundsPer)+ (s.maxRounds?0:0), s.maxRounds||99);
   const lines=[];
   lines.push(`<b>${NAMES[s.gameStyle]||'Game'}</b> · ${s.mode==='team'?s.teamCount+' teams':'Classic'}`);
@@ -2347,7 +2390,7 @@ function resumeGame(){
   G._resumeSec=G._resumeRound?(s.round.sec||0):0;
   G.teamCount=s.teamCount; G.curTeam=s.curTeam;
   G.classicTotal=s.classicTotal; G.gameTurnCount=s.gameTurnCount; G.turnCount=s.turnCount||0;
-  G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:t.players||[],playerIdx:t.playerIdx||0}));
+  G.teams=s.teams.map(t=>({name:t.name,score:t.score,players:(t.players||[]).map(p=>typeof p==='string'?{name:p,score:0}:p),playerIdx:t.playerIdx||0}));
   while(G.teams.length<G.teamCount)G.teams.push({name:'Team '+(G.teams.length+1),players:[],score:0});
   const st=s.settings||{};
   // tiltEnabled is clamped to what THIS device can do — the same account can
@@ -2537,25 +2580,31 @@ function proceedSetup(){
 }
 
 /* Teams */
-function addP(t){const i=document.getElementById('t'+t+'pi'),n=i.value.trim();if(!n)return;SFX.tap();G.teams[t-1].players.push(n);i.value='';renderPlayers(t)}
+function addP(t){const i=document.getElementById('t'+t+'pi'),n=i.value.trim();if(!n)return;SFX.tap();G.teams[t-1].players.push({name:n,score:0});i.value='';renderPlayers(t)}
 function remP(t,i){G.teams[t-1].players.splice(i,1);SFX.tap();renderPlayers(t)}
-function renderPlayers(t){const el=document.getElementById('t'+t+'pw'),ps=G.teams[t-1].players;if(!el)return;el.innerHTML=ps.length===0?'<span style="font-size:12px;color:var(--mut)">No players added</span>':ps.map((p,i)=>`<span class="ptag">${esc(p)}<span class="prem" onclick="remP(${t},${i})">×</span></span>`).join('')}
+function renderPlayers(t){const el=document.getElementById('t'+t+'pw'),ps=G.teams[t-1].players;if(!el)return;el.innerHTML=ps.length===0?'<span style="font-size:12px;color:var(--mut)">No players added</span>':ps.map((p,i)=>`<span class="ptag">${esc(p.name)}<span class="prem" onclick="remP(${t},${i})">×</span></span>`).join('')}
 function startGame(){
   SFX.tap();
-  clearGameProgress();   // starting fresh — abandon any earlier checkpoint
+  clearGameProgress();
   for(let i=0;i<G.teamCount;i++){
     const inp=document.getElementById('tn'+(i+1));
     G.teams[i].name=(inp?inp.value.trim():'')||'Team '+(i+1);
     G.teams[i].score=0;
     G.teams[i].playerIdx=0;
+    G.teams[i].playedIdxs=[];
+    G.teams[i].players.forEach(p=>p.score=0);
   }
   G.teams=G.teams.slice(0,G.teamCount);
   G.curTeam=0;
   G.gameTurnCount=0;
   G.classicTotal=0;
+  G.turnLog=[];
   G.skipDeduct=document.getElementById('tog-skip-t').checked;
-  // voiceEnabled + tiltEnabled already set by proceedSetup(); don't overwrite from missing elements
-  setupPermissions(); if(!checkShowHowTo()){goTo('screen-ready'); updateReadyScreen();}
+  setupPermissions();
+  if(!checkShowHowTo()){
+    const cont=()=>{goTo('screen-ready'); updateReadyScreen();};
+    showTeamSplash(cont);
+  }
 }
 /* A tip row tagged data-req="tilt" / "voice" only applies when that control is
    switched on — otherwise the Ready screen promises a feature the player
@@ -2610,7 +2659,24 @@ function updateReadyScreen(){
 ═══════════════════════════ */
 let tiltPermGranted=false,motionListenerAdded=false;
 const isHTTPS=()=>window.isSecureContext||location.protocol==='https:'||location.hostname==='localhost';
-const needsiOSPerm=()=>typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function';
+/* iPad reports itself as a Mac, so touch points are what separate it from a
+   desktop Safari. Shared by the tilt-permission gate below. */
+const _isIOSDevice=()=>/iPad|iPhone|iPod/.test(navigator.userAgent)
+  ||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+
+/* Does this browser demand an explicit, gesture-bound grant before it will
+   deliver motion events?
+   This used to test ONLY for DeviceMotionEvent.requestPermission, on the
+   assumption that the function existed only on iOS 13+. Chrome has since
+   shipped it for compatibility — it resolves "granted" with no prompt — so the
+   check became true on Android and desktop Chrome as well, and those players
+   were shown an iOS permission card and had Start blocked behind a tap that
+   achieved nothing. The platform test is what actually matters; the function
+   test stays so an older iOS without it still falls through to the plain
+   listener path. */
+const needsiOSPerm=()=>_isIOSDevice()
+  &&typeof DeviceMotionEvent!=='undefined'
+  &&typeof DeviceMotionEvent.requestPermission==='function';
 
 function setupPermissions(){
   const rb=document.getElementById('ready-btn');
@@ -3495,13 +3561,15 @@ async function beginRound(){
       if(G.mode==='team'){
         const tcol=TEAM_HEX[G.curTeam%TEAM_HEX.length];
         const player=teamCurrentPlayer(G.curTeam);
+        const ps=G.teams[G.curTeam].players;
+        G._curPI=ps.length>0?(G.teams[G.curTeam].playerIdx||0)%ps.length:undefined;
         bar.style.display='block';
         bar.innerHTML=player
           ? `${esc(G.teams[G.curTeam].name)} &nbsp;·&nbsp; 🎯 <span style="color:#fff">${esc(player)}</span>'s turn`
           : `${esc(G.teams[G.curTeam].name)}'s Turn`;
         bar.style.color=tcol;
         playScr.style.setProperty('--team',tcol);
-        advanceTeamPlayer(G.curTeam); // next time this team plays, next player is up
+        advanceTeamPlayer(G.curTeam);
       } else {
         bar.style.display='none';
         playScr.style.removeProperty('--team');
@@ -3515,8 +3583,14 @@ async function beginRound(){
     });
   }
 
-  // Charades portrait mode → skip landscape check (button-only play)
-  const skipLandscapeCheck=(G.gameStyle==='charades'&&G.charadesOrientation==='portrait')||G.gameStyle==='dontsayit';
+  // Charades portrait mode → skip landscape check (button-only play).
+  // Also skipped on a device that cannot tilt: landscape exists so the phone
+  // sits flat on a forehead, and telling a laptop owner to rotate their screen
+  // is an instruction they cannot follow. Those players use voice or buttons,
+  // neither of which cares about orientation.
+  const skipLandscapeCheck=(G.gameStyle==='charades'&&G.charadesOrientation==='portrait')
+    ||G.gameStyle==='dontsayit'
+    ||!tiltCapable();
   if(skipLandscapeCheck){proceed()}
   else{waitLandscape(proceed)}
 }
@@ -3882,8 +3956,18 @@ function endRound(){
   SFX.timeup();
   showOverlay("⏱ TIME'S UP!",'t');
   const pts=Math.max(0,(G.skipDeduct?G.correct-G.skipped:G.correct)-(G.buzzed||0));
-  if(G.mode==='team')G.teams[G.curTeam].score+=pts;
-  else G.classicTotal+=pts;
+  if(G.mode==='team'){
+    G.teams[G.curTeam].score+=pts;
+    const ps=G.teams[G.curTeam].players;
+    const pi=G._curPI;
+    if(ps.length>0&&pi!==undefined){
+      ps[pi%ps.length].score+=pts;
+      if(!G.teams[G.curTeam].playedIdxs)G.teams[G.curTeam].playedIdxs=[];
+      if(!G.teams[G.curTeam].playedIdxs.includes(pi%ps.length))G.teams[G.curTeam].playedIdxs.push(pi%ps.length);
+    }
+    if(!G.turnLog)G.turnLog=[];
+    G.turnLog.push({teamIdx:G.curTeam,teamName:G.teams[G.curTeam].name,playerName:pi!==undefined&&ps.length?ps[pi%ps.length].name:null,pts});
+  } else G.classicTotal+=pts;
   saveLB(pts);
   if(shouldShowInterstitial()){
     G.lastAdTs=Date.now();
@@ -3921,8 +4005,8 @@ function showScore(){
 
   // Round info
   if(G.maxRounds>0){
-    const turnsPerTeam=G.mode==='team'?G.teamCount:1;
-    const roundNum=Math.ceil(G.gameTurnCount/turnsPerTeam);
+    const turnsPerRound=G.mode==='team'?_totalTPR():1;
+    const roundNum=Math.ceil(G.gameTurnCount/turnsPerRound);
     roundInfoEl.textContent=`ROUND ${roundNum} OF ${G.maxRounds}`;
     roundInfoEl.style.display='block';
   } else {
@@ -3939,10 +4023,14 @@ function showScore(){
     const emoji=pts>=12?'🏆':pts>=8?'🎉':pts>=4?'👍':'😅';
     scEmoji.textContent=emoji;
     gameOverBanner.style.display='none';
+    document.getElementById('sc-champ-banner').style.display='none';
+    document.getElementById('sc-matchups').style.display='none';
     if(playBtn){
       if(G.mode==='team'){
-        const next=G.teams[(G.curTeam+1)%G.teamCount];
-        playBtn.textContent=`▶ ${next.name}'s Turn`;
+        const nextIdx=(G.curTeam+1)%G.teamCount;
+        const next=G.teams[nextIdx];
+        const np=teamCurrentPlayer(nextIdx);
+        playBtn.textContent=np?`▶ ${np} (${next.name})`:`▶ ${next.name}'s Turn`;
       } else {
         playBtn.textContent='▶ Play Again';
       }
@@ -3955,35 +4043,78 @@ function showScore(){
   const cards=document.getElementById('sc-cards');
   if(G.mode==='team'){
     document.getElementById('sc-sub').textContent=`${G.teams[G.curTeam].name} scored ${pts} pts`;
+    const sorted=[...G.teams].slice(0,G.teamCount).sort((a,b)=>b.score-a.score);
+    const MEDALS=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
     if(gameOver){
-      // Final standings: sorted, medals, podium colors — tied teams share same rank
-      const sorted=[...G.teams].slice(0,G.teamCount).sort((a,b)=>b.score-a.score);
-      const MEDALS=['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣'];
-      const ranks=sorted.map((t,i)=>{
-        if(i===0) return 0;
-        return sorted[i].score===sorted[i-1].score?ranks[i-1]:i;
-      });
-      cards.innerHTML=`<div class="result-cards">${sorted.map((t,i)=>`<div class="rcard${ranks[i]===0?' winner':ranks[i]===1?' r2':ranks[i]===2?' r3':''}"><div class="rrank">${MEDALS[ranks[i]]||'#'+(ranks[i]+1)}</div><div><div class="rname">${esc(t.name)}</div><div class="rdetail">${t.score} total pts</div></div><div class="rpts" data-v="${t.score}">0</div></div>`).join('')}</div>`;
+      const ranks=[0];
+      for(let i=1;i<sorted.length;i++)ranks.push(sorted[i].score===sorted[i-1].score?ranks[i-1]:i);
+      const playerRow=t=>t.players.length?`<div class="rcard-players">${t.players.map(p=>`<span class="rcard-player"><b>${esc(p.name)}</b> ${p.score}pts</span>`).join('')}</div>`:'';
+      cards.innerHTML=`<div class="result-cards">${sorted.map((t,i)=>`<div class="rcard${ranks[i]===0?' winner':ranks[i]===1?' r2':ranks[i]===2?' r3':''}"><div class="rrank">${MEDALS[ranks[i]]||'#'+(ranks[i]+1)}</div><div><div class="rname">${esc(t.name)}</div><div class="rdetail">${t.score} total pts</div>${playerRow(t)}</div><div class="rpts" data-v="${t.score}">0</div></div>`).join('')}</div>`;
     } else {
-      // Mid-game scoreboard: turn order, no medals; unplayed teams show — instead of 0
       const nextIdx=(G.curTeam+1)%G.teamCount;
       cards.innerHTML=`<div class="result-cards">${G.teams.slice(0,G.teamCount).map((t,i)=>{
-        const played=i<G.gameTurnCount;
+        const played=t.score>0||i<=G.curTeam;
         const isNext=i===nextIdx;
-        return `<div class="rcard"${played?'':' style="opacity:.55"'}><div class="rrank" style="color:${TEAM_HEX[i%TEAM_HEX.length]}">●</div><div><div class="rname">${esc(t.name)}${isNext?' <span style="font-size:11px;color:var(--acc)">→ up next</span>':''}</div><div class="rdetail">${played?t.score+' total pts':'not played yet'}</div></div><div class="rpts"${played?` data-v="${t.score}"`:''}>${played?'0':'—'}</div></div>`;
+        const pRow=t.players.length?`<div class="rcard-players">${t.players.map(p=>`<span class="rcard-player"><b>${esc(p.name)}</b> ${p.score}pts</span>`).join('')}</div>`:'';
+        return `<div class="rcard"${played?'':' style="opacity:.55"'}><div class="rrank" style="color:${TEAM_HEX[i%TEAM_HEX.length]}">●</div><div><div class="rname">${esc(t.name)}${isNext?' <span style="font-size:11px;color:var(--acc)">→ up next</span>':''}</div><div class="rdetail">${played?t.score+' total pts':'not played yet'}</div>${played?pRow:''}</div><div class="rpts"${played?` data-v="${t.score}"`:''}>${played?'0':'—'}</div></div>`;
       }).join('')}</div>`;
     }
     cards.querySelectorAll('.rpts[data-v]').forEach(el=>countUp(el,parseInt(el.dataset.v)||0));
     if(gameOver){
+      const winnerEl=document.getElementById('sc-winner-text');
+      const champEl=document.getElementById('sc-champ-banner');
+      const matchEl=document.getElementById('sc-matchups');
       const tied=sorted.filter(t=>t.score===sorted[0].score);
       if(tied.length>1){
-        document.getElementById('sc-winner-text').textContent=`🤝 It's a tie! ${tied.map(t=>t.name).join(' & ')} tied with ${sorted[0].score} points!`;
-        setTimeout(()=>{SFX.winner();burstConfetti()},300);
+        winnerEl.innerHTML=`🤝 It's a tie! ${tied.map(t=>t.name).join(' & ')} tied with ${sorted[0].score} points!`;
+        champEl.innerHTML=`<div class="champ-banner"><div class="champ-trophy">🤝</div><div class="champ-congrats">It's a Tie!</div><div class="champ-name">${tied.map(t=>esc(t.name)).join(' & ')}</div><div class="champ-score">${sorted[0].score} points each</div></div>`;
       } else {
-        document.getElementById('sc-winner-text').textContent=`🎉 ${sorted[0].name} wins with ${sorted[0].score} points!`;
-        setTimeout(()=>{SFX.winner();burstConfetti()},300);
+        winnerEl.innerHTML=`🎉 ${esc(sorted[0].name)} wins with ${sorted[0].score} points!`;
+        champEl.innerHTML=`<div class="champ-banner"><div class="champ-trophy">🏆</div><div class="champ-congrats">Congratulations!</div><div class="champ-name">${esc(sorted[0].name)}</div><div class="champ-score">Champion — ${sorted[0].score} points</div></div>`;
       }
-    } else if(sorted[0].score!==sorted[1].score){
+      champEl.style.display='block';
+      const allPlayers=G.teams.slice(0,G.teamCount).flatMap(t=>t.players.map(p=>({...p,team:t.name})));
+      if(allPlayers.length>0){
+        const mvp=allPlayers.sort((a,b)=>b.score-a.score)[0];
+        winnerEl.innerHTML+=`<div class="mvp-line">⭐ MVP: ${esc(mvp.name)} (${esc(mvp.team)}) — ${mvp.score} pts</div>`;
+      }
+      // 1v1 matchup round summary from turnLog
+      const log=G.turnLog||[];
+      if(log.length>=2&&G.teamCount>=2){
+        const matchups=[];
+        const tpr=_totalTPR();
+        for(let r=0;r<G.maxRounds;r++){
+          const rTurns=log.slice(r*tpr,(r+1)*tpr);
+          const byTeam={};
+          rTurns.forEach(t=>{if(!byTeam[t.teamIdx])byTeam[t.teamIdx]=[];byTeam[t.teamIdx].push(t);});
+          const teamKeys=Object.keys(byTeam).map(Number);
+          if(teamKeys.length>=2){
+            const maxLen=Math.max(...teamKeys.map(k=>byTeam[k].length));
+            for(let s=0;s<maxLen;s++){
+              const entries=teamKeys.map(k=>byTeam[k][s]).filter(Boolean);
+              if(entries.length>=2){
+                for(let a=0;a<entries.length-1;a++){
+                  for(let b=a+1;b<entries.length;b++){
+                    matchups.push({round:r+1,p1:entries[a],p2:entries[b]});
+                  }
+                }
+              }
+            }
+          }
+        }
+        if(matchups.length>0){
+          let html='<div class="matchup-section"><div class="matchup-title">Round Summary — 1v1 Matchups</div>';
+          matchups.forEach(m=>{
+            const w=m.p1.pts>m.p2.pts?1:m.p2.pts>m.p1.pts?2:0;
+            html+=`<div class="matchup-card"><div class="matchup-p${w===1?' won':w===0?' tied':' lost'}"><div class="matchup-pname">${esc(m.p1.playerName||m.p1.teamName)}</div><div class="matchup-pteam">${esc(m.p1.teamName)}</div><div class="matchup-pscore">${m.p1.pts}</div>${w===1?'<div class="matchup-winner">Winner</div>':''}</div><div class="matchup-vs">R${m.round}<br>VS</div><div class="matchup-p${w===2?' won':w===0?' tied':' lost'}"><div class="matchup-pname">${esc(m.p2.playerName||m.p2.teamName)}</div><div class="matchup-pteam">${esc(m.p2.teamName)}</div><div class="matchup-pscore">${m.p2.pts}</div>${w===2?'<div class="matchup-winner">Winner</div>':''}</div></div>`;
+          });
+          html+='</div>';
+          matchEl.innerHTML=html;
+          matchEl.style.display='block';
+        }
+      }
+      setTimeout(()=>{SFX.winner();burstConfetti()},300);
+    } else if(sorted.length>=2&&sorted[0].score!==sorted[1].score){
       setTimeout(()=>SFX.winner(),300);
     }
   } else {
@@ -4052,7 +4183,8 @@ let _splashCb=null;
 function teamCurrentPlayer(idx){
   const t=G.teams[idx];if(!t||!t.players||t.players.length===0)return null;
   const pi=t.playerIdx||0;
-  return t.players[pi%t.players.length];
+  const p=t.players[pi%t.players.length];
+  return typeof p==='string'?p:p.name;
 }
 // Advance to next player for a team (called once the current player's turn starts)
 function advanceTeamPlayer(idx){
@@ -4063,11 +4195,18 @@ function advanceTeamPlayer(idx){
 function showTeamSplash(cb){
   _splashCb=cb;
   const t=G.teams[G.curTeam],col=TEAM_HEX[G.curTeam%TEAM_HEX.length];
+  const played=t.playedIdxs||[];
+  // Auto-select first unplayed player
+  if(t.players.length>0){
+    const first=t.players.findIndex((_,i)=>!played.includes(i));
+    if(first>=0)t.playerIdx=first;
+  }
   const player=teamCurrentPlayer(G.curTeam);
   document.getElementById('tsplash-name').textContent=t.name;
   document.getElementById('tsplash-name').style.color=col;
   const passEl=document.getElementById('tsplash-pass');
   const playerEl=document.getElementById('tsplash-player');
+  const picksEl=document.getElementById('tsplash-picks');
   if(player){
     if(passEl)passEl.textContent='Pass the phone to';
     if(playerEl){playerEl.innerHTML=`🎯 <b>${esc(player)}</b>, you're up!`;playerEl.style.display='block';}
@@ -4075,10 +4214,32 @@ function showTeamSplash(cb){
     if(passEl)passEl.textContent='Pass the phone to';
     if(playerEl)playerEl.style.display='none';
   }
+  if(picksEl){
+    if(t.players.length>1){
+      const cur=(t.playerIdx||0)%t.players.length;
+      picksEl.innerHTML=`<div style="font-size:11px;color:var(--mut);width:100%;text-align:center;margin-bottom:2px">Select player:</div>`+
+        t.players.map((p,i)=>{
+          const done=played.includes(i);
+          return `<button class="tsplash-pchip${i===cur?' selected':''}${done?' done':''}" ${done?'disabled':''}onclick="selectSplashPlayer(${G.curTeam},${i})">${esc(p.name)}${done?' ✓':''}</button>`;
+        }).join('');
+      picksEl.style.display='flex';
+      picksEl.style.flexWrap='wrap';
+    } else picksEl.style.display='none';
+  }
   document.getElementById('tsplash-score').textContent='Team score: '+t.score+' pts';
   document.getElementById('tsplash-wash').style.background=`radial-gradient(ellipse at 50% 40%, ${col} 0%, transparent 70%)`;
   document.getElementById('team-splash').classList.add('show');
   SFX.countdown();
+}
+function selectSplashPlayer(teamIdx,pIdx){
+  const t=G.teams[teamIdx];
+  if((t.playedIdxs||[]).includes(pIdx))return;
+  SFX.tap();
+  t.playerIdx=pIdx;
+  const player=teamCurrentPlayer(teamIdx);
+  const playerEl=document.getElementById('tsplash-player');
+  if(playerEl&&player)playerEl.innerHTML=`🎯 <b>${esc(player)}</b>, you're up!`;
+  document.querySelectorAll('.tsplash-pchip').forEach((el,i)=>el.classList.toggle('selected',i===pIdx));
 }
 function dismissTeamSplash(){
   SFX.tap();
@@ -4089,10 +4250,22 @@ function dismissTeamSplash(){
 
 // keepTeam — set only by resumeGame(), which restores the team whose turn was
 // interrupted and must replay it rather than skip past it (F-112).
+function _teamDone(idx){
+  const t=G.teams[idx];
+  const total=Math.max(t.players.length,1);
+  return(t.playedIdxs||[]).length>=total;
+}
 function playAgain(keepTeam){
   SFX.tap();
-  if(G.mode==='team'&&keepTeam!==true)G.curTeam=(G.curTeam+1)%G.teamCount;
-  // Restore tilt/voice from user's setup selection (endRound sets G.tiltEnabled=false)
+  if(G.mode==='team'&&keepTeam!==true){
+    // Check if all teams exhausted their players — new sub-round
+    const allDone=G.teams.slice(0,G.teamCount).every((_,i)=>_teamDone(i));
+    if(allDone)G.teams.slice(0,G.teamCount).forEach(t=>t.playedIdxs=[]);
+    // Advance to next team that still has unplayed players
+    let next=(G.curTeam+1)%G.teamCount,checked=0;
+    while(checked<G.teamCount&&_teamDone(next)){next=(next+1)%G.teamCount;checked++;}
+    G.curTeam=next;
+  }
   const tiltTog=document.getElementById('tog-tilt');
   const voiceTog=document.getElementById('tog-voice');
   if(tiltTog)G.tiltEnabled=tiltTog.checked;
@@ -4628,8 +4801,9 @@ const HB_AUTH = (() => {
   let _user = null;
   let _lbTab = 'local'; // 'local' | 'global'
   let _recovery = false; // true while the player is setting a new password
-  let _otpEmail = null;  // address a login code was just sent to (code-entry view)
+  let _otpEmail = null;  // address a code was sent to (code-entry view)
   let _otpTimer = null;  // resend cooldown ticker
+  let _otpMode  = null;  // 'signup' | 'recovery' — what the OTP view is for
 
   function _client() {
     if (!_sb) _sb = getSharedSB();
@@ -4681,7 +4855,7 @@ const HB_AUTH = (() => {
     if (m.includes('email not confirmed'))
       return 'Please confirm your email first — check your inbox for the link.';
     if (m.includes('password should be at least') || m.includes('password is too short'))
-      return 'Password is too short — use at least 6 characters.';
+      return 'Password is too short — use at least 8 characters.';
     if (m.includes('unable to validate email') || m.includes('invalid email'))
       return 'That email address does not look right.';
     if (m.includes('rate limit') || m.includes('too many') || status === 429)
@@ -4830,7 +5004,7 @@ const HB_AUTH = (() => {
     const otpInp = document.getElementById('auth-otp-code');
     if (otpInp) {
       otpInp.addEventListener('input', () => {
-        otpInp.value = otpInp.value.replace(/\D/g, '').slice(0, 6);
+        otpInp.value = otpInp.value.replace(/\D/g, '').slice(0, 8);
         _otpMsg('ok', '');
       });
       otpInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); verifyLoginCode(); } });
@@ -4844,7 +5018,7 @@ const HB_AUTH = (() => {
     _clearMsg();
     modal.style.display = 'flex';
     document.getElementById('auth-reset').style.display = 'none';
-    if (_otpEmail && !_user) { _showOtpView(_otpEmail); return; }  // don't bury a half-typed code
+    if (_otpEmail && !_user) { _showOtpView(_otpEmail, _otpMode); return; }  // don't bury a half-typed code
     document.getElementById('auth-otp').style.display = 'none';
     if (_user) _renderSignedIn(); else _renderSignedOut();
   }
@@ -4869,7 +5043,6 @@ const HB_AUTH = (() => {
     document.getElementById('auth-reset').style.display = 'none';
     document.getElementById('auth-otp').style.display = 'none';
     document.getElementById('auth-forgot').style.display = isUp ? 'none' : '';
-    document.getElementById('auth-code-btn').style.display = isUp ? 'none' : '';
     document.getElementById('auth-signed-out').style.display = 'block';
     document.getElementById('auth-signed-in').style.display = 'none';
     _clearMsg();
@@ -4909,7 +5082,9 @@ const HB_AUTH = (() => {
           _fieldErr('email', 'That email already has an account — sign in instead.');
           return;
         }
-        _showOk('Check your email to confirm your account!');
+        _showOtpView(email, 'signup');
+        _otpMsg('ok', 'We sent an 8-digit code to your email. Enter it below to complete sign-up.');
+        _otpCooldown(60);
       } else {
         const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
         if (error) throw error;
@@ -4925,12 +5100,7 @@ const HB_AUTH = (() => {
     }
   }
 
-  /* ---- Sign in with a 6-digit emailed code -------------------------------
-     A link in an email drags the player out to a browser and, in the native
-     app, into a different context entirely. A code they can copy back keeps
-     them in the app. Supabase sends BOTH in one mail: the magic-link template
-     must contain {{ .Token }} (see supabase/templates/magic_link.html) or the
-     mail arrives with a link only and this flow has nothing to type. */
+  /* ---- OTP verification (signup + forgot-password recovery) ------------- */
   function _otpMsg(id, msg) {
     const err = document.getElementById('auth-otp-err');
     const ok  = document.getElementById('auth-otp-ok');
@@ -4952,50 +5122,53 @@ const HB_AUTH = (() => {
     tick();
     _otpTimer = setInterval(tick, 1000);
   }
-  function _showOtpView(email) {
+  function _showOtpView(email, mode) {
     _otpEmail = email;
+    _otpMode = mode || null;
     document.getElementById('auth-signed-out').style.display = 'none';
     document.getElementById('auth-signed-in').style.display = 'none';
     document.getElementById('auth-reset').style.display = 'none';
     document.getElementById('auth-otp').style.display = 'block';
     document.getElementById('auth-otp-to').textContent = email;
+    const title = document.getElementById('auth-otp-title');
+    const btn = document.getElementById('auth-otp-btn');
+    const back = document.getElementById('auth-otp-back');
+    if (mode === 'signup') {
+      if (title) title.textContent = 'Verify your email';
+      if (btn) btn.textContent = 'Verify & Create Account';
+      if (back) back.textContent = '← Back to Sign Up';
+    } else if (mode === 'recovery') {
+      if (title) title.textContent = 'Reset your password';
+      if (btn) btn.textContent = 'Verify Code';
+      if (back) back.textContent = '← Back to Sign In';
+    }
     const code = document.getElementById('auth-otp-code');
     code.value = '';
     setTimeout(() => code.focus(), 50);
   }
   function cancelOtp() {
     clearInterval(_otpTimer);
+    const wasSignup = _otpMode === 'signup';
     _otpEmail = null;
+    _otpMode = null;
     document.getElementById('auth-otp').style.display = 'none';
     _otpMsg('ok', '');
-    switchTab('in');
+    switchTab(wasSignup ? 'up' : 'in');
   }
   async function _sendCode(email, btn, label) {
     const sb = _client();
     if (!sb) throw new Error('Auth service unavailable. Check your connection.');
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     try {
-      // shouldCreateUser:false — this is the SIGN IN tab, so an unknown address
-      // must not silently create a half-made account.
-      const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: authRedirectTo() } });
-      if (error) throw error;
+      if (_otpMode === 'recovery') {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: authRedirectTo() });
+        if (error) throw error;
+      } else {
+        const { error } = await sb.auth.resend({ type: 'signup', email });
+        if (error) throw error;
+      }
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = label; }
-    }
-  }
-  async function emailLoginCode() {
-    const email = document.getElementById('auth-email').value.trim();
-    _clearMsg();
-    if (!email) { _fieldErr('email', 'Enter your email address first.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { _fieldErr('email', 'That does not look like a valid email.'); return; }
-    const btn = document.getElementById('auth-code-btn');
-    try {
-      await _sendCode(email, btn, '✉️ Email me a sign-in code');
-      _showOtpView(email);
-      _otpMsg('ok', 'Code sent — check your inbox (and spam).');
-      _otpCooldown(60);
-    } catch (err) {
-      _showErr(_authErrMsg(err));
     }
   }
   async function resendLoginCode() {
@@ -5009,25 +5182,42 @@ const HB_AUTH = (() => {
       _otpMsg('err', _authErrMsg(err));
     }
   }
+  async function pasteOtp() {
+    try {
+      const text = await navigator.clipboard.readText();
+      const digits = (text || '').replace(/\D/g, '').slice(0, 8);
+      if (digits) {
+        const inp = document.getElementById('auth-otp-code');
+        if (inp) { inp.value = digits; inp.focus(); }
+      }
+    } catch (e) { /* clipboard permission denied — user can paste manually */ }
+  }
   async function verifyLoginCode() {
     const sb = _client();
     if (!sb) { _otpMsg('err', 'Auth service unavailable.'); return; }
     const token = (document.getElementById('auth-otp-code').value || '').replace(/\D/g, '');
-    if (token.length !== 6) { _otpMsg('err', 'Enter the 6-digit code from the email.'); return; }
+    if (token.length !== 8) { _otpMsg('err', 'Enter the 8-digit code from the email.'); return; }
     const btn = document.getElementById('auth-otp-btn');
     btn.disabled = true; btn.textContent = '…';
     try {
-      // type:'email' covers the magic-link/OTP token GoTrue mails for sign-in.
-      const { data, error } = await sb.auth.verifyOtp({ email: _otpEmail, token, type: 'email' });
+      const otpType = _otpMode === 'signup' ? 'signup' : _otpMode === 'recovery' ? 'recovery' : 'email';
+      const { data, error } = await sb.auth.verifyOtp({ email: _otpEmail, token, type: otpType });
       if (error) throw error;
       clearInterval(_otpTimer);
       document.getElementById('auth-otp').style.display = 'none';
+      const wasRecovery = _otpMode === 'recovery';
       _otpEmail = null;
-      if (data?.user) { _user = data.user; _renderSignedIn(); _updatePill(); applySubFromProfile(); }
+      _otpMode = null;
+      if (wasRecovery) {
+        if (data?.user) { _user = data.user; }
+        showResetForm();
+      } else if (data?.user) {
+        _user = data.user; _renderSignedIn(); _updatePill(); applySubFromProfile();
+      }
     } catch (err) {
       _otpMsg('err', _authErrMsg(err));
     } finally {
-      btn.disabled = false; btn.textContent = 'Sign in';
+      btn.disabled = false; btn.textContent = _otpMode === 'signup' ? 'Verify & Create Account' : _otpMode === 'recovery' ? 'Verify Code' : 'Verify';
     }
   }
 
@@ -5043,9 +5233,9 @@ const HB_AUTH = (() => {
     try {
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: authRedirectTo() });
       if (error) throw error;
-      // Deliberately not confirming whether the address exists — that would let
-      // anyone enumerate registered users.
-      _showOk('If that email has an account, a reset link is on its way.');
+      _showOtpView(email, 'recovery');
+      _otpMsg('ok', 'We sent an 8-digit code to reset your password. Check your inbox.');
+      _otpCooldown(60);
     } catch (err) {
       _showErr(_authErrMsg(err));
     } finally {
@@ -5210,7 +5400,7 @@ const HB_AUTH = (() => {
   function getTab() { return _lbTab; }
   function getUser() { return _user; }
 
-  return { init, showAuthModal, hideAuthModal, switchTab, submit, googleSignIn, signOut, syncScore, fetchGlobalLB, switchLBTab, getTab, getUser, forgotPassword, submitNewPassword, emailLoginCode, resendLoginCode, verifyLoginCode, cancelOtp, _authErrMsg };
+  return { init, showAuthModal, hideAuthModal, switchTab, submit, googleSignIn, signOut, syncScore, fetchGlobalLB, switchLBTab, getTab, getUser, forgotPassword, submitNewPassword, resendLoginCode, verifyLoginCode, cancelOtp, pasteOtp, _authErrMsg };
 })();
 
 // backdrop listener wired in init() after DOM is ready
@@ -5229,6 +5419,8 @@ function saveLB(pts){
   };
   if(G.mode==='team'){
     entry.teamName=G.teams[G.curTeam].name;
+    const ps=G.teams[G.curTeam].players;
+    if(ps.length>0&&G._curPI!==undefined)entry.playerName=ps[G._curPI%ps.length].name;
     entry.teams=G.teams.slice(0,G.teamCount).map(t=>({name:t.name,score:t.score}));
   }
   lb.unshift(entry);
@@ -5677,6 +5869,7 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
   <div class="tsplash-pass" id="tsplash-pass">Pass the phone to</div>
   <div class="tsplash-name" id="tsplash-name">Team 2</div>
   <div class="tsplash-player" id="tsplash-player" style="display:none"></div>
+  <div class="tsplash-picks" id="tsplash-picks" style="display:none"></div>
   <div class="tsplash-score" id="tsplash-score"></div>
   <button class="btn btn-pri" style="max-width:280px;z-index:1" onclick="dismissTeamSplash()">We're Ready! →</button>
 </div>
@@ -5716,7 +5909,6 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
       </div>
       <button id="auth-submit-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submit()">Sign In</button>
       <button type="button" id="auth-forgot" class="auth-forgot" onclick="HB_AUTH.forgotPassword()">Forgot password?</button>
-      <button type="button" id="auth-code-btn" class="btn btn-out" style="margin-top:10px" onclick="HB_AUTH.emailLoginCode()">✉️ Email me a sign-in code</button>
       <div class="auth-divider" id="auth-or"><span>or</span></div>
       <button class="btn auth-google-btn" onclick="HB_AUTH.googleSignIn()">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style="vertical-align:middle;margin-right:8px"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.859-3.048.859-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.705A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.705V4.963H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.037l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.963L3.964 7.295C4.672 5.169 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
@@ -5734,20 +5926,23 @@ document.addEventListener('DOMContentLoaded',()=>HB_AUTH.init());
 
     <!-- one-time-code sign-in — no leaving the app for an inbox link -->
     <div id="auth-otp" style="display:none">
-      <div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:6px">Enter your sign-in code</div>
-      <div style="font-size:12px;color:var(--mut);margin-bottom:14px">We emailed a 6-digit code to <b id="auth-otp-to" style="color:var(--txt)"></b>. Paste it below — no need to leave the app.</div>
+      <div id="auth-otp-title" style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:6px">Verify your email</div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:14px">We emailed an 8-digit code to <b id="auth-otp-to" style="color:var(--txt)"></b>. Enter it below.</div>
       <div id="auth-otp-err" class="auth-msg auth-msg-err" style="display:none"></div>
       <div id="auth-otp-ok" class="auth-msg auth-msg-ok" style="display:none"></div>
-      <input id="auth-otp-code" class="inp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="123456" style="text-align:center;letter-spacing:6px;font-weight:800">
-      <button id="auth-otp-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.verifyLoginCode()">Sign in</button>
+      <div style="position:relative">
+        <input id="auth-otp-code" class="inp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="one-time-code" placeholder="12345678" style="text-align:center;letter-spacing:4px;font-weight:800;padding-right:50px">
+        <button type="button" onclick="HB_AUTH.pasteOtp()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:11px;font-weight:700;color:var(--acc);cursor:pointer;padding:4px 6px">Paste</button>
+      </div>
+      <button id="auth-otp-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.verifyLoginCode()">Verify & Create Account</button>
       <button type="button" id="auth-otp-resend" class="btn btn-out" style="margin-top:10px" onclick="HB_AUTH.resendLoginCode()">Send a new code</button>
-      <button type="button" class="auth-forgot" onclick="HB_AUTH.cancelOtp()">← Use my password instead</button>
+      <button type="button" id="auth-otp-back" class="auth-forgot" onclick="HB_AUTH.cancelOtp()">← Back to Sign Up</button>
     </div>
 
     <!-- set-a-new-password view — shown after following the reset link -->
     <div id="auth-reset" style="display:none">
       <div style="font-size:15px;font-weight:800;color:var(--txt);margin-bottom:6px">Choose a new password</div>
-      <div style="font-size:12px;color:var(--mut);margin-bottom:14px">Pick something at least 6 characters long.</div>
+      <div style="font-size:12px;color:var(--mut);margin-bottom:14px">Pick something at least 8 characters long.</div>
       <input id="auth-new-pass" class="inp" type="password" placeholder="New password" autocomplete="new-password">
       <button id="auth-reset-btn" class="btn btn-pri" style="margin-top:16px" onclick="HB_AUTH.submitNewPassword()">Set new password</button>
     </div>
