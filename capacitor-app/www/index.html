@@ -1069,12 +1069,12 @@ body::after{content:'';position:fixed;inset:0;
 #home-user-pill:active{background:rgba(255,255,255,0.12)}
 .upill-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--pur),var(--blu));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0;overflow:hidden}
 .upill-avatar img{width:100%;height:100%;object-fit:cover}
-.auth-card{background:var(--s1);border:1.5px solid var(--bdr2);border-radius:var(--rL);padding:28px 22px 24px;width:100%;max-width:360px;position:relative;margin:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)}
+.auth-card{background:var(--s1);border:1.5px solid var(--bdr2);border-radius:var(--rL);padding:28px 22px 24px;width:100%;max-width:360px;position:relative;margin:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7);transform:translateZ(0)}
 .auth-close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--mut);font-size:20px;cursor:pointer;padding:4px;line-height:1;transition:color .2s}
 .auth-close:active{color:var(--txt)}
 .auth-logo{font-family:'Nunito',sans-serif;font-size:22px;font-weight:900;color:var(--acc);text-align:center;margin-bottom:18px;letter-spacing:.5px}
 .auth-tabs{display:flex;gap:6px;background:rgba(255,255,255,0.04);border-radius:var(--rM);padding:5px;margin-bottom:18px}
-.auth-tab{flex:1;padding:10px;border:none;border-radius:calc(var(--rM) - 4px);background:none;color:var(--mut);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s,color .2s}
+.auth-tab{flex:1;padding:10px;border:none;border-radius:calc(var(--rM) - 4px);background:none;color:var(--mut);font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
 .auth-tab-active{background:var(--s3)!important;color:var(--txt)!important}
 .auth-msg{padding:10px 14px;border-radius:var(--rS);font-size:13px;margin-bottom:12px}
 .auth-msg-err{background:rgba(255,45,85,0.12);border:1px solid rgba(255,45,85,0.3);color:#FF6B88}
@@ -2332,7 +2332,7 @@ function saveGameProgress(){
         correct:G.correct, skipped:G.skipped, buzzed:G.buzzed||0,
         roundWords:G.roundWords||[], streak:G.streak||0,
         goldenIdx:(typeof G.goldenIdx==='number')?G.goldenIdx:-1
-      } : null
+      } : (G._resumeRound || null)
     }));
   }catch(e){/* storage full or blocked — recovery is a nicety, never fail the game */}
 }
@@ -2401,9 +2401,9 @@ function resumeGame(){
   if(st.charadesOrientation)G.charadesOrientation=st.charadesOrientation;
   // Mirror the restored settings back into the setup controls, so a later
   // playAgain() (which reads the toggles) does not silently undo them.
+  selGameStyle(G.gameStyle);          // repaints the setup banner + sensor rows
   const tg=(id,v)=>{const el=document.getElementById(id);if(el)el.checked=v};
   tg('tog-skip',G.skipDeduct); tg('tog-voice',G.voiceEnabled); tg('tog-tilt',G.tiltEnabled);
-  selGameStyle(G.gameStyle);          // repaints the setup banner + sensor rows
   selMode(G.mode); setMaxRounds(G.maxRounds); setTimer(G.timer);
   if(typeof refreshDeckGrid==='function')refreshDeckGrid();
   if(G.deck&&G.deck!=='dontsayit'&&typeof selDeck==='function')selDeck(G.deck);
@@ -3395,16 +3395,19 @@ function releaseWakeLock(){
   if(_wakeLock){_wakeLock.release().catch(()=>{});_wakeLock=null}
 }
 // Pause game timer when app is backgrounded (call, notification, home button, screen lock)
+function pauseRoundTimer(){
+  if(G.interval&&!G.roundOver){clearInterval(G.interval);G.interval=null;G._paused=true;}
+  stopStep();
+  saveGameProgress();
+}
+function resumeRoundTimer(){
+  if(G._paused&&!G.roundOver&&G.sec>0){G._paused=false;startTimer();}
+  else{G._paused=false;}
+  if(_wakeLock===null&&G.sec>0)acquireWakeLock();
+}
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'){
-    if(G.interval&&!G.roundOver){clearInterval(G.interval);G.interval=null;G._paused=true;}
-    stopStep();
-    saveGameProgress();
-  } else {
-    if(G._paused&&!G.roundOver&&G.sec>0){G._paused=false;startTimer();}
-    else{G._paused=false;}
-    if(_wakeLock===null&&G.sec>0)acquireWakeLock();
-  }
+  if(document.visibilityState==='hidden')pauseRoundTimer();
+  else resumeRoundTimer();
 });
 
 /* Stop decorative work while backgrounded.
@@ -3777,11 +3780,10 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).c
 
   // Topmost first. Each entry: [element id, how to dismiss it]
   const OVERLAYS = [
-    ['auth-modal',        () => window.HB_AUTH && HB_AUTH.hideAuthModal()],
+    ['auth-modal',        () => typeof HB_AUTH !== 'undefined' && HB_AUTH.hideAuthModal()],
     ['howto-modal',       () => typeof dismissHowTo === 'function' && dismissHowTo()],
     ['resume-modal',      () => typeof declineResume === 'function' && declineResume()],
     ['free-paywall-modal',() => { const e=document.getElementById('free-paywall-modal'); if(e)e.style.display='none'; }],
-    ['fp-deck-info',      () => { const e=document.getElementById('fp-deck-info');       if(e)e.style.display='none'; }],
     ['clearlb-modal',     () => { const e=document.getElementById('clearlb-modal');      if(e)e.style.display='none'; }],
   ];
   // Where "back" goes from each screen.
@@ -3792,7 +3794,8 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).c
     'screen-score':'screen-home', 'screen-ad':'screen-home',
   };
 
-  const visible = el => el && getComputedStyle(el).display !== 'none';
+  // getClientRects is empty when the element or any ancestor is display:none.
+  const visible = el => !!el && el.getClientRects().length > 0;
 
   App.addListener('backButton', () => {
     for(const [id, close] of OVERLAYS){
@@ -3806,7 +3809,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitWordText).c
     if(id === 'screen-countdown'){ if(typeof abortCountdown === 'function') abortCountdown(); return; }
     if(id === 'screen-ad'){ return; }
 
-    if(PARENT[id]){ goTo(PARENT[id]); if(window.SFX) SFX.tap(); return; }
+    if(PARENT[id]){ goTo(PARENT[id]); SFX.tap(); return; }
     App.exitApp();                                   // only from Home
   });
 })();
@@ -3853,7 +3856,9 @@ function startTimer(){
     if(G.sec===10){SFX.tensec();buzz([10]);document.getElementById('screen-play').classList.add('tension');G.goldenIdx=G.idx+1}
     if(G.sec<=10&&G.sec>3)SFX.heartbeat();
     if(G.sec<=3&&G.sec>0)SFX.countdown();
-    if(G.sec<=0)endRound();
+    if(G.sec<=0){endRound();return;}
+    // Android can kill the process without a visibilitychange, so checkpoint.
+    if(G.sec%5===0)saveGameProgress();
   },1000);
 }
 function updateTimerRing(){
@@ -4387,6 +4392,17 @@ const PLATFORM = {
     return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null;
   }
 };
+
+// iOS only goes "inactive" (not hidden) for Notification Centre, Control Centre
+// and banner calls, so visibilitychange never fires and the round clock kept
+// running (M-031). appStateChange reports the inactive state on both platforms.
+try{
+  if(PLATFORM.isNative&&PLATFORM.app){
+    PLATFORM.app.addListener('appStateChange',({isActive})=>{
+      if(isActive)resumeRoundTimer(); else pauseRoundTimer();
+    });
+  }
+}catch(e){}
 
 // Where Google's redirect hands control back to the app after sign-in. Must be
 // registered as a URL scheme on both platforms (AndroidManifest intent-filter,
@@ -5035,10 +5051,14 @@ const HB_AUTH = (() => {
     const legal = document.getElementById('auth-legal');
     if (legal) legal.style.display = isUp ? 'block' : 'none';
     document.getElementById('auth-submit-btn').textContent = isUp ? 'Create Account' : 'Sign In';
-    document.getElementById('auth-pass').autocomplete = isUp ? 'new-password' : 'current-password';
+    const passEl = document.getElementById('auth-pass');
+    passEl.autocomplete = isUp ? 'new-password' : 'current-password';
+    passEl.placeholder = isUp ? 'Create a password' : 'Password';
     ['auth-email','auth-pass','auth-name'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) { el.value = ''; el.classList.remove('field-invalid'); }
+      if (!el) return;
+      if (id !== 'auth-email') el.value = '';
+      el.classList.remove('field-invalid');
     });
     document.getElementById('auth-reset').style.display = 'none';
     document.getElementById('auth-otp').style.display = 'none';
@@ -5048,6 +5068,15 @@ const HB_AUTH = (() => {
     _clearMsg();
     const modal = document.getElementById('auth-modal');
     if (modal) modal.scrollTop = 0;
+    _repaintAuthCard();
+  }
+  // N-009 — iOS WebKit leaves text inside the backdrop-filtered modal unpainted
+  // after a tab switch until the next touch. A one-frame opacity nudge forces it.
+  function _repaintAuthCard() {
+    const card = document.querySelector('#auth-modal .auth-card');
+    if (!card) return;
+    card.style.opacity = '0.999';
+    requestAnimationFrame(() => requestAnimationFrame(() => { card.style.opacity = ''; }));
   }
 
   async function submit() {
@@ -5097,6 +5126,7 @@ const HB_AUTH = (() => {
       // above may have flipped the form over to Sign In.
       const stillUp = document.getElementById('auth-tab-up').classList.contains('auth-tab-active');
       btn.disabled = false; btn.textContent = stillUp ? 'Create Account' : 'Sign In';
+      _repaintAuthCard();
     }
   }
 
@@ -5145,6 +5175,7 @@ const HB_AUTH = (() => {
     const code = document.getElementById('auth-otp-code');
     code.value = '';
     setTimeout(() => code.focus(), 50);
+    _repaintAuthCard();
   }
   function cancelOtp() {
     clearInterval(_otpTimer);
@@ -5256,6 +5287,7 @@ const HB_AUTH = (() => {
     document.getElementById('auth-otp').style.display = 'none';
     document.getElementById('auth-reset').style.display = 'block';
     document.getElementById('auth-new-pass').value = '';
+    _repaintAuthCard();
   }
   async function submitNewPassword() {
     const sb = _client();
