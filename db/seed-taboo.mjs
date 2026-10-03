@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════
-// HeadBand! — DON'T SAY IT!! Seed Generator
+// HeadBand! — SIDE-STEP SIX!! Seed Generator
 // Parses "DONT_SAY_IT_Full_Deck_2000 words.xlsx" (sheet3 "Full Deck":
 // # | TARGET | FORBIDDEN 1-6 | CATEGORY) → db/seed-taboo.sql
 //

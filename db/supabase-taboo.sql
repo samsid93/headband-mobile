@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════
--- HeadBand! — DON'T SAY IT!! (Mode 3) Schema
+-- HeadBand! — SIDE-STEP SIX!! (Mode 3) Schema
 -- Run in: Supabase Dashboard → SQL Editor → New Query
 -- Run BEFORE seed-taboo.sql. Requires supabase-decks.sql already applied.
 -- ═══════════════════════════════════════════════════
@@ -20,7 +20,7 @@ create index if not exists taboo_active_idx on public.taboo_cards(id) where acti
 --    by clients as the cache-version signal. mode='dontsayit' keeps it out
 --    of the Up Top / Charades deck grid.
 insert into public.decks (id, name, icon, color, is_premium, mode, sort)
-values ('dontsayit', 'Don''t Say It!!', '🚫', '#FF2D55', false, 'dontsayit', 100)
+values ('dontsayit', 'Side-Step Six!!', '🚫', '#FF2D55', false, 'dontsayit', 100)
 on conflict (id) do update set mode = 'dontsayit', sort = 100;
 
 -- 3. Touch the dontsayit deck row when cards change (cache invalidation)

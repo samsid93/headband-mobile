@@ -7,9 +7,9 @@
      an empty strip at the top even with the status bar hidden. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wham Bam — Party Word Game</title>
-<meta name="description" content="Wham Bam — the TOP 3 party games in 1 app. Up Top, Charades and Don't Say It!! Hold it. Guess it. WIN it. 24 decks, tilt controls, voice commands, team play.">
+<meta name="description" content="Wham Bam — the TOP 3 party games in 1 app. Up Top, Charades and Side-Step Six!! Hold it. Guess it. WIN it. 24 decks, tilt controls, voice commands, team play.">
 <meta property="og:title" content="Wham Bam — Party Word Game">
-<meta property="og:description" content="Hold it. Guess it. WIN it. The TOP 3 party games in 1 app — Up Top, Charades and Don't Say It!! 24 decks, tilt controls, team play.">
+<meta property="og:description" content="Hold it. Guess it. WIN it. The TOP 3 party games in 1 app — Up Top, Charades and Side-Step Six!! 24 decks, tilt controls, team play.">
 <meta property="og:image" content="https://whambam.games/logo.png?v=2">
 <meta property="og:url" content="https://whambam.games">
 <meta property="og:type" content="website">
@@ -579,7 +579,7 @@ body::after{content:'';position:fixed;inset:0;
 .team-bar{width:100%;padding:7px 18px;text-align:center;font-size:13px;font-weight:800;letter-spacing:.3px;background:rgba(26,12,0,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--bdr);flex-shrink:0;z-index:6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* ── UNIFIED GAMEPLAY LAYOUT (all 3 modes) ──
    Top bar (scores + timer) · big word card · one action row of buttons.
-   Column flow works identically in portrait (Charades / Don't Say It) and
+   Column flow works identically in portrait (Charades / Side-Step Six) and
    landscape (Up Top). */
 .play-land{display:flex;flex-direction:column;align-items:center;width:100%;flex:1;min-height:0;gap:8px;padding:4px 4px calc(42px + env(safe-area-inset-bottom))}
 /* Centred cluster — leaves both top corners free (back button lives top-left) */
@@ -866,8 +866,8 @@ body::after{content:'';position:fixed;inset:0;
 /* Both dimensions capped at the art's own ratio → whole poster always fits,
    at any screen size, and can never zoom-crop */
 .gm-poster{position:relative;flex-shrink:0;line-height:0}
-.gv-mobile .gm-poster{width:min(100%,calc(100vh*1536/2752));height:min(100%,calc(100vw*2752/1536))}
-.gv-desktop .gm-poster{width:min(100%,calc(100vh*1376/768));height:min(100%,calc(100vw*768/1376))}
+.gv-mobile .gm-poster{width:min(100%,calc(100vh*768/1376));height:min(100%,calc(100vw*1376/768))}
+.gv-desktop .gm-poster{width:min(100%,calc(100vh*1678/937));height:min(100%,calc(100vw*937/1678))}
 .gm-poster svg,.gm-poster img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
 /* Hit zones: glow-only CTA (same treatment as the splash Start Now button) —
    transparent-centre blurred halo, so no hard outline has to trace the panels.
@@ -961,11 +961,11 @@ body::after{content:'';position:fixed;inset:0;
 .smb-charades{background:linear-gradient(135deg,#E62E6B,#7A2BD9)}
 .smb-charades .smb-name{color:#4DE1FF}
 .smb-dontsayit{background:linear-gradient(135deg,#019BEE,#0161C4)}
-/* ═══ DON'T SAY IT gameplay ═══ */
+/* ═══ SIDE-STEP SIX gameplay ═══ */
 .wforbidden{display:none;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:14px;width:100%;max-width:360px}
 .taboo-mode .wforbidden{display:grid}
-/* Target word — bigger and bolder in Don't Say It */
-/* Don't Say It shares the card with the forbidden-words grid, so its word runs
+/* Target word — bigger and bolder in Side-Step Six */
+/* Side-Step Six shares the card with the forbidden-words grid, so its word runs
    smaller than the other modes — but 7.5vw clamped to the 30px floor on a normal
    phone, which was far too small. Needs an ID in the selector to outrank the
    general #screen-play .wtext rule below. */
@@ -1045,10 +1045,10 @@ body::after{content:'';position:fixed;inset:0;
 /* An empty hint row still reserved its margin, and most cards have no hint. */
 #screen-play .whint:empty{display:none;margin:0}
 
-/* Portrait (Charades / Don't Say It). Width is the binding constraint here —
+/* Portrait (Charades / Side-Step Six). Width is the binding constraint here —
    height is plentiful — so this is vw-driven, and set high. Anything that
    genuinely does not fit is still brought down by fitWordText(). */
-/* Matched to Don't Say It (.taboo-mode, clamp(34px,11vw,60px)), which the user
+/* Matched to Side-Step Six (.taboo-mode, clamp(34px,11vw,60px)), which the user
    confirmed reads well in portrait. Was clamp(42px,17vw,88px) — that ceiling is
    what pushed long Charades titles into breaking mid-word. fitWordText() still
    shrinks anything that overflows even at this size; this just means it rarely
@@ -1240,7 +1240,7 @@ body::after{content:'';position:fixed;inset:0;
   <!-- Portrait art: three stacked panels -->
   <div class="gm-variant gv-mobile">
     <div class="gm-poster">
-      <img src="mode-poster.svg" class="gm-poster-img" alt="Pick your game — Up Top, Charades, Don&#39;t Say It" draggable="false">
+      <img src="mode-poster-mobile.png" class="gm-poster-img" alt="Pick your game — Up Top, Charades, Side-Step Six" draggable="false">
       <!-- Tops/heights measured off the artwork: each frame must sit ABOVE its
            panel's title, not through it. Charades is the tight one — its title
            starts at ~54%, so the frame has to begin by 51.5%. -->
@@ -1250,23 +1250,23 @@ body::after{content:'';position:fixed;inset:0;
       <button class="gm-hit k-charades" style="left:3%;right:3%;top:51.5%;height:21%;--rot:-1.8deg" onclick="selGameStyle('charades')" aria-label="Charades — only you read the word, act it out without speaking">
         <span class="gm-tag" aria-hidden="true"><b>2</b>Charades</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
       </button>
-      <button class="gm-hit k-dontsayit" style="left:3%;right:3%;top:74.5%;height:21%;--rot:-1.8deg" onclick="selGameStyle('dontsayit')" aria-label="Don't Say It — describe the word without saying the forbidden words">
-        <span class="gm-tag" aria-hidden="true"><b>3</b>Don't Say It</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      <button class="gm-hit k-dontsayit" style="left:3%;right:3%;top:74.5%;height:21%;--rot:-1.8deg" onclick="selGameStyle('dontsayit')" aria-label="Side-Step Six — describe the word without saying the forbidden words">
+        <span class="gm-tag" aria-hidden="true"><b>3</b>Side-Step Six</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
       </button>
     </div>
   </div>
   <!-- Landscape art: three side-by-side columns -->
   <div class="gm-variant gv-desktop">
     <div class="gm-poster">
-      <img src="mode-poster-desktop.png" class="gm-poster-img" alt="Pick your game — Up Top, Charades, Don&#39;t Say It" draggable="false">
+      <img src="mode-poster-desktop.png" class="gm-poster-img" alt="Pick your game — Up Top, Charades, Side-Step Six" draggable="false">
       <button class="gm-hit k-headsup" style="left:4.5%;width:29%;top:26.5%;height:67%" onclick="selGameStyle('headsup')" aria-label="Up Top — phone on forehead, others give verbal clues">
         <span class="gm-tag" aria-hidden="true"><b>1</b>Up Top</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
       </button>
       <button class="gm-hit k-charades" style="left:35.2%;width:29.6%;top:26.5%;height:67%" onclick="selGameStyle('charades')" aria-label="Charades — only you read the word, act it out without speaking">
         <span class="gm-tag" aria-hidden="true"><b>2</b>Charades</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
       </button>
-      <button class="gm-hit k-dontsayit" style="left:66.3%;width:29.5%;top:26.5%;height:67%" onclick="selGameStyle('dontsayit')" aria-label="Don't Say It — describe the word without saying the forbidden words">
-        <span class="gm-tag" aria-hidden="true"><b>3</b>Don't Say It</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
+      <button class="gm-hit k-dontsayit" style="left:66.3%;width:29.5%;top:26.5%;height:67%" onclick="selGameStyle('dontsayit')" aria-label="Side-Step Six — describe the word without saying the forbidden words">
+        <span class="gm-tag" aria-hidden="true"><b>3</b>Side-Step Six</span><span class="gm-go" aria-hidden="true">TAP TO PLAY</span>
       </button>
     </div>
   </div>
@@ -1907,8 +1907,8 @@ const DECKS=[
   {id:"popculture",name:"Pop Culture",icon:"🔥",premium:true,locked:true,words:[]},
   {id:"books",name:"Books & Authors",icon:"📚",premium:true,locked:true,words:[]}
 ];
-function tabooDeck(){return {id:'dontsayit',name:"Don't Say It!!",icon:'🚫',premium:false,words:TABOO.map(c=>({w:c.t,f:c.f}))}}
-/* DON'T SAY IT!! fallback cards — replaced by DB catalog at runtime */
+function tabooDeck(){return {id:'dontsayit',name:"Side-Step Six!!",icon:'🚫',premium:false,words:TABOO.map(c=>({w:c.t,f:c.f}))}}
+/* SIDE-STEP SIX!! fallback cards — replaced by DB catalog at runtime */
 let TABOO=[{t:"BANDIT",f:["BLUEY","DAD","OUTLAW","THIEF","ROBBER","MASK"]},{t:"NELSON MANDELA",f:["PRESIDENT","SOUTH AFRICAN","ANTI-APARTHEID","PRISON","LEADER","ICON"]},{t:"DOVE",f:["COMPANY","SOAP","SKINCARE","MOISTURIZER","BEAUTY","WHITE BIRD"]},{t:"DIAMOND",f:["GEM","SPARKLE","RING","PRECIOUS","SHINY","CRYSTAL"]},{t:"RICHARD FEYNMAN",f:["SCIENTIST","AMERICAN","PHYSICIST","NOBEL PRIZE","LECTURER","QUANTUM"]},{t:"FAISALABAD",f:["CITY","PAKISTAN","TEXTILES","INDUSTRIAL","PUNJAB","MANUFACTURING"]},{t:"PHOENIX",f:["CITY","AMERICA","ARIZONA","DESERT","HOT","SOUTHWEST"]},{t:"KEVIN HART",f:["COMEDIAN","AMERICAN","ACTOR","STAND-UP","HOLLYWOOD","SHORT"]},{t:"SELFIE",f:["PHOTO","CAMERA","PHONE","POSE","MIRROR","INSTAGRAM"]},{t:"BULB",f:["LIGHT","GLASS","GLOW","SCREW IN","LAMP","ELECTRIC"]},{t:"MARC ANTHONY",f:["SINGER","AMERICAN","LATIN","SALSA","ARTIST","SONGWRITER"]},{t:"BRYAN ROBSON",f:["FOOTBALLER","ENGLISH","MANCHESTER UNITED","CAPTAIN","MIDFIELDER","PREMIER LEAGUE"]},{t:"BELARUS",f:["COUNTRY","EUROPE","MINSK","RUSSIA","SOVIET","LANDLOCKED"]},{t:"RUSSELL",f:["UP","BOY SCOUT","DISNEY","BADGE","PIXAR","ELDERLY FRIEND"]},{t:"MOJITO",f:["COCKTAIL","RUM","MINT","LIME","CUBAN","DRINK"]},{t:"COLUMBUS",f:["CITY","AMERICA","OHIO","CAPITAL","MIDWEST","STATE UNIVERSITY"]},{t:"CHEAT",f:["ACTION","DISHONEST","TRICK","DECEIVE","UNFAIR","FRAUD"]},{t:"WRENCH",f:["TOOL","METAL","TIGHTEN","GRIP","BOLT","ADJUSTABLE"]},{t:"IRAN",f:["COUNTRY","MIDDLE EAST","TEHRAN","PERSIAN","ISLAMIC","ANCIENT"]},{t:"MARTINA HINGIS",f:["TENNIS","SWISS","GRAND SLAM","YOUNGEST CHAMPION","ATHLETE","DOUBLES"]},{t:"BUS",f:["VEHICLE","WHEELS","SCHOOL","RIDE","DRIVER","ROUTE"]},{t:"BEAST",f:["DISNEY","BELLE","CASTLE","FUR","CURSE","MONSTER"]},{t:"PESTO",f:["SAUCE","GREEN","BASIL","ITALIAN","PASTA","BLENDED"]},{t:"LYON",f:["CITY","FRANCE","FOOD","SILK","RIVER","GASTRONOMY"]},{t:"FORD",f:["COMPANY","CAR","AMERICA","TRUCK","HENRY","ASSEMBLY LINE"]},{t:"MICROBIOLOGIST",f:["JOB","BACTERIA","LAB","MICROSCOPE","RESEARCH","CELLS"]},{t:"SWIM",f:["ACTION","WATER","POOL","STROKE","FLOAT","DIVE"]},{t:"SQUASH",f:["SPORT","RACKET","COURT","WALL","BALL","RALLY"]},{t:"ORANGUTAN",f:["APE","JUNGLE","ORANGE","TREE","ASIA","PRIMATE"]},{t:"STREETWEAR",f:["FASHION","CLOTHING","HYPE","SNEAKERS","BRAND","TRENDY"]},{t:"JAPAN",f:["COUNTRY","ASIA","TOKYO","SUSHI","ISLANDS","SAMURAI"]},{t:"ROOF",f:["HOUSE","TOP","SHINGLE","COVER","CEILING","OVERHEAD"]},{t:"ALGERIA",f:["COUNTRY","AFRICA","ALGIERS","SAHARA","ARABIC","MEDITERRANEAN"]},{t:"JOAQUIN PHOENIX",f:["ACTOR","AMERICAN","OSCAR","JOKER ROLE","HOLLYWOOD","INTENSE"]},{t:"SNOOP DOGG",f:["RAPPER","AMERICAN","HIP HOP","ARTIST","LAID-BACK","ICON"]},{t:"FISH",f:["SWIM","OCEAN","SCALES","FIN","GILLS","AQUARIUM"]},{t:"GARFIELD",f:["CAT","LASAGNA","ORANGE","LAZY","CARTOON","MONDAY"]},{t:"THAILAND",f:["COUNTRY","ASIA","BANGKOK","TEMPLES","TROPICAL","SIAM"]},{t:"SAMOSA",f:["FRIED","INDIAN","TRIANGLE","PASTRY","FILLING","SNACK"]},{t:"LAMBORGHINI",f:["COMPANY","CAR","ITALY","SUPERCAR","LUXURY","FAST"]},{t:"KATE MIDDLETON",f:["ROYAL","BRITISH","PRINCESS OF WALES","DUCHESS","FAMILY","MONARCHY"]},{t:"BEGIN",f:["ACTION","START","COMMENCE","INITIATE","OPENING","FIRST STEP"]},{t:"CLIMBING",f:["ROCK","TREE","LADDER","UP","GRIP","MOUNTAIN"]},{t:"FIRE",f:["HOT","FLAME","BURN","ORANGE","SMOKE","HEAT"]},{t:"WELLINGTON",f:["CITY","NEW ZEALAND","CAPITAL","WINDY","HARBOUR","HOBBIT FILMS"]},{t:"MALALA YOUSAFZAI",f:["ACTIVIST","PAKISTANI","NOBEL PRIZE","EDUCATION","YOUNGEST LAUREATE","SHOT"]},{t:"MONICA SELES",f:["TENNIS","SERBIAN-AMERICAN","GRAND SLAM","CHAMPION","ATHLETE","STABBING INCIDENT"]},{t:"HOLD",f:["ACTION","GRIP","HAND","CARRY","GRASP","KEEP"]},{t:"MARILYN MONROE",f:["ACTRESS","AMERICAN","CLASSIC HOLLYWOOD","ICON","BLONDE","LATE"]},{t:"FLASHLIGHT",f:["BATTERY","BEAM","DARK","HANDHELD","TORCH","SHINE"]}];
 
 
@@ -2166,7 +2166,7 @@ function selGameStyle(s){
   if(s==='dontsayit'){G.deck='dontsayit'}
   else if(G.deck==='dontsayit'){G.deck='movies';refreshDeckGrid()}
   const chip=document.getElementById('setup-mode-chip');
-  const CHIPS={headsup:'🙆 UP TOP!!',charades:'🤫 CHARADES!!',dontsayit:"🚫 DON'T SAY IT!!"};
+  const CHIPS={headsup:'🙆 UP TOP!!',charades:'🤫 CHARADES!!',dontsayit:"🚫 SIDE-STEP SIX!!"};
   if(chip)chip.textContent=CHIPS[s];
   const h=document.getElementById('style-hint');
   const HINTS={headsup:'Phone on forehead — others give verbal clues',
@@ -2198,7 +2198,7 @@ function selGameStyle(s){
     if(tiltTog)tiltTog.checked=false;
     if(voiceTog)voiceTog.checked=false;
   }
-  // Don't Say It uses one fixed mega-deck — no deck UI at all in that mode
+  // Side-Step Six uses one fixed mega-deck — no deck UI at all in that mode
   const dk=document.getElementById('deck-section');
   if(dk)dk.style.display=s==='dontsayit'?'none':'block';
   // Tint the banner to match the chosen game
@@ -2355,7 +2355,7 @@ function maybeOfferResume(){
   const s=loadGameProgress();
   if(!s)return;
   _resumeOffered=true;
-  const NAMES={headsup:'Up Top!!',charades:'Charades!!',dontsayit:"Don't Say It!!"};
+  const NAMES={headsup:'Up Top!!',charades:'Charades!!',dontsayit:"Side-Step Six!!"};
   const modal=document.getElementById('resume-modal');
   if(!modal)return;
   const mpp=s.mode==='team'?Math.max(1,...s.teams.map(t=>(t.players||[]).length)):1;
@@ -2514,7 +2514,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* The How to Play guide is shown once PER MODE, not once per browser — each
    game has different rules, so seeing Up Top's guide must not suppress the
    others. */
-const HOWTO_TITLES={headsup:'🙆 Up Top!!',charades:'🤫 Charades!!',dontsayit:"🚫 Don't Say It!!"};
+const HOWTO_TITLES={headsup:'🙆 Up Top!!',charades:'🤫 Charades!!',dontsayit:"🚫 Side-Step Six!!"};
 function _howToKey(){return 'hb_howto_seen_'+G.gameStyle}
 /* Migrate the old single browser-wide flag: whoever saw the old guide only ever
    saw Up Top's, so credit that mode and let the other two show theirs once. */
@@ -4004,7 +4004,7 @@ function showScore(){
   const roundInfoEl=document.getElementById('sc-round-info');
   const gameOverBanner=document.getElementById('sc-gameover-banner');
   const playBtn=document.getElementById('sc-play-again-btn');
-  // Don't Say It has one fixed mega-deck — no deck to change
+  // Side-Step Six has one fixed mega-deck — no deck to change
   const changeDeckBtn=document.getElementById('sc-change-deck-btn');
   if(changeDeckBtn)changeDeckBtn.style.display=G.gameStyle==='dontsayit'?'none':'block';
 
