@@ -23,7 +23,7 @@ const FILES = [
   ['logo.png',               'logo.png'],
   ['splash.png',             'splash.png'],
   ['splash-desktop.png',     'splash-desktop.png'],
-  ['mode-poster.svg',        'mode-poster.svg'],
+  ['mode-poster-mobile.png', 'mode-poster-mobile.png'],
   ['mode-poster-desktop.png','mode-poster-desktop.png'],
 ];
 
