@@ -1,7 +1,7 @@
 WHAM BAM — SERVER UPLOAD PACKAGE
 =================================
 
-Upload ALL 6 files below into the SAME directory (the site root of
+Upload ALL files below into the SAME directory (the site root of
 whambam.games). All asset paths in the HTML are relative, so they must
 sit next to the HTML file — do not put them in subfolders.
 
@@ -11,7 +11,7 @@ index.html                The game (all HTML/CSS/JS inline)
 logo.png                  Favicon, apple-touch-icon, og:image, home logo, ad logo
 splash.png                Splash / landing screen — PORTRAIT art (phones)
 splash-desktop.png        Splash / landing screen — LANDSCAPE art (desktop)
-mode-poster.svg           Select-Game screen — PORTRAIT art (stacked panels)
+mode-poster-mobile.png    Select-Game screen — PORTRAIT art (stacked panels)
 mode-poster-desktop.png   Select-Game screen — LANDSCAPE art (side-by-side)
 legal-style.css           Shared stylesheet for privacy/terms pages
 privacy.html              Privacy Policy page
