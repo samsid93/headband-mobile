@@ -8,7 +8,9 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play rejects any upload whose versionCode is not higher than the last one.
-        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+        // Assignment form on purpose: `versionCode (x).toInteger()` parses as
+        // `versionCode(x).toInteger()` in Groovy and fails with "Value is null".
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
